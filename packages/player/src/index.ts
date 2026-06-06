@@ -6,6 +6,8 @@ export type PlayOptions = {
     bpm?: number;
 };
 
+const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+
 const playDrum = (value: string, time: number) => {
     switch (value) {
         case "kick":
@@ -66,7 +68,14 @@ export const play = async (
 
         transport.scheduleRepeat(
             (time) => {
-                playDrum(event.value, time);
+                if (event.type === "drum") {
+                    playDrum(event.value, time);
+                }   
+
+                if (event.type === "note") {
+                    synth.triggerAttackRelease(event.value, event.dur, time);
+
+                }
             },
             loopDuration,
             eventOffset

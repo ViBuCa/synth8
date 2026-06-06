@@ -95,4 +95,35 @@ describe("compile", () => {
       ],
     });
   });
+
+  it("compiles melody", () => {
+    expect(compile('melody("c4 e4 g4")').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4" },
+      { time: 1, dur: 1, type: "note", value: "e4" },
+      { time: 2, dur: 1, type: "note", value: "g4" },
+    ]);
+  });
+
+  it("compiles song", () => {
+    const pattern = compile(`
+    song(
+      beat("kick snare"),
+      melody("c4 e4")
+    )
+  `);
+
+    expect(pattern.events).toContainEqual({
+      time: 0,
+      dur: 1,
+      type: "drum",
+      value: "kick",
+    });
+
+    expect(pattern.events).toContainEqual({
+      time: 0,
+      dur: 1,
+      type: "note",
+      value: "c4",
+    });
+  });
 });

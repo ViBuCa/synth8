@@ -26,12 +26,24 @@ describe("parse", () => {
             rate: 1
         });
     });
-    
+
     it("rejects unterminated groups", () => {
         expect(() => compile(`beat("kick [snare hihat")`)).toThrow("Unterminated group");
     });
 
     it("rejects unexpected closing groups", () => {
         expect(() => compile(`beat("kick snare] hihat")`)).toThrow("Unexpected closing group");
+    });
+
+    it("parses melody", () => {
+        expect(parse('melody("c4 e4 g4")')).toEqual({
+            kind: "MelodyExpression",
+            rate: 1,
+            notes: [
+                { kind: "MelodyNote", value: "c4" },
+                { kind: "MelodyNote", value: "e4" },
+                { kind: "MelodyNote", value: "g4" },
+            ],
+        });
     });
 });
