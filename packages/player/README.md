@@ -1,20 +1,20 @@
-# @vibuca/player
+# @vibuca/synth8-player
 
 Tone.js player for Synt8 patterns.
 
-This package plays patterns compiled by `@vibuca/core`.
+This package plays patterns compiled by `@vibuca/synth8-core`.
 
 ## Install
 
 ```bash
-npm install @vibuca/core @vibuca/player
+npm install @vibuca/synth8-core @vibuca/synth8-player
 ```
 
 ## Usage
 
 ```ts
-import { compile } from "@vibuca/core";
-import { play, stop } from "@vibuca/player";
+import { compile } from "@vibuca/synth8-core";
+import { play, stop } from "@vibuca/synth8-player";
 
 const pattern = compile(`
   song(
@@ -57,7 +57,7 @@ stop();
 
 ## Supported events
 
-`@vibuca/player` supports:
+`@vibuca/synth8-player` supports:
 
 ```ts
 { type: "drum", value: "kick" }

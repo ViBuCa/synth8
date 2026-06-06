@@ -1,6 +1,6 @@
 import * as Tone from "tone";
 import { kick, snare, hihat, clap, openhat, tom, cowbell, rim } from "./drum/drum-synths";
-import type { Pattern } from "@vibuca/core";
+import type { Pattern } from "@vibuca/synth8-core";
 
 export type PlayOptions = {
     bpm?: number;

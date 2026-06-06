@@ -222,10 +222,10 @@ importers:
 
   apps/playground:
     dependencies:
-      '@vibuca/core':
+      '@vibuca/synth8-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@vibuca/player':
+      '@vibuca/synth8-player':
         specifier: workspace:*
         version: link:../../packages/player
 
@@ -233,7 +233,7 @@ importers:
 
   packages/player:
     dependencies:
-      '@vibuca/core':
+      '@vibuca/synth8-core':
         specifier: workspace:*
         version: link:../core
       tone:

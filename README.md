@@ -32,12 +32,12 @@ synt8/
 
 ### Packages
 
-| Package              | Purpose                              |
-| -------------------- | ------------------------------------ |
-| `@vibuca/core`       | Parser, AST, compiler, pattern model |
-| `@vibuca/player`     | Audio playback engine                |
-| `@vibuca/editor`     | Reusable editor component            |
-| `@vibuca/playground` | Browser-based development playground |
+| Package                     | Purpose                              |
+| --------------------------- | ------------------------------------ |
+| `@vibuca/synth8-core`       | Parser, AST, compiler, pattern model |
+| `@vibuca/synth8-player`     | Audio playback engine                |
+| `@vibuca/synth8-editor`     | Reusable editor component            |
+| `@vibuca/playground`        | Browser-based development playground |
 
 ---
 
@@ -53,7 +53,7 @@ synt8/
 Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:ViBuCa/synth8.git
 cd synt8
 ```
 
@@ -98,13 +98,13 @@ pnpm build
 Build a single package:
 
 ```bash
-pnpm --filter @vibuca/core build
+pnpm --filter @vibuca/synth8-core build
 ```
 
 or
 
 ```bash
-pnpm --filter @vibuca/player build
+pnpm --filter @vibuca/synth8-player build
 ```
 
 ---
@@ -116,7 +116,7 @@ Packages depend on each other using pnpm workspace references:
 ```json
 {
   "dependencies": {
-    "@vibuca/core": "workspace:*"
+    "@vibuca/syth8-core": "workspace:*"
   }
 }
 ```
@@ -154,7 +154,7 @@ pnpm build
 Publish a package:
 
 ```bash
-pnpm --filter @vibuca/core publish --access public
+pnpm --filter @vibuca/synth8-core publish --access public
 ```
 
 Publish all public packages:
@@ -174,13 +174,13 @@ The playground application should remain private.
 After publishing:
 
 ```bash
-pnpm add @vibuca/core
+pnpm add @vibuca/synth8-core
 ```
 
 Example:
 
 ```ts
-import { hello } from "@vibuca/core";
+import { hello } from "@vibuca/synth8-core";
 
 console.log(hello());
 ```

@@ -10,7 +10,7 @@ export default defineConfig({
       fileName: "index"
     },
     rollupOptions: {
-      external: ["tone", "@vibuca/core"]
+      external: ["tone", "@vibuca/synth8-core"]
     }
   }
 });

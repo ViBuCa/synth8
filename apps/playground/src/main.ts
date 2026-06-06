@@ -1,5 +1,5 @@
-import { compile } from "@vibuca/core";
-import { play, stop } from "@vibuca/player";
+import { compile } from "@vibuca/synth8-core";
+import { play, stop } from "@vibuca/synth8-player";
 
 const initialSource = `beat("kick snare hihat hihat").rate(2)`;
 

@@ -1,4 +1,4 @@
-# @vibuca/core
+# @vibuca/synth8-core
 
 Core parser and compiler for Synt8, an MIT-licensed pattern music toolkit written in TypeScript.
 
@@ -7,13 +7,13 @@ Synt8 defines its own small pattern DSL for rhythmic and melodic music patterns.
 ## Install
 
 ```bash
-npm install @vibuca/core
+npm install @vibuca/synth8-core
 ```
 
 ## Usage
 
 ```ts
-import { compile } from "@vibuca/core";
+import { compile } from "@vibuca/synth8-core";
 
 const pattern = compile(`
   song(

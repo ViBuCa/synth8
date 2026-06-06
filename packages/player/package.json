@@ -1,5 +1,5 @@
 {
-  "name": "@vibuca/player",
+  "name": "@vibuca/synth8-player",
   "version": "0.1.1",
   "type": "module",
   "license": "MIT",
@@ -12,7 +12,7 @@
     }
   },
   "dependencies": {
-    "@vibuca/core": "workspace:*",
+    "@vibuca/synth8-core": "workspace:*",
     "tone": "^15.1.22"
   },
   "scripts": {
