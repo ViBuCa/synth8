@@ -25,6 +25,17 @@ describe("compile", () => {
       ]
     });
   });
+  
+  it("supports rests", () => {
+    expect(compile(`beat("kick _ snare hihat").rate(2)`)).toEqual({
+      length: 2,
+      events: [
+        { time: 0, dur: 0.5, type: "drum", value: "kick" },
+        { time: 1, dur: 0.5, type: "drum", value: "snare" },
+        { time: 1.5, dur: 0.5, type: "drum", value: "hihat" },
+      ],
+    });
+  });
 
   it("rejects unknown drum sounds", () => {
     expect(() => compile(`beat("kick clap")`)).toThrow("Unknown drum sound");
