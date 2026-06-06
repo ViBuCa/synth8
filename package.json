@@ -1,0 +1,25 @@
+{
+  "name": "synth8",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --filter @vibuca/playground dev",
+    "build": "pnpm -r build",
+    "clean": "pnpm -r exec rm -rf dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.0.3",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "unplugin-dts": "^1.0.2",
+    "vite": "^8.0.16"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@vibuca/playground",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@vibuca/core": "workspace:*"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  }
+}

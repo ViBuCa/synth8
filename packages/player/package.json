@@ -1,0 +1,13 @@
+{
+  "name": "@vibuca/player",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@vibuca/core": "workspace:*",
+    "tone": "^15.1.22"
+  },
+  "scripts": {
+    "build": "vite build"
+  }
+}
