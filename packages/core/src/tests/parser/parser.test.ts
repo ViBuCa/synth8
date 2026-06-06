@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "../../parser/parser";
+import { compile } from "../..";
 
 describe("parse", () => {
     it("parses a beat expression", () => {
@@ -24,5 +25,13 @@ describe("parse", () => {
             ],
             rate: 1
         });
+    });
+    
+    it("rejects unterminated groups", () => {
+        expect(() => compile(`beat("kick [snare hihat")`)).toThrow("Unterminated group");
+    });
+
+    it("rejects unexpected closing groups", () => {
+        expect(() => compile(`beat("kick snare] hihat")`)).toThrow("Unexpected closing group");
     });
 });

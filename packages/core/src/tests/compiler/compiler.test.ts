@@ -69,4 +69,17 @@ describe("compile", () => {
       ],
     });
   });
+
+  it("supports nested groups", () => {
+    expect(compile(`beat("kick [snare [hihat hihat]] kick")`)).toEqual({
+      length: 3,
+      events: [
+        { time: 0, dur: 1, type: "drum", value: "kick" },
+        { time: 1, dur: 0.5, type: "drum", value: "snare" },
+        { time: 1.5, dur: 0.25, type: "drum", value: "hihat" },
+        { time: 1.75, dur: 0.25, type: "drum", value: "hihat" },
+        { time: 2, dur: 1, type: "drum", value: "kick" },
+      ],
+    });
+  });
 });
