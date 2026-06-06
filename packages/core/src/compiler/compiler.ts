@@ -13,6 +13,14 @@ const VALID_DRUMS = new Set([
   "cowbell",
 ]);
 
+const validateSound = (sound: string): void => {
+  if (sound === REST) return;
+
+  if (!VALID_DRUMS.has(sound)) {
+    throw new Error(`Unknown drum sound: ${sound}`);
+  }
+};
+
 const validateStep = (step: BeatStep): void => {
   if (step.kind === "BeatGroup") {
     for (const child of step.steps) {
@@ -21,11 +29,14 @@ const validateStep = (step: BeatStep): void => {
     return;
   }
 
-  if (step.value === REST) return;
-
-  if (!VALID_DRUMS.has(step.value)) {
-    throw new Error(`Unknown drum sound: ${step.value}`);
+  if (step.kind === "BeatParallel") {
+    for (const sound of step.sounds) {
+      validateSound(sound.value);
+    }
+    return;
   }
+
+  validateSound(step.value);
 };
 
 const compileSteps = (
@@ -38,25 +49,40 @@ const compileSteps = (
   const events: Event[] = [];
   const stepDuration = duration / steps.length;
 
-  steps.forEach((step: BeatStep, index: number) => {
+  steps.forEach((step, index) => {
     const time = start + index * stepDuration;
 
-    if (step.kind === "BeatGroup") {
-      events.push(...compileSteps(step.steps, time, stepDuration));
-      return;
-    }
+    switch (step.kind) {
+      case "BeatGroup":
+        events.push(...compileSteps(step.steps, time, stepDuration));
+        break;
 
-    if (step.value === REST) {
-      return;
-    }
+      case "BeatParallel":
+        for (const sound of step.sounds) {
+          if (sound.value === REST) continue;
 
-    events.push({
-      time,
-      dur: stepDuration,
-      type: "drum",
-      value: step.value,
-    });
+          events.push({
+            time,
+            dur: stepDuration,
+            type: "drum",
+            value: sound.value,
+          });
+        }
+        break;
+
+      case "BeatSound":
+        if (step.value === REST) break;
+
+        events.push({
+          time,
+          dur: stepDuration,
+          type: "drum",
+          value: step.value,
+        });
+        break;
+    }
   });
+
   return events;
 };
 

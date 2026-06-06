@@ -82,4 +82,17 @@ describe("compile", () => {
       ],
     });
   });
+
+  it("supports parallel hits", () => {
+    expect(compile(`beat("kick+hihat snare hihat snare")`)).toEqual({
+      length: 4,
+      events: [
+        { time: 0, dur: 1, type: "drum", value: "kick" },
+        { time: 0, dur: 1, type: "drum", value: "hihat" },
+        { time: 1, dur: 1, type: "drum", value: "snare" },
+        { time: 2, dur: 1, type: "drum", value: "hihat" },
+        { time: 3, dur: 1, type: "drum", value: "snare" },
+      ],
+    });
+  });
 });

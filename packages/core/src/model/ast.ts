@@ -6,7 +6,7 @@ export type BeatExpression = {
   rate: number;
 };
 
-export type BeatStep = BeatSound | BeatGroup;
+export type BeatStep = BeatSound | BeatGroup | BeatParallel;
 
 export type BeatSound = {
   kind: "BeatSound";
@@ -16,4 +16,9 @@ export type BeatSound = {
 export type BeatGroup = {
   kind: "BeatGroup";
   steps: BeatStep[];
+};
+
+export type BeatParallel = {
+  kind: "BeatParallel";
+  sounds: BeatSound[];
 };
