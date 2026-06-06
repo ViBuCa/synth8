@@ -5,3 +5,5 @@ export function hello() {
 }
 
 export * from "./compiler";
+
+export * from "./model";

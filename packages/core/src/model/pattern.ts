@@ -1,6 +1,6 @@
-import type { Synt8Event } from "./event";
+import type { Event } from "./event";
 
-export type Synt8Pattern = {
+export type Pattern = {
   length: number;
-  events: Synt8Event[];
+  events: Event[];
 };

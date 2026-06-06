@@ -225,6 +225,9 @@ importers:
       '@vibuca/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@vibuca/player':
+        specifier: workspace:*
+        version: link:../../packages/player
 
   packages/core: {}
 

@@ -1,8 +1,8 @@
-import type { Synt8Pattern } from "../model/pattern";
+import type { Pattern } from "../model/pattern";
 
 const VALID_DRUMS = new Set(["kick", "snare", "hihat"]);
 
-export const compile = (source: string): Synt8Pattern => {
+export const compile = (source: string): Pattern => {
   const match = source.match(
     /^beat\("([^"]*)"\)(?:\.rate\((\d+(?:\.\d+)?)\))?$/
   );

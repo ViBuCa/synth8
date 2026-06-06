@@ -1,8 +1,8 @@
-export type Synt8EventType = "drum";
+export type EventType = "drum";
 
-export type Synt8Event = {
+export type Event = {
   time: number;
   dur: number;
-  type: Synt8EventType;
+  type: EventType;
   value: string;
 };
