@@ -17,5 +17,6 @@
   },
   "scripts": {
     "build": "vite build"
-  }
+  },
+  "files": ["dist", "README.md", "LICENSE"]
 }
