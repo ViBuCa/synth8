@@ -1,5 +1,6 @@
 import type { AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
+import { parseMelodyPattern } from "./melody-pattern-parser";
 import { tokenize, type Token } from "./tokenizer";
 
 class Parser {
@@ -8,7 +9,7 @@ class Parser {
     constructor(private readonly tokens: Token[]) { }
 
     parse(): AstNode {
-        const node = this.parseBeatExpression();
+        const node = this.parseExpression();
 
         if (!this.isAtEnd()) {
             throw new Error("Unexpected tokens after expression.");
@@ -17,6 +18,46 @@ class Parser {
         return node;
     }
 
+    private parseExpression(): AstNode {
+        const token = this.peek();
+
+        if (token?.type !== "identifier") {
+            throw new Error("Expected expression.");
+        }
+
+        if (token.value === "beat") {
+            return this.parseBeatExpression();
+        }
+
+        if (token.value === "melody") {
+            return this.parseMelodyExpression();
+        }
+
+        if (token.value === "song") {
+            return this.parseSongExpression();
+        }
+
+        throw new Error(`Unknown expression: ${token.value}`);
+    }
+
+    private parseOptionalRate(): number {
+        let rate = 1;
+
+        if (this.matchSymbol(".")) {
+            this.expectIdentifier("rate");
+            this.expectSymbol("(");
+            rate = this.expectNumber();
+            this.expectSymbol(")");
+        }
+
+        if (!Number.isFinite(rate) || rate <= 0) {
+            throw new Error(`Invalid rate: ${rate}`);
+        }
+
+        return rate;
+    }
+
+    /*
     private parseBeatExpression(): AstNode {
         this.expectIdentifier("beat");
         this.expectSymbol("(");
@@ -42,6 +83,64 @@ class Parser {
             kind: "BeatExpression",
             steps: parseBeatPattern(body),
             rate,
+        };
+    }*/
+
+    private parseBeatExpression(): AstNode {
+        this.expectIdentifier("beat");
+        this.expectSymbol("(");
+
+        const body = this.expectString();
+
+        this.expectSymbol(")");
+
+        const rate = this.parseOptionalRate();
+
+        return {
+            kind: "BeatExpression",
+            steps: parseBeatPattern(body),
+            rate,
+        };
+    }
+
+    private parseMelodyExpression(): AstNode {
+        this.expectIdentifier("melody");
+        this.expectSymbol("(");
+
+        const body = this.expectString();
+
+        this.expectSymbol(")");
+
+        const rate = this.parseOptionalRate();
+
+        return {
+            kind: "MelodyExpression",
+            notes: parseMelodyPattern(body),
+            rate,
+        };
+    }
+
+    private parseSongExpression(): AstNode {
+        this.expectIdentifier("song");
+        this.expectSymbol("(");
+
+        const tracks: AstNode[] = [];
+
+        if (!this.matchSymbol(")")) {
+            do {
+                tracks.push(this.parseExpression());
+            } while (this.matchSymbol(","));
+
+            this.expectSymbol(")");
+        }
+
+        if (tracks.length === 0) {
+            throw new Error("song() requires at least one track.");
+        }
+
+        return {
+            kind: "SongExpression",
+            tracks,
         };
     }
 
@@ -73,7 +172,7 @@ class Parser {
         return token.value;
     }
 
-    private expectSymbol(value: "(" | ")" | "."): void {
+    private expectSymbol(value: "(" | ")" | "." | ","): void {
         const token = this.advance();
 
         if (token?.type !== "symbol" || token.value !== value) {
@@ -81,7 +180,7 @@ class Parser {
         }
     }
 
-    private matchSymbol(value: "(" | ")" | "."): boolean {
+    private matchSymbol(value: "(" | ")" | "." | ","): boolean {
         const token = this.peek();
 
         if (token?.type === "symbol" && token.value === value) {
