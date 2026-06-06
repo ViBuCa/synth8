@@ -46,4 +46,21 @@ describe("parse", () => {
             ],
         });
     });
+
+    it("parses parallel melody notes", () => {
+        expect(parse('melody("c4+e4+g4")')).toEqual({
+            kind: "MelodyExpression",
+            rate: 1,
+            notes: [
+                {
+                    kind: "MelodyParallel",
+                    notes: [
+                        { kind: "MelodyNote", value: "c4" },
+                        { kind: "MelodyNote", value: "e4" },
+                        { kind: "MelodyNote", value: "g4" },
+                    ],
+                },
+            ],
+        });
+    });
 });

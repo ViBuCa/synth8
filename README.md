@@ -230,11 +230,11 @@ Current milestone:
 * [x] pnpm workspaces
 * [x] Vite library builds
 * [x] Playground application
-* [ ] Pattern parser
-* [ ] AST
-* [ ] Compiler
-* [ ] Audio scheduler
-* [ ] Tone.js player
+* [x] Pattern parser
+* [x] AST
+* [x] Compiler
+* [x] Audio scheduler
+* [x] Tone.js player
 * [ ] Web editor
 * [ ] MIDI export
 * [ ] Phaser integration examples

@@ -145,6 +145,16 @@ const compileMelodySteps = (
       }];
     }
 
+    if (note.kind === "MelodyParallel") {
+      return note.notes
+        .filter((child) => child.value !== "_")
+        .map((child) => ({
+          time,
+          dur: stepDur,
+          type: "note",
+          value: child.value,
+        }));
+    }
     return compileMelodySteps(note.notes, time, stepDur);
   });
 }

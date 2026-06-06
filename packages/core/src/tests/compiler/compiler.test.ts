@@ -126,4 +126,22 @@ describe("compile", () => {
       value: "c4",
     });
   });
+
+  it("compiles parallel melody notes", () => {
+    expect(compile('melody("c4+e4+g4 f4")').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4" },
+      { time: 0, dur: 1, type: "note", value: "e4" },
+      { time: 0, dur: 1, type: "note", value: "g4" },
+      { time: 1, dur: 1, type: "note", value: "f4" },
+    ]);
+  });
+
+  it("compiles parallel melody notes in groups", () => {
+    expect(compile('melody("c4 [e4+g4 a4]")').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4" },
+      { time: 1, dur: 0.5, type: "note", value: "e4" },
+      { time: 1, dur: 0.5, type: "note", value: "g4" },
+      { time: 1.5, dur: 0.5, type: "note", value: "a4" },
+    ]);
+  });
 });

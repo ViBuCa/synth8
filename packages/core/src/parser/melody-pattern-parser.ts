@@ -1,15 +1,48 @@
 import type { MelodyStep } from "../model/ast";
 import { isSupportedNote } from "./notes";
 
-export function parseMelodyPattern(source: string): MelodyStep[] {
+const toMelodyStep = (value: string): MelodyStep => {
+    const parts = value.split("+").filter(Boolean);
+
+    if (parts.length === 1) {
+        return {
+            kind: "MelodyNote",
+            value: parts[0],
+        };
+    }
+
+    return {
+        kind: "MelodyParallel",
+        notes: parts.map((part) => ({
+            kind: "MelodyNote",
+            value: part,
+        })),
+    };
+};
+
+const validateMelodyToken = (value: string): void => {
+    const parts = value.split("+").filter(Boolean);
+
+    if (parts.length === 0) {
+        throw new Error("Expected note.");
+    }
+
+    for (const part of parts) {
+        if (!isSupportedNote(part)) {
+            throw new Error(`Unknown note: ${part}`);
+        }
+    }
+};
+
+export const parseMelodyPattern = (source: string): MelodyStep[] => {
     const chars = [...source];
     let index = 0;
 
-    function skipWhitespace() {
+    const skipWhitespace = () => {
         while (chars[index] === " ") index++;
-    }
+    };
 
-    function parseSteps(until?: string): MelodyStep[] {
+    const parseSteps = (until?: string): MelodyStep[] => {
         const notes: MelodyStep[] = [];
 
         while (index < chars.length) {
@@ -42,14 +75,8 @@ export function parseMelodyPattern(source: string): MelodyStep[] {
 
             if (!value) break;
 
-            if (!isSupportedNote(value)) {
-                throw new Error(`Unknown note: ${value}`);
-            }
-
-            notes.push({
-                kind: "MelodyNote",
-                value,
-            });
+            validateMelodyToken(value);
+            notes.push(toMelodyStep(value));
         }
 
         if (until) {
