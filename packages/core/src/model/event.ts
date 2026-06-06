@@ -1,4 +1,4 @@
-export type EventType = "drum";
+export type EventType = 'drum' | 'note';
 
 export type Event = {
   time: number;

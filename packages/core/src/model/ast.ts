@@ -1,9 +1,36 @@
-export type AstNode = BeatExpression;
+export type AstNode = BeatExpression
+  | MelodyExpression
+  | SongExpression;
 
 export type BeatExpression = {
   kind: "BeatExpression";
   steps: BeatStep[];
   rate: number;
+};
+
+export type SongExpression = {
+  kind: "SongExpression";
+  tracks: AstNode[];
+};
+
+export type MelodyExpression = {
+  kind: "MelodyExpression";
+  notes: MelodyStep[];
+  rate: number;
+};
+
+export type MelodyStep =
+  | MelodyNote
+  | MelodyGroup;
+
+export type MelodyNote = {
+  kind: "MelodyNote";
+  value: string;
+};
+
+export type MelodyGroup = {
+  kind: "MelodyGroup";
+  notes: MelodyStep[];
 };
 
 export type BeatStep = BeatSound | BeatGroup | BeatParallel;

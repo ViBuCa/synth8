@@ -1,4 +1,4 @@
-import type { AstNode, Event, Pattern, BeatStep } from "../model";
+import type { AstNode, Event, Pattern, BeatStep, MelodyStep } from "../model";
 import { parse } from "../parser/parser";
 
 const REST = '_';
@@ -39,7 +39,7 @@ const validateStep = (step: BeatStep): void => {
   validateSound(step.value);
 };
 
-const compileSteps = (
+const compileBeatSteps = (
   steps: BeatStep[],
   start: number,
   duration: number
@@ -54,7 +54,7 @@ const compileSteps = (
 
     switch (step.kind) {
       case "BeatGroup":
-        events.push(...compileSteps(step.steps, time, stepDuration));
+        events.push(...compileBeatSteps(step.steps, time, stepDuration));
         break;
 
       case "BeatParallel":
@@ -98,11 +98,56 @@ const compileAst = (ast: AstNode): Pattern => {
 
       return {
         length,
-        events: compileSteps(ast.steps, 0, length),
+        events: compileBeatSteps(ast.steps, 0, length),
       };
     }
+    case "MelodyExpression": {
+      const beatDuration = 1 / ast.rate;
+      const length = ast.notes.length * beatDuration;
+
+      return {
+        length,
+        events: compileMelodySteps(ast.notes, 0, length),
+      };
+    }
+    case "SongExpression": {
+      const patterns = ast.tracks.map(compileAst);
+
+      return {
+        length: Math.max(...patterns.map((pattern) => pattern.length)),
+        events: patterns.flatMap((pattern) => pattern.events),
+      };
+    }
+    default: {
+      throw new Error("Unknown AST node");
+    }
   }
-};
+}
+
+const compileMelodySteps = (
+  notes: MelodyStep[],
+  start: number,
+  dur: number
+): Event[] => {
+  const stepDur = dur / notes.length;
+
+  return notes.flatMap((note, index) => {
+    const time = start + index * stepDur;
+
+    if (note.kind === "MelodyNote") {
+      if (note.value === "_") return [];
+
+      return [{
+        time,
+        dur: stepDur,
+        type: "note",
+        value: note.value,
+      }];
+    }
+
+    return compileMelodySteps(note.notes, time, stepDur);
+  });
+}
 
 export const compile = (source: string): Pattern => {
   return compileAst(parse(source));
