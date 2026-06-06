@@ -13,4 +13,16 @@ describe("compile", () => {
       ]
     });
   });
+
+  it("compiles a simple fast pattern", () => {
+    expect(compile(`beat("kick snare hihat snare").rate(2)`)).toEqual({
+      length: 2,
+      events: [
+        { time: 0, type: "drum", value: "kick", dur: 0.5 },
+        { time: 0.5, type: "drum", value: "snare", dur: 0.5 },
+        { time: 1, type: "drum", value: "hihat", dur: 0.5 },
+        { time: 1.5, type: "drum", value: "snare", dur: 0.5 }
+      ]
+    });
+  });
 });
