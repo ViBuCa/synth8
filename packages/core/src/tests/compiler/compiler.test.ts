@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compile } from "../index";
+import { compile } from "../../index";
 
 describe("compile", () => {
   it("compiles a simple sample pattern", () => {
@@ -24,5 +24,9 @@ describe("compile", () => {
         { time: 1.5, type: "drum", value: "snare", dur: 0.5 }
       ]
     });
+  });
+
+  it("rejects unknown drum sounds", () => {
+    expect(() => compile(`beat("kick clap")`)).toThrow("Unknown drum sound");
   });
 });
