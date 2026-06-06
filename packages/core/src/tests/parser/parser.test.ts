@@ -5,7 +5,12 @@ describe("parse", () => {
     it("parses a beat expression", () => {
         expect(parse(`beat("kick snare hihat hihat").rate(2)`)).toEqual({
             kind: "BeatExpression",
-            sounds: ["kick", "snare", "hihat", "hihat"],
+            steps: [
+                { kind: "BeatSound", value: "kick" },
+                { kind: "BeatSound", value: "snare" },
+                { kind: "BeatSound", value: "hihat" },
+                { kind: "BeatSound", value: "hihat" }
+            ],
             rate: 2
         });
     });
@@ -13,7 +18,10 @@ describe("parse", () => {
     it("defaults rate to 1", () => {
         expect(parse(`beat("kick snare")`)).toEqual({
             kind: "BeatExpression",
-            sounds: ["kick", "snare"],
+            steps: [
+                { kind: "BeatSound", value: "kick" },
+                { kind: "BeatSound", value: "snare" }
+            ],
             rate: 1
         });
     });
