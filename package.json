@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "pnpm --filter @vibuca/playground dev",
     "build": "pnpm -r build",
-    "clean": "pnpm -r exec rm -rf dist"
+    "clean": "pnpm -r exec rm -rf dist",
+    "test": "pnpm -r test"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "typescript": "^6.0.3",
     "unplugin-dts": "^1.0.2",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
   }
 }
