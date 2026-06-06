@@ -1,46 +1,33 @@
+import type { AstNode } from "../model/ast";
 import type { Pattern } from "../model/pattern";
+import { parse } from "../parser/parser";
 
 const VALID_DRUMS = new Set(["kick", "snare", "hihat"]);
 
-export const compile = (source: string): Pattern => {
-  const match = source.match(
-    /^beat\("([^"]*)"\)(?:\.rate\((\d+(?:\.\d+)?)\))?$/
-  );
+const compileAst = (ast: AstNode): Pattern => {
+  switch (ast.kind) {
+    case "BeatExpression": {
+      for (const sound of ast.sounds) {
+        if (!VALID_DRUMS.has(sound)) {
+          throw new Error(`Unknown drum sound: ${sound}`);
+        }
+      }
 
-  if (!match) {
-    throw new Error(
-      `Invalid Synt8 pattern. Expected: beat("kick snare hihat hihat").rate(2)`
-    );
-  }
+      const dur = 1 / ast.rate;
 
-  const [, body, rateRaw] = match;
-  const rate = rateRaw ? Number(rateRaw) : 1;
-
-  if (!Number.isFinite(rate) || rate <= 0) {
-    throw new Error(`Invalid rate: ${rateRaw}`);
-  }
-
-  const tokens = body.trim().split(/\s+/).filter(Boolean);
-
-  if (tokens.length === 0) {
-    return { length: 0, events: [] };
-  }
-
-  for (const token of tokens) {
-    if (!VALID_DRUMS.has(token)) {
-      throw new Error(`Unknown drum sound: ${token}`);
+      return {
+        length: ast.sounds.length * dur,
+        events: ast.sounds.map((sound, index) => ({
+          time: index * dur,
+          dur,
+          type: "drum",
+          value: sound,
+        })),
+      };
     }
   }
+};
 
-  const dur = 1 / rate;
-
-  return {
-    length: tokens.length * dur,
-    events: tokens.map((token, index) => ({
-      time: index * dur,
-      dur,
-      type: "drum",
-      value: token,
-    })),
-  };
+export const compile = (source: string): Pattern => {
+  return compileAst(parse(source));
 };
