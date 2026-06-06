@@ -1,34 +1,10 @@
 import * as Tone from "tone";
+import { kick, snare, hihat, clap, openhat, tom, cowbell, rim } from "./drum/drum-synths";
 import type { Pattern } from "@vibuca/core";
 
 export type PlayOptions = {
   bpm?: number;
 };
-
-const kick = new Tone.MembraneSynth().toDestination();
-
-const snare = new Tone.NoiseSynth({
-  noise: { type: "white" },
-  envelope: {
-    attack: 0.001,
-    decay: 0.15,
-    sustain: 0
-  }
-}).toDestination();
-
-const hihat = new Tone.MetalSynth({
-  envelope: {
-    attack: 0.001,
-    decay: 0.05,
-    release: 0.01
-  },
-  harmonicity: 5.1,
-  modulationIndex: 32,
-  resonance: 4000,
-  octaves: 1.5
-})
-hihat.frequency.value = 300;
-hihat.toDestination();
 
 const playDrum = (value: string, time: number) => {
   switch (value) {
@@ -40,8 +16,28 @@ const playDrum = (value: string, time: number) => {
       snare.triggerAttackRelease("16n", time);
       break;
 
+    case "clap":
+      clap.triggerAttackRelease("16n", time);
+      break;
+
     case "hihat":
       hihat.triggerAttackRelease("32n", time);
+      break;
+
+    case "openhat":
+      openhat.triggerAttackRelease("8n", time);
+      break;
+
+    case "tom":
+      tom.triggerAttackRelease("G1", "8n", time);
+      break;
+
+    case "rim":
+      rim.triggerAttackRelease("32n", time);
+      break;
+
+    case "cowbell":
+      cowbell.triggerAttackRelease("16n", time);
       break;
 
     default:
@@ -57,9 +53,10 @@ export const play = async (
 
   await Tone.start();
 
-  Tone.Transport.stop();
-  Tone.Transport.cancel();
-  Tone.Transport.bpm.value = bpm;
+    const transport = Tone.getTransport();
+  transport.stop();
+  transport.cancel();
+  transport.bpm.value = bpm;
 
   const secondsPerBeat = 60 / bpm;
   const loopDuration = pattern.length * secondsPerBeat;
@@ -67,7 +64,7 @@ export const play = async (
   for (const event of pattern.events) {
     const eventOffset = event.time * secondsPerBeat;
 
-    Tone.Transport.scheduleRepeat(
+    transport.scheduleRepeat(
       (time) => {
         playDrum(event.value, time);
       },
@@ -76,10 +73,11 @@ export const play = async (
     );
   }
 
-  Tone.Transport.start();
+  transport.start();
 };
 
 export const stop = (): void => {
-  Tone.Transport.stop();
-  Tone.Transport.cancel();
+    const transport = Tone.getTransport();
+  transport.stop();
+  transport.cancel();
 };

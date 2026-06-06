@@ -25,7 +25,7 @@ describe("compile", () => {
       ]
     });
   });
-  
+
   it("supports rests", () => {
     expect(compile(`beat("kick _ snare hihat").rate(2)`)).toEqual({
       length: 2,
@@ -37,7 +37,23 @@ describe("compile", () => {
     });
   });
 
+  it("supports additional drum sounds", () => {
+    expect(
+      compile(`beat("kick clap openhat tom rim cowbell").rate(2)`)
+    ).toEqual({
+      length: 3,
+      events: [
+        { time: 0, dur: 0.5, type: "drum", value: "kick" },
+        { time: 0.5, dur: 0.5, type: "drum", value: "clap" },
+        { time: 1, dur: 0.5, type: "drum", value: "openhat" },
+        { time: 1.5, dur: 0.5, type: "drum", value: "tom" },
+        { time: 2, dur: 0.5, type: "drum", value: "rim" },
+        { time: 2.5, dur: 0.5, type: "drum", value: "cowbell" },
+      ],
+    });
+  });
+
   it("rejects unknown drum sounds", () => {
-    expect(() => compile(`beat("kick clap")`)).toThrow("Unknown drum sound");
+    expect(() => compile(`beat("kick slap")`)).toThrow("Unknown drum sound");
   });
 });

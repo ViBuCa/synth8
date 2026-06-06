@@ -2,8 +2,17 @@ import type { AstNode } from "../model/ast";
 import type { Pattern } from "../model/pattern";
 import { parse } from "../parser/parser";
 
-const REST = '_'
-const VALID_DRUMS = new Set(["kick", "snare", "hihat"]);
+const REST = '_';
+const VALID_DRUMS = new Set([
+  "kick",
+  "snare",
+  "clap",
+  "hihat",
+  "openhat",
+  "tom",
+  "rim",
+  "cowbell",
+]);
 
 const compileAst = (ast: AstNode): Pattern => {
   switch (ast.kind) {
