@@ -100,25 +100,30 @@ const compileAst = (ast: AstNode): Pattern => {
 
       const steps = repeatArray(ast.steps, ast.repeat);
       const beatDuration = 1 / ast.rate;
-      const length = steps.length * beatDuration;
+
+      const patternLength = steps.length * beatDuration;
+      const length = ast.offset + patternLength;
 
       return {
         length,
-        events: compileBeatSteps(steps, 0, length),
-        loop: ast.loop
+        loopLength: patternLength,
+        events: compileBeatSteps(steps, ast.offset, patternLength),
+        loop: ast.loop,
       };
     }
 
     case "MelodyExpression": {
       const notes = repeatArray(ast.notes, ast.repeat);
       const beatDuration = 1 / ast.rate;
-      const length = notes.length * beatDuration;
-      const transpose = ast.transpose;
+      
+      const patternLength = notes.length * beatDuration;
+      const length = ast.offset + patternLength;
 
       return {
         length,
-        events: compileMelodySteps(notes, 0, length, transpose),
-        loop: ast.loop
+        loopLength: patternLength,
+        events: compileMelodySteps(notes, ast.offset, patternLength, ast.transpose),
+        loop: ast.loop,
       };
     }
 
@@ -129,11 +134,12 @@ const compileAst = (ast: AstNode): Pattern => {
         if (!pattern.loop) {
           return pattern.events;
         }
-        return loopEvents(pattern.events, pattern.length, length);
+        return loopEvents(pattern.events, pattern.loopLength, length);
       });
 
       return {
         length,
+        loopLength: length,
         events: events.sort((a, b) => a.time - b.time),
         loop: true
       };

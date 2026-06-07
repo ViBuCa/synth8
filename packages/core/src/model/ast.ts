@@ -9,6 +9,7 @@ export type BeatExpression = {
   rate: number;
   repeat: number;
   loop: boolean;
+  offset: number;
 };
 
 export type SongExpression = {
@@ -23,6 +24,7 @@ export type MelodyExpression = {
   transpose: number;
   repeat: number;
   loop: boolean;
+  offset: number;
 };
 
 export type MelodyStep =

@@ -62,11 +62,13 @@ class Parser {
         transpose: number; 
         repeat: number;
         loop: boolean;
+        offset: number;
     } {
         let rate = 1;
         let transpose = 0;
         let repeat = 1;
         let loop = false;
+        let offset = 0;
 
         while (this.matchSymbol(".")) {
             const modifier = this.expectAnyIdentifier();
@@ -79,6 +81,7 @@ class Parser {
                 case 'slow':
                 case 'transpose':
                 case 'repeat':
+                case 'offset':
                     value = this.expectNumber();
                     break;
             }
@@ -103,6 +106,12 @@ class Parser {
                     }
                     transpose += value;
                     break;
+                case 'offset':
+                    if (!Number.isInteger(value)) {
+                        throw new Error(`Offset value must be an integer: ${value}`);
+                    }
+                    offset += value;
+                    break;
                 case 'repeat':
                     if (!Number.isInteger(value) || value <= 0) {
                         throw new Error(`Repeat value must be an integer: ${value}`);
@@ -116,7 +125,7 @@ class Parser {
                     throw new Error(`Unknown modifier: ${modifier}`);
             }
         }
-        return { rate, transpose, repeat, loop };
+        return { rate, transpose, repeat, loop, offset };
     }
 
     private parseBeatExpression(): AstNode {
@@ -127,14 +136,15 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const { rate, repeat, loop } = this.parseOptionalRate();
+        const { rate, repeat, loop, offset } = this.parseOptionalRate();
 
         return {
             kind: "BeatExpression",
             steps: parseBeatPattern(body),
             rate,
             repeat,
-            loop
+            loop,
+            offset
         };
     }
 
@@ -146,7 +156,7 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const { rate, transpose, repeat, loop } = this.parseOptionalRate();
+        const { rate, transpose, repeat, loop, offset } = this.parseOptionalRate();
 
         return {
             kind: "MelodyExpression",
@@ -154,7 +164,8 @@ class Parser {
             rate,
             transpose,
             repeat,
-            loop
+            loop,
+            offset
         };
     }
 
