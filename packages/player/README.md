@@ -87,6 +87,25 @@ Velocity is supported when present:
 ```ts
 { type: "note", value: "c4", velocity: 0.5 }
 ```
+The player automatically creates separate Tone.js synthesizers for each layer.
+
+## Supported waveforms
+```ts
+sine
+triangle
+square
+sawtooth
+```
+
+## Layer playback
+Synth8 patterns may contain multiple playback layers.
+
+Each layer can define its own playback configuration:
+```ts
+melody("c4 e4 g4").sound("triangle")
+melody("c3 g3").sound("sawtooth")
+melody("c5 d5 e5").sound("square")
+```
 
 ## Event Structure
 The player consumes compiled events:
@@ -122,20 +141,37 @@ await play(pattern, { bpm: 120 });
 ```
 The player intentionally does not parse Synth8 source code directly. Source code is compiled by @vibuca/synth8-core first.
 
+## Playback configuration
+Playback configuration is stored on pattern layers rather than individual events.
+
+### Example:
+```ts
+{
+  playback: {
+    sound: "triangle"
+  },
+  events: [...]
+}
+```
+This allows multiple tracks in the same song to use different synthesizer waveforms while keeping the event model simple.
+
 ## Example
 
 ```ts
 const pattern = compile(`
   song(
-    sequence(
-      melody("d4/2 f#4 a4 c5"),
-      melody("g4+b4 f#4+a4 e4+g4 d4+f#4")
-    ),
+    melody("d4/2 f#4 a4 c5")
+      .sound("triangle"),
 
-    beat("kick _ snare _").loop(),
-    beat("_ hihat _ hihat").fast(2).loop(),
+    melody("d3 _ a2 _")
+      .sound("sawtooth")
+      .loop(),
 
-    melody("d2 _ a1 _").loop()
+    melody("d5+a5 f#5+a5 g5+b5")
+      .sound("square"),
+
+    beat("kick _ snare _")
+      .loop()
   )
 `);
 
@@ -145,7 +181,9 @@ await play(pattern, { bpm: 110 });
 ## Note
 The player currently provides a built-in Tone.js playback engine.
 
-Future Synth8 releases may support additional playback configuration such as waveform selection, instrument banks and effects while keeping the compiled event format stable.
+Playback configuration currently supports waveform selection.
+
+Future releases may add gain, panning, effects and instrument banks without changing the compiled event format.
 
 ## License
 
