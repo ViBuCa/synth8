@@ -2,7 +2,7 @@
 
 Core parser and compiler for Synth8, an MIT-licensed pattern music toolkit written in TypeScript.
 
-Synth8 defines a small music DSL for rhythmic and melodic patterns.
+Synth8 defines a small music DSL for rhythmic and melodic pattern composition.
 
 ## Install
 
@@ -17,8 +17,13 @@ import { compile } from "@vibuca/synth8-core";
 
 const pattern = compile(`
   song(
-    beat("kick+hihat _ snare hihat"),
-    melody("c4+e4+g4 f4").transpose(12)
+    sequence(
+      melody("c4/2 e4 g4"),
+      melody("f4 a4 c5")
+    ).repeat(2),
+
+    beat("kick _ snare _").loop(),
+    beat("_ hihat _ hihat").fast(2).loop()
   )
 `);
 
@@ -76,6 +81,23 @@ beat("kick:1 snare:0.7 hihat:0.4")
 melody("c4:1 e4:0.6 g4:0.3")
 ```
 
+### Duration
+
+```ts
+beat("kick/2 snare hihat")
+melody("c4/2 d4 e4")
+```
+
+Durations are expressed in beats.
+
+```ts
+melody("c4:0.5/2 d4")
+```
+
+Velocity and duration can be combined on the same note or drum hit.
+
+A duration of 1 is implied when omitted.
+
 ### Timing modifiers
 
 ```ts
@@ -100,11 +122,50 @@ beat("kick snare").repeat(4)
 melody("c4 e4 g4").repeat(2)
 ```
 
+### Offset
+
+```ts
+beat("kick snare").offset(4)
+melody("c4 e4 g4").offset(8)
+```
+
+### Sequence
+
+```ts
+sequence(
+  beat("kick snare"),
+  beat("hihat hihat")
+)
+```
+Patterns inside a sequence are played one after another.
+
+```ts
+sequence(
+  melody("c4 d4"),
+  melody("e4 f4")
+)
+```
+Sequences support the same structural modifiers as tracks:
+```ts
+sequence(
+  beat("kick snare"),
+  beat("hihat hihat")
+).repeat(2)
+
+sequence(
+  melody("c4 d4"),
+  melody("e4 f4")
+).offset(4)
+```
+
+
 ### Looping
 
 ```ts
-beat(pattern).loop()
-melody(pattern).loop()
+song(
+  beat("kick _ snare _").loop(),
+  melody("c4 d4 e4 f4")
+)
 ```
 
 Looping is performed at song compilation time.
@@ -129,6 +190,10 @@ type Pattern = {
   events: Event[];
 };
 ```
+
+length represents the total pattern length in beats.
+
+Events contain absolute timing information after all modifiers, repeats, offsets, sequences and loops have been compiled.
 
 Events are stored in beats, not seconds.
 
