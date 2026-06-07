@@ -3,7 +3,7 @@ import { compile } from "../../index";
 
 describe("compile", () => {
   it("compiles a simple sample pattern", () => {
-    expect(compile(`beat("kick snare hihat hihat")`)).toEqual({
+    expect(compile(`beat("kick snare hihat hihat")`)).toMatchObject({
       length: 4,
       loopLength: 4,
       loop: false,
@@ -17,7 +17,7 @@ describe("compile", () => {
   });
 
   it("compiles a simple fast pattern", () => {
-    expect(compile(`beat("kick snare hihat snare").rate(2)`)).toEqual({
+    expect(compile(`beat("kick snare hihat snare").rate(2)`)).toMatchObject({
       length: 2,
       loopLength: 2,
       loop: false,
@@ -31,7 +31,7 @@ describe("compile", () => {
   });
 
   it("supports rests", () => {
-    expect(compile(`beat("kick _ snare hihat").rate(2)`)).toEqual({
+    expect(compile(`beat("kick _ snare hihat").rate(2)`)).toMatchObject({
       length: 2,
       loopLength: 2,
       loop: false,
@@ -46,7 +46,7 @@ describe("compile", () => {
   it("supports additional drum sounds", () => {
     expect(
       compile(`beat("kick clap openhat tom rim cowbell").rate(2)`)
-    ).toEqual({
+    ).toMatchObject({
       length: 3,
       loopLength: 3,
       loop: false,
@@ -66,7 +66,7 @@ describe("compile", () => {
   });
 
   it("supports groups", () => {
-    expect(compile(`beat("kick [snare hihat] kick hihat")`)).toEqual({
+    expect(compile(`beat("kick [snare hihat] kick hihat")`)).toMatchObject({
       length: 4,
       loopLength: 4,
       loop: false,
@@ -81,7 +81,7 @@ describe("compile", () => {
   });
 
   it("supports nested groups", () => {
-    expect(compile(`beat("kick [snare [hihat hihat]] kick")`)).toEqual({
+    expect(compile(`beat("kick [snare [hihat hihat]] kick")`)).toMatchObject({
       length: 3,
       loopLength: 3,
       loop: false,
@@ -96,7 +96,7 @@ describe("compile", () => {
   });
 
   it("supports parallel hits", () => {
-    expect(compile(`beat("kick+hihat snare hihat snare")`)).toEqual({
+    expect(compile(`beat("kick+hihat snare hihat snare")`)).toMatchObject({
       length: 4,
       loopLength: 4,
       loop: false,

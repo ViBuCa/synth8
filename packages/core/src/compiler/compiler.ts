@@ -219,11 +219,16 @@ const compileAst = (ast: AstNode): Pattern => {
       const patternLength = getBeatStepsDuration(steps) * beatDuration;
       const length = ast.offset + patternLength;
 
+      const events = compileBeatSteps(steps, ast.offset, patternLength);
       return {
         length,
         loopLength: patternLength,
-        events: compileBeatSteps(steps, ast.offset, patternLength),
+        events,
         loop: ast.loop,
+        layers: [{
+          events,
+          playback: { sound: ast.sound }
+        }]
       };
     }
 
@@ -234,11 +239,16 @@ const compileAst = (ast: AstNode): Pattern => {
       const patternLength = getMelodyStepsDuration(notes) * beatDuration;
       const length = ast.offset + patternLength;
 
+      const events = compileMelodySteps(notes, ast.offset, patternLength, ast.transpose);
       return {
         length,
         loopLength: patternLength,
-        events: compileMelodySteps(notes, ast.offset, patternLength, ast.transpose),
+        events,
         loop: ast.loop,
+        layers: [{
+          events,
+          playback: { sound: ast.sound }
+        }]
       };
     }
 
@@ -246,56 +256,74 @@ const compileAst = (ast: AstNode): Pattern => {
       const patterns = ast.tracks.map(compileAst);
       const length = Math.max(...patterns.map((p) => p.length));
 
-      const events = patterns.flatMap((pattern) => {
+      const layers = patterns.flatMap((pattern) => {
         if (!pattern.loop) {
-          return pattern.events;
+          return pattern.layers;
         }
 
-        return loopEvents(pattern.events, pattern.loopLength, length);
+        return pattern.layers.map((layer) => ({
+          ...layer,
+          events: loopEvents(layer.events, pattern.loopLength, length),
+        }));
       });
+
+      const events = layers
+        .flatMap((layer) => layer.events)
+        .sort((a, b) => a.time - b.time);
 
       return {
         length,
         loopLength: length,
-        events: events.sort((a, b) => a.time - b.time),
+        events,
+        layers,
         loop: true,
       };
     }
-
     case "SequenceExpression": {
       let sequenceLength = 0;
-      const sequenceEvents: Event[] = [];
+      const sequenceLayers: Pattern["layers"] = [];
 
       for (const patternAst of ast.patterns) {
         const pattern = compileAst(patternAst);
 
-        sequenceEvents.push(
-          ...pattern.events.map((event) => ({
-            ...event,
-            time: event.time + sequenceLength,
+        sequenceLayers.push(
+          ...pattern.layers.map((layer) => ({
+            ...layer,
+            events: layer.events.map((event) => ({
+              ...event,
+              time: event.time + sequenceLength,
+            })),
           }))
         );
 
         sequenceLength += pattern.length;
       }
 
-      const events: Event[] = [];
+      const repeatedLayers: Pattern["layers"] = [];
 
       for (let i = 0; i < ast.repeat; i++) {
-        events.push(
-          ...sequenceEvents.map((event) => ({
-            ...event,
-            time: event.time + ast.offset + i * sequenceLength,
+        repeatedLayers.push(
+          ...sequenceLayers.map((layer) => ({
+            ...layer,
+            events: layer.events.map((event) => ({
+              ...event,
+              time: event.time + ast.offset + i * sequenceLength,
+            })),
           }))
         );
       }
 
       const repeatedLength = sequenceLength * ast.repeat;
 
+      const events = repeatedLayers
+        .flatMap((layer) => layer.events)
+        .sort((a, b) => a.time - b.time);
+
       return {
         length: ast.offset + repeatedLength,
         loopLength: repeatedLength,
         events,
+        layers: repeatedLayers,
         loop: ast.loop,
       };
     }

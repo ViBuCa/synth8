@@ -3,25 +3,19 @@ import { play, stop } from "@vibuca/synth8-player";
 
 const initialSource = `song(
   sequence(
-    melody("d4/2 f#4 a4 c5/2"),
-    melody("g4+b4/2 f#4+a4 e4+g4 d4+f#4"),
-    melody("d5/2 _ c5 bb4/2").transpose(-12)
+    melody("d4/2 f#4 a4 c5").sound("triangle"),
+    melody("g4+b4 f#4+a4 e4+g4 d4+f#4").sound("square"),
+    melody("d5/2 _ c5 bb4/2").transpose(-12).sound("sine")
   ).repeat(2),
 
-  sequence(
-    beat("kick/2 _ snare _"),
-    beat("kick+hihat _ snare+hihat _"),
-    beat("kick _ snare/2 _"),
-    beat("snare:0.5/0.5 snare:0.6/0.5 snare:0.8/0.5 snare:1/0.5")
-  ).loop(),
+  beat("kick _ snare _").sound("square").loop(),
+  beat("_ hihat:0.25 _ hihat:0.15").fast(2).loop(),
 
-  beat("_ hihat:0.2/0.5 _ hihat:0.15/0.5").loop(),
-
-  melody("d2/2 _ a1/2 _").loop(),
+  melody("d2/2 _ a1/2 _").sound("sawtooth").loop(),
 
   sequence(
-    melody("a4+c5/2 f#4+a4"),
-    melody("g4+b4 d4+g4/2")
+    melody("a4+c5/2 f#4+a4").sound("triangle"),
+    melody("g4+b4 d4+g4/2").sound("sine")
   ).offset(8)
 )`;
 

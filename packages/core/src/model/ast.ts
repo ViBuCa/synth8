@@ -1,3 +1,5 @@
+import { Waveform } from "./playback-config";
+
 export type AstNode =
   | BeatExpression
   | MelodyExpression
@@ -13,12 +15,14 @@ type Modifiers = {
 export type SequenceExpression = {
   kind: "SequenceExpression";
   patterns: AstNode[];
+  sound?: Waveform;
 } & Modifiers;
 
 export type BeatExpression = {
   kind: "BeatExpression";
   steps: BeatStep[];
   rate: number;
+  sound?: Waveform;
 } & Modifiers;
 
 export type SongExpression = {
@@ -31,6 +35,7 @@ export type MelodyExpression = {
   notes: MelodyStep[];
   rate: number;
   transpose: number;
+  sound?: Waveform;
 } & Modifiers;
 
 export type MelodyStep =

@@ -4,7 +4,7 @@ import { compile } from "../..";
 
 describe("parse", () => {
     it("parses a beat expression", () => {
-        expect(parse(`beat("kick snare hihat hihat").rate(2)`)).toEqual({
+        expect(parse(`beat("kick snare hihat hihat").rate(2)`)).toMatchObject({
             kind: "BeatExpression",
             steps: [
                 { kind: "BeatSound", value: "kick", duration: 1 },
@@ -20,7 +20,7 @@ describe("parse", () => {
     });
 
     it("defaults rate to 1", () => {
-        expect(parse(`beat("kick snare")`)).toEqual({
+        expect(parse(`beat("kick snare")`)).toMatchObject({
             kind: "BeatExpression",
             steps: [
                 { kind: "BeatSound", value: "kick", duration: 1 },
@@ -42,7 +42,7 @@ describe("parse", () => {
     });
 
     it("parses melody", () => {
-        expect(parse('melody("c4 e4 g4")')).toEqual({
+        expect(parse('melody("c4 e4 g4")')).toMatchObject({
             kind: "MelodyExpression",
             rate: 1,
             repeat: 1,
@@ -58,7 +58,7 @@ describe("parse", () => {
     });
 
     it("parses parallel melody notes", () => {
-        expect(parse('melody("c4+e4+g4")')).toEqual({
+        expect(parse('melody("c4+e4+g4")')).toMatchObject({
             kind: "MelodyExpression",
             rate: 1,
             repeat: 1,

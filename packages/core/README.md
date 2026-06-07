@@ -18,12 +18,12 @@ import { compile } from "@vibuca/synth8-core";
 const pattern = compile(`
   song(
     sequence(
-      melody("c4/2 e4 g4"),
-      melody("f4 a4 c5")
+      melody("c4/2 e4 g4").sound("triangle"),
+      melody("f4 a4 c5").sound("square")
     ).repeat(2),
 
     beat("kick _ snare _").loop(),
-    beat("_ hihat _ hihat").fast(2).loop()
+    melody("c2 _ g1 _").sound("sawtooth").loop()
   )
 `);
 
@@ -105,6 +105,25 @@ beat("kick snare").fast(2)
 beat("kick snare").slow(2)
 melody("c4 e4").rate(2)
 ```
+### Sound
+
+```ts
+melody("c4 e4 g4").sound("triangle")
+melody("c4 e4 g4").sound("sine")
+melody("c4 e4 g4").sound("square")
+melody("c4 e4 g4").sound("sawtooth")
+```
+sound() stores playback information on the compiled pattern layer.
+
+It does not modify events.
+
+Supported sounds:
+```ts
+sine
+triangle
+square
+sawtooth
+```
 
 ### Transpose
 
@@ -158,7 +177,6 @@ sequence(
 ).offset(4)
 ```
 
-
 ### Looping
 
 ```ts
@@ -187,7 +205,19 @@ Looping does not modify the Event model. Events remain simple timing and musical
 ```ts
 type Pattern = {
   length: number;
+  loopLength: number;
   events: Event[];
+  loop: boolean;
+  layers: PatternLayer[];
+};
+
+type PatternLayer = {
+  events: Event[];
+  playback?: PlaybackConfig;
+};
+
+type PlaybackConfig = {
+  sound?: "sine" | "triangle" | "square" | "sawtooth";
 };
 ```
 
@@ -196,6 +226,10 @@ length represents the total pattern length in beats.
 Events contain absolute timing information after all modifiers, repeats, offsets, sequences and loops have been compiled.
 
 Events are stored in beats, not seconds.
+
+events is kept for compatibility and contains all compiled events.
+
+layers preserves track-level playback information such as sound selection. Players should prefer layers when available.
 
 ```ts
 type Event =
