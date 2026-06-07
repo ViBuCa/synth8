@@ -1,12 +1,29 @@
 import * as Tone from "tone";
-import { kick, snare, hihat, clap, openhat, tom, cowbell, rim } from "./drum/drum-synths";
-import type { Pattern } from "@vibuca/synth8-core";
+import {
+    kick,
+    snare,
+    hihat,
+    clap,
+    openhat,
+    tom,
+    cowbell,
+    rim,
+} from "./drum/drum-synths";
+import type { Pattern, PatternLayer, Waveform } from "@vibuca/synth8-core";
 
 export type PlayOptions = {
     bpm?: number;
 };
 
-const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+const DEFAULT_SOUND: Waveform = "sine";
+
+const createSynth = (sound: Waveform): Tone.PolySynth<Tone.Synth> => {
+    return new Tone.PolySynth(Tone.Synth, {
+        oscillator: {
+            type: sound,
+        },
+    }).toDestination();
+};
 
 const playDrum = (value: string, time: number) => {
     switch (value) {
@@ -47,6 +64,18 @@ const playDrum = (value: string, time: number) => {
     }
 };
 
+const getLayers = (pattern: Pattern): PatternLayer[] => {
+    if (pattern.layers.length > 0) {
+        return pattern.layers;
+    }
+
+    return [
+        {
+            events: pattern.events,
+        },
+    ];
+};
+
 export const play = async (
     pattern: Pattern,
     options: PlayOptions = {}
@@ -63,23 +92,35 @@ export const play = async (
     const secondsPerBeat = 60 / bpm;
     const loopDuration = pattern.length * secondsPerBeat;
 
-    for (const event of pattern.events) {
-        const eventOffset = event.time * secondsPerBeat;
+    const layers = getLayers(pattern);
 
-        transport.scheduleRepeat(
-            (time) => {
-                if (event.type === "drum") {
-                    playDrum(event.value, time);
-                }   
+    for (const layer of layers) {
+        const sound = layer.playback?.sound ?? DEFAULT_SOUND;
+        const synth = createSynth(sound);
 
-                if (event.type === "note") {
-                    synth.triggerAttackRelease(event.value, event.dur, time);
+        for (const event of layer.events) {
+            const eventOffset = event.time * secondsPerBeat;
+            const eventDuration = event.dur * secondsPerBeat;
 
-                }
-            },
-            loopDuration,
-            eventOffset
-        );
+            transport.scheduleRepeat(
+                (time) => {
+                    if (event.type === "drum") {
+                        playDrum(event.value, time);
+                    }
+
+                    if (event.type === "note") {
+                        synth.triggerAttackRelease(
+                            event.value,
+                            eventDuration,
+                            time,
+                            event.velocity ?? 0.8
+                        );
+                    }
+                },
+                loopDuration,
+                eventOffset
+            );
+        }
     }
 
     transport.start();
