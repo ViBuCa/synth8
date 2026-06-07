@@ -4,19 +4,22 @@ export type AstNode =
   | SongExpression
   | SequenceExpression;
 
+type Modifiers = {
+  repeat: number;
+  offset: number;
+  loop: boolean;
+}
+
 export type SequenceExpression = {
   kind: "SequenceExpression";
   patterns: AstNode[];
-};
+} & Modifiers;
 
 export type BeatExpression = {
   kind: "BeatExpression";
   steps: BeatStep[];
   rate: number;
-  repeat: number;
-  loop: boolean;
-  offset: number;
-};
+} & Modifiers;
 
 export type SongExpression = {
   kind: "SongExpression";
@@ -28,10 +31,7 @@ export type MelodyExpression = {
   notes: MelodyStep[];
   rate: number;
   transpose: number;
-  repeat: number;
-  loop: boolean;
-  offset: number;
-};
+} & Modifiers;
 
 export type MelodyStep =
   | MelodyNote

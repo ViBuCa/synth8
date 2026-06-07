@@ -25,7 +25,7 @@ class Parser {
             throw new Error("Expected expression.");
         }
 
-        switch(token.value) {
+        switch (token.value) {
             case 'beat':
                 return this.parseBeatExpression();
             case 'melody':
@@ -55,7 +55,7 @@ class Parser {
         }
     }
 
-    private parseOptionalRate(): {
+    private parseModifiers(): {
         rate: number;
         transpose: number;
         repeat: number;
@@ -134,7 +134,7 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const { rate, repeat, loop, offset } = this.parseOptionalRate();
+        const { rate, repeat, loop, offset } = this.parseModifiers();
 
         return {
             kind: "BeatExpression",
@@ -154,7 +154,7 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const { rate, transpose, repeat, loop, offset } = this.parseOptionalRate();
+        const { rate, transpose, repeat, loop, offset } = this.parseModifiers();
 
         return {
             kind: "MelodyExpression",
@@ -166,7 +166,7 @@ class Parser {
             offset
         };
     }
-
+    
     private parseSequenceExpression(): AstNode {
         this.expectIdentifier("sequence");
         this.expectSymbol("(");
@@ -185,9 +185,14 @@ class Parser {
             throw new Error("sequence() requires at least one pattern.");
         }
 
+        const { repeat, loop, offset } = this.parseModifiers();
+
         return {
             kind: "SequenceExpression",
             patterns,
+            repeat,
+            loop,
+            offset,
         };
     }
 

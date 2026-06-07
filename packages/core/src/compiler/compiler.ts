@@ -144,29 +144,42 @@ const compileAst = (ast: AstNode): Pattern => {
         loop: true
       };
     }
-
+    
     case "SequenceExpression": {
-      let offset = 0;
-      const events: Event[] = [];
+      let sequenceLength = 0;
+      const sequenceEvents: Event[] = [];
 
       for (const patternAst of ast.patterns) {
         const pattern = compileAst(patternAst);
 
-        events.push(
+        sequenceEvents.push(
           ...pattern.events.map((event) => ({
             ...event,
-            time: event.time + offset,
+            time: event.time + sequenceLength,
           }))
         );
 
-        offset += pattern.length;
+        sequenceLength += pattern.length;
       }
 
+      const events: Event[] = [];
+
+      for (let i = 0; i < ast.repeat; i++) {
+        events.push(
+          ...sequenceEvents.map((event) => ({
+            ...event,
+            time: event.time + ast.offset + i * sequenceLength,
+          }))
+        );
+      }
+
+      const repeatedLength = sequenceLength * ast.repeat;
+
       return {
-        length: offset,
-        loopLength: offset,
+        length: ast.offset + repeatedLength,
+        loopLength: repeatedLength,
         events,
-        loop: false,
+        loop: ast.loop,
       };
     }
 
