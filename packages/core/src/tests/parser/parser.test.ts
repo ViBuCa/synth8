@@ -7,10 +7,10 @@ describe("parse", () => {
         expect(parse(`beat("kick snare hihat hihat").rate(2)`)).toEqual({
             kind: "BeatExpression",
             steps: [
-                { kind: "BeatSound", value: "kick" },
-                { kind: "BeatSound", value: "snare" },
-                { kind: "BeatSound", value: "hihat" },
-                { kind: "BeatSound", value: "hihat" }
+                { kind: "BeatSound", value: "kick", duration: 1 },
+                { kind: "BeatSound", value: "snare", duration: 1 },
+                { kind: "BeatSound", value: "hihat", duration: 1 },
+                { kind: "BeatSound", value: "hihat", duration: 1 }
             ],
             rate: 2,
             repeat: 1,
@@ -23,8 +23,8 @@ describe("parse", () => {
         expect(parse(`beat("kick snare")`)).toEqual({
             kind: "BeatExpression",
             steps: [
-                { kind: "BeatSound", value: "kick" },
-                { kind: "BeatSound", value: "snare" }
+                { kind: "BeatSound", value: "kick", duration: 1 },
+                { kind: "BeatSound", value: "snare", duration: 1 }
             ],
             rate: 1,
             repeat: 1,
@@ -50,9 +50,9 @@ describe("parse", () => {
             loop: false,
             offset: 0,
             notes: [
-                { kind: "MelodyNote", value: "c4" },
-                { kind: "MelodyNote", value: "e4" },
-                { kind: "MelodyNote", value: "g4" },
+                { kind: "MelodyNote", value: "c4", duration: 1 },
+                { kind: "MelodyNote", value: "e4", duration: 1 },
+                { kind: "MelodyNote", value: "g4", duration: 1 },
             ],
         });
     });
@@ -69,9 +69,9 @@ describe("parse", () => {
                 {
                     kind: "MelodyParallel",
                     notes: [
-                        { kind: "MelodyNote", value: "c4" },
-                        { kind: "MelodyNote", value: "e4" },
-                        { kind: "MelodyNote", value: "g4" },
+                        { kind: "MelodyNote", value: "c4", duration: 1 },
+                        { kind: "MelodyNote", value: "e4", duration: 1 },
+                        { kind: "MelodyNote", value: "g4", duration: 1 },
                     ],
                 },
             ],

@@ -8,6 +8,7 @@ const toBeatSound = (value: string): BeatSound => {
         kind: "BeatSound",
         value: token.value,
         velocity: token.velocity,
+        duration: 1
     };
 };
 
