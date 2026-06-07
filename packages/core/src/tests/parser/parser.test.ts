@@ -13,7 +13,8 @@ describe("parse", () => {
                 { kind: "BeatSound", value: "hihat" }
             ],
             rate: 2,
-            repeat: 1
+            repeat: 1,
+            loop: false
         });
     });
 
@@ -25,7 +26,8 @@ describe("parse", () => {
                 { kind: "BeatSound", value: "snare" }
             ],
             rate: 1,
-            repeat: 1
+            repeat: 1,
+            loop: false
         });
     });
 
@@ -43,6 +45,7 @@ describe("parse", () => {
             rate: 1,
             repeat: 1,
             transpose: 0,
+            loop: false,
             notes: [
                 { kind: "MelodyNote", value: "c4" },
                 { kind: "MelodyNote", value: "e4" },
@@ -57,6 +60,7 @@ describe("parse", () => {
             rate: 1,
             repeat: 1,
             transpose: 0,
+            loop: false,
             notes: [
                 {
                     kind: "MelodyParallel",

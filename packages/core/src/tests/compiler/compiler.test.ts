@@ -5,6 +5,7 @@ describe("compile", () => {
   it("compiles a simple sample pattern", () => {
     expect(compile(`beat("kick snare hihat hihat")`)).toEqual({
       length: 4,
+      loop: false,
       events: [
         { time: 0, type: "drum", value: "kick", dur: 1 },
         { time: 1, type: "drum", value: "snare", dur: 1 },
@@ -17,6 +18,7 @@ describe("compile", () => {
   it("compiles a simple fast pattern", () => {
     expect(compile(`beat("kick snare hihat snare").rate(2)`)).toEqual({
       length: 2,
+      loop: false,
       events: [
         { time: 0, type: "drum", value: "kick", dur: 0.5 },
         { time: 0.5, type: "drum", value: "snare", dur: 0.5 },
@@ -29,6 +31,7 @@ describe("compile", () => {
   it("supports rests", () => {
     expect(compile(`beat("kick _ snare hihat").rate(2)`)).toEqual({
       length: 2,
+      loop: false,
       events: [
         { time: 0, dur: 0.5, type: "drum", value: "kick" },
         { time: 1, dur: 0.5, type: "drum", value: "snare" },
@@ -42,6 +45,7 @@ describe("compile", () => {
       compile(`beat("kick clap openhat tom rim cowbell").rate(2)`)
     ).toEqual({
       length: 3,
+      loop: false,
       events: [
         { time: 0, dur: 0.5, type: "drum", value: "kick" },
         { time: 0.5, dur: 0.5, type: "drum", value: "clap" },
@@ -60,6 +64,7 @@ describe("compile", () => {
   it("supports groups", () => {
     expect(compile(`beat("kick [snare hihat] kick hihat")`)).toEqual({
       length: 4,
+      loop: false,
       events: [
         { time: 0, dur: 1, type: "drum", value: "kick" },
         { time: 1, dur: 0.5, type: "drum", value: "snare" },
@@ -73,6 +78,7 @@ describe("compile", () => {
   it("supports nested groups", () => {
     expect(compile(`beat("kick [snare [hihat hihat]] kick")`)).toEqual({
       length: 3,
+      loop: false,
       events: [
         { time: 0, dur: 1, type: "drum", value: "kick" },
         { time: 1, dur: 0.5, type: "drum", value: "snare" },
@@ -86,6 +92,7 @@ describe("compile", () => {
   it("supports parallel hits", () => {
     expect(compile(`beat("kick+hihat snare hihat snare")`)).toEqual({
       length: 4,
+      loop: false,
       events: [
         { time: 0, dur: 1, type: "drum", value: "kick" },
         { time: 0, dur: 1, type: "drum", value: "hihat" },
@@ -261,6 +268,27 @@ describe("compile", () => {
       { time: 1, dur: 1, type: "drum", value: "snare", velocity: undefined },
       { time: 2, dur: 1, type: "drum", value: "kick", velocity: 0.8 },
       { time: 3, dur: 1, type: "drum", value: "snare", velocity: undefined },
+    ]);
+  });
+
+  it("loops shorter beat tracks until song length", () => {
+    expect(
+      compile(`song(
+      beat("kick snare").loop(),
+      melody("c4 d4 e4 f4")
+    )`).events
+    ).toEqual([
+      { time: 0, dur: 1, type: "drum", value: "kick" },
+      { time: 0, dur: 1, type: "note", value: "c4" },
+
+      { time: 1, dur: 1, type: "drum", value: "snare" },
+      { time: 1, dur: 1, type: "note", value: "d4" },
+
+      { time: 2, dur: 1, type: "drum", value: "kick" },
+      { time: 2, dur: 1, type: "note", value: "e4" },
+
+      { time: 3, dur: 1, type: "drum", value: "snare" },
+      { time: 3, dur: 1, type: "note", value: "f4" },
     ]);
   });
 });

@@ -1,6 +1,6 @@
 import type { AstNode, Event, Pattern, BeatStep, MelodyStep } from "../model";
 import { parse } from "../parser/parser";
-import { repeatArray } from "./repeat-helper";
+import { loopEvents, repeatArray } from "./repeat-helper";
 import { transposeNote } from "./transpose-helper";
 
 const REST = '_';
@@ -105,6 +105,7 @@ const compileAst = (ast: AstNode): Pattern => {
       return {
         length,
         events: compileBeatSteps(steps, 0, length),
+        loop: ast.loop
       };
     }
 
@@ -117,15 +118,24 @@ const compileAst = (ast: AstNode): Pattern => {
       return {
         length,
         events: compileMelodySteps(notes, 0, length, transpose),
+        loop: ast.loop
       };
     }
 
     case "SongExpression": {
       const patterns = ast.tracks.map(compileAst);
+      const length = Math.max(...patterns.map((p) => p.length));
+      const events = patterns.flatMap((pattern) => {
+        if (!pattern.loop) {
+          return pattern.events;
+        }
+        return loopEvents(pattern.events, pattern.length, length);
+      });
 
       return {
-        length: Math.max(...patterns.map((pattern) => pattern.length)),
-        events: patterns.flatMap((pattern) => pattern.events),
+        length,
+        events: events.sort((a, b) => a.time - b.time),
+        loop: true
       };
     }
 

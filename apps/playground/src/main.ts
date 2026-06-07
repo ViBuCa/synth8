@@ -2,17 +2,10 @@ import { compile } from "@vibuca/synth8-core";
 import { play, stop } from "@vibuca/synth8-player";
 
 const initialSource = `song(
-  melody("d5 f#5 a5 f#5 g5 f#5 e5 d5"),
-
-  melody("d4+f#4+a4 _ g4+b4+d5 _").slow(2),
-
-  melody("d2 _ a1 _ g1 _ d1 _"),
-
-  melody("d5+a5 f#5+a5 g5+b5 d5+g5").fast(2),
-
-  beat("kick+hihat _ snare hihat kick _ snare hihat"),
-
-  beat("hihat hihat hihat hihat").fast(2)
+  beat("kick _ snare _").loop(),
+  beat("_ hihat _ hihat").loop(),
+  melody("d4 f#4 a4 c5 d5 c5 a4 f#4"),
+  melody("d2 _ a1 _").loop()
 )`;
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `

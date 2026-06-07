@@ -60,17 +60,29 @@ class Parser {
     { 
         rate: number; 
         transpose: number; 
-        repeat: number 
+        repeat: number;
+        loop: boolean;
     } {
         let rate = 1;
         let transpose = 0;
         let repeat = 1;
+        let loop = false;
 
         while (this.matchSymbol(".")) {
             const modifier = this.expectAnyIdentifier();
 
+            let value = 0;
             this.expectSymbol("(");
-            const value = this.expectNumber();
+            switch (modifier) {
+                case 'rate':
+                case 'fast':
+                case 'slow':
+                case 'transpose':
+                case 'repeat':
+                    value = this.expectNumber();
+                    break;
+            }
+
             this.expectSymbol(")");
             switch (modifier) {
                 case 'rate':                     
@@ -97,11 +109,14 @@ class Parser {
                     }
                     repeat = value;
                     break;
+                case 'loop':
+                    loop = true;
+                    break;
                 default:
                     throw new Error(`Unknown modifier: ${modifier}`);
             }
         }
-        return { rate, transpose, repeat };
+        return { rate, transpose, repeat, loop };
     }
 
     private parseBeatExpression(): AstNode {
@@ -112,13 +127,14 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const { rate, repeat } = this.parseOptionalRate();
+        const { rate, repeat, loop } = this.parseOptionalRate();
 
         return {
             kind: "BeatExpression",
             steps: parseBeatPattern(body),
             rate,
-            repeat
+            repeat,
+            loop
         };
     }
 
@@ -130,14 +146,15 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const { rate, transpose, repeat } = this.parseOptionalRate();
+        const { rate, transpose, repeat, loop } = this.parseOptionalRate();
 
         return {
             kind: "MelodyExpression",
             notes: parseMelodyPattern(body),
             rate,
             transpose,
-            repeat
+            repeat,
+            loop
         };
     }
 
