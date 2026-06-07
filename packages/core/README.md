@@ -98,6 +98,26 @@ melody("c5 e5 g5").transpose(-12)
 ```ts
 beat("kick snare").repeat(4)
 melody("c4 e4 g4").repeat(2)
+```
+
+### Looping
+
+```ts
+beat(pattern).loop()
+melody(pattern).loop()
+```
+
+Looping is performed at song compilation time.
+
+Tracks marked with `.loop()` are repeated until the longest track in the song has completed.
+
+Looping does not modify the Event model. Events remain simple timing and musical data:
+
+- time
+- dur
+- type
+- value
+- optional velocity
 
 ## Output
 
