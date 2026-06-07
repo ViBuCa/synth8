@@ -1,21 +1,27 @@
-import type { BeatStep } from "../model/ast";
+import type { BeatSound, BeatStep } from "../model/ast";
+import { parsePatternToken } from "./pattern-token";
+
+const toBeatSound = (value: string): BeatSound => {
+    const token = parsePatternToken(value);
+
+    return {
+        kind: "BeatSound",
+        value: token.value,
+        velocity: token.velocity,
+    };
+};
+
 
 const toBeatStep = (value: string): BeatStep => {
     const parts = value.split("+").filter(Boolean);
 
     if (parts.length === 1) {
-        return {
-            kind: "BeatSound",
-            value: parts[0],
-        };
+        return toBeatSound(parts[0]);
     }
 
     return {
         kind: "BeatParallel",
-        sounds: parts.map((part) => ({
-            kind: "BeatSound",
-            value: part,
-        })),
+        sounds: parts.map(toBeatSound),
     };
 };
 

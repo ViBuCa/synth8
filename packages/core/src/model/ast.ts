@@ -28,6 +28,7 @@ export type MelodyStep =
 export type MelodyNote = {
   kind: "MelodyNote";
   value: string;
+  velocity?: number;
 };
 
 export type MelodyGroup = {
@@ -45,6 +46,7 @@ export type BeatStep = BeatSound | BeatGroup | BeatParallel;
 export type BeatSound = {
   kind: "BeatSound";
   value: string;
+  velocity?: number;
 };
 
 export type BeatGroup = {

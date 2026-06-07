@@ -66,6 +66,7 @@ const compileBeatSteps = (
             dur: stepDuration,
             type: "drum",
             value: sound.value,
+            velocity: sound.velocity,
           });
         }
         break;
@@ -78,6 +79,7 @@ const compileBeatSteps = (
           dur: stepDuration,
           type: "drum",
           value: step.value,
+          velocity: step.velocity,
         });
         break;
     }
@@ -142,6 +144,7 @@ const compileMelodySteps = (
         dur: stepDur,
         type: "note",
         value: note.value,
+        velocity: note.velocity,
       }];
     }
 
@@ -153,6 +156,7 @@ const compileMelodySteps = (
           dur: stepDur,
           type: "note",
           value: child.value,
+          velocity: child.velocity,
         }));
     }
     return compileMelodySteps(note.notes, time, stepDur);

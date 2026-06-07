@@ -144,4 +144,26 @@ describe("compile", () => {
       { time: 1.5, dur: 0.5, type: "note", value: "a4" },
     ]);
   });
+
+  it("compiles drum velocity", () => {
+    expect(compile('beat("kick:0.5 snare")').events).toEqual([
+      { time: 0, dur: 1, type: "drum", value: "kick", velocity: 0.5 },
+      { time: 1, dur: 1, type: "drum", value: "snare", velocity: undefined },
+    ]);
+  });
+
+  it("compiles melody velocity", () => {
+    expect(compile('melody("c4:0.25 e4")').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4", velocity: 0.25 },
+      { time: 1, dur: 1, type: "note", value: "e4", velocity: undefined },
+    ]);
+  });
+
+  it("compiles parallel melody velocity", () => {
+    expect(compile('melody("c4:1+e4:0.5+g4:0.25")').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4", velocity: 1 },
+      { time: 0, dur: 1, type: "note", value: "e4", velocity: 0.5 },
+      { time: 0, dur: 1, type: "note", value: "g4", velocity: 0.25 },
+    ]);
+  });
 });

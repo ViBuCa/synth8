@@ -1,22 +1,27 @@
-import type { MelodyStep } from "../model/ast";
+import type { MelodyNote, MelodyStep } from "../model/ast";
 import { isSupportedNote } from "./notes";
+import { parsePatternToken } from "./pattern-token";
+
+const toMelodyNote = (value: string): MelodyNote => {
+    const token = parsePatternToken(value);
+
+    return {
+        kind: "MelodyNote",
+        value: token.value,
+        velocity: token.velocity,
+    };
+};
 
 const toMelodyStep = (value: string): MelodyStep => {
     const parts = value.split("+").filter(Boolean);
 
     if (parts.length === 1) {
-        return {
-            kind: "MelodyNote",
-            value: parts[0],
-        };
+        return toMelodyNote(parts[0]);
     }
 
     return {
         kind: "MelodyParallel",
-        notes: parts.map((part) => ({
-            kind: "MelodyNote",
-            value: part,
-        })),
+        notes: parts.map(toMelodyNote),
     };
 };
 
@@ -28,8 +33,9 @@ const validateMelodyToken = (value: string): void => {
     }
 
     for (const part of parts) {
-        if (!isSupportedNote(part)) {
-            throw new Error(`Unknown note: ${part}`);
+        const token = parsePatternToken(part);
+        if (!isSupportedNote(token.value)) {
+            throw new Error(`Unknown note: ${token.value}`);
         }
     }
 };

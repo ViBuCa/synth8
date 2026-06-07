@@ -5,4 +5,5 @@ export type Event = {
   dur: number;
   type: EventType;
   value: string;
+  velocity?: number;
 };
