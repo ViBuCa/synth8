@@ -166,4 +166,26 @@ describe("compile", () => {
       { time: 0, dur: 1, type: "note", value: "g4", velocity: 0.25 },
     ]);
   });
+
+  it("supports fast", () => {
+    expect(compile('beat("kick snare").fast(2)').events).toEqual([
+      { time: 0, dur: 0.5, type: "drum", value: "kick" },
+      { time: 0.5, dur: 0.5, type: "drum", value: "snare" },
+    ]);
+  });
+
+  it("supports slow", () => {
+    expect(compile('beat("kick snare").slow(2)').events).toEqual([
+      { time: 0, dur: 2, type: "drum", value: "kick" },
+      { time: 2, dur: 2, type: "drum", value: "snare" },
+    ]);
+  });
+
+  it("composes timing modifiers", () => {
+    expect(compile('melody("c4 e4").fast(2).slow(4)').events).toEqual([
+      { time: 0, dur: 2, type: "note", value: "c4" },
+      { time: 2, dur: 2, type: "note", value: "e4" },
+    ]);
+  });
+
 });

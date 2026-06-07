@@ -40,51 +40,46 @@ class Parser {
         throw new Error(`Unknown expression: ${token.value}`);
     }
 
-    private parseOptionalRate(): number {
-        let rate = 1;
+    private expectAnyIdentifier(): string {
+        const token = this.advance();
 
-        if (this.matchSymbol(".")) {
-            this.expectIdentifier("rate");
-            this.expectSymbol("(");
-            rate = this.expectNumber();
-            this.expectSymbol(")");
+        if (token?.type !== "identifier") {
+            throw new Error("Expected identifier.");
         }
 
-        if (!Number.isFinite(rate) || rate <= 0) {
-            throw new Error(`Invalid rate: ${rate}`);
-        }
-
-        return rate;
+        return token.value;
     }
 
-    /*
-    private parseBeatExpression(): AstNode {
-        this.expectIdentifier("beat");
-        this.expectSymbol("(");
-
-        const body = this.expectString();
-
-        this.expectSymbol(")");
-
+    private parseOptionalRate(): { rate: number } {
         let rate = 1;
 
-        if (this.matchSymbol(".")) {
-            this.expectIdentifier("rate");
+        while (this.matchSymbol(".")) {
+            const modifier = this.expectAnyIdentifier();
+
             this.expectSymbol("(");
-            rate = this.expectNumber();
+            const value = this.expectNumber();
             this.expectSymbol(")");
+            switch (modifier) {
+                case 'rate':
+                    rate *= value;
+                    break;
+                case 'fast':
+                    rate *= value;
+                    break;
+                case 'slow':
+                    rate /= value;
+                    break;
+                default:
+                    throw new Error(`Unknown modifier: ${modifier}`);
+            }
         }
 
         if (!Number.isFinite(rate) || rate <= 0) {
             throw new Error(`Invalid rate: ${rate}`);
         }
 
-        return {
-            kind: "BeatExpression",
-            steps: parseBeatPattern(body),
-            rate,
-        };
-    }*/
+        return { rate };
+    }
 
     private parseBeatExpression(): AstNode {
         this.expectIdentifier("beat");
@@ -94,7 +89,7 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const rate = this.parseOptionalRate();
+        const { rate } = this.parseOptionalRate();
 
         return {
             kind: "BeatExpression",
@@ -111,7 +106,7 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const rate = this.parseOptionalRate();
+        const { rate } = this.parseOptionalRate();
 
         return {
             kind: "MelodyExpression",
