@@ -3,283 +3,310 @@ import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
 import { tokenize, type Token } from "./tokenizer";
 
-class Parser {
-    private index = 0;
+type ParserState = {
+  tokens: Token[];
+  index: number;
+};
 
-    constructor(private readonly tokens: Token[]) { }
+type Modifiers = {
+  rate: number;
+  transpose: number;
+  repeat: number;
+  loop: boolean;
+  offset: number;
+};
 
-    parse(): AstNode {
-        const node = this.parseExpression();
+const createState = (tokens: Token[]): ParserState => ({
+  tokens,
+  index: 0,
+});
 
-        if (!this.isAtEnd()) {
-            throw new Error("Unexpected tokens after expression.");
+const peek = (state: ParserState): Token | undefined => {
+  return state.tokens[state.index];
+};
+
+const advance = (state: ParserState): Token | undefined => {
+  return state.tokens[state.index++];
+};
+
+const isAtEnd = (state: ParserState): boolean => {
+  return state.index >= state.tokens.length;
+};
+
+const expectIdentifier = (state: ParserState, value: string): void => {
+  const token = advance(state);
+
+  if (token?.type !== "identifier" || token.value !== value) {
+    throw new Error(`Expected identifier "${value}".`);
+  }
+};
+
+const expectAnyIdentifier = (state: ParserState): string => {
+  const token = advance(state);
+
+  if (token?.type !== "identifier") {
+    throw new Error("Expected identifier.");
+  }
+
+  return token.value;
+};
+
+const expectString = (state: ParserState): string => {
+  const token = advance(state);
+
+  if (token?.type !== "string") {
+    throw new Error("Expected string.");
+  }
+
+  return token.value;
+};
+
+const expectNumber = (state: ParserState): number => {
+  const token = advance(state);
+
+  if (token?.type !== "number") {
+    throw new Error("Expected number.");
+  }
+
+  return token.value;
+};
+
+const expectSymbol = (
+  state: ParserState,
+  value: "(" | ")" | "." | ","
+): void => {
+  const token = advance(state);
+
+  if (token?.type !== "symbol" || token.value !== value) {
+    throw new Error(`Expected "${value}".`);
+  }
+};
+
+const matchSymbol = (
+  state: ParserState,
+  value: "(" | ")" | "." | ","
+): boolean => {
+  const token = peek(state);
+
+  if (token?.type === "symbol" && token.value === value) {
+    advance(state);
+    return true;
+  }
+
+  return false;
+};
+
+const checkSaneRange = (value: number, name: string): void => {
+  if (!Number.isFinite(value) || value <= 0 || value > 100) {
+    throw new Error(`Invalid ${name}: ${value}`);
+  }
+};
+
+const parseModifiers = (state: ParserState): Modifiers => {
+  let rate = 1;
+  let transpose = 0;
+  let repeat = 1;
+  let loop = false;
+  let offset = 0;
+
+  while (matchSymbol(state, ".")) {
+    const modifier = expectAnyIdentifier(state);
+
+    let value = 0;
+
+    expectSymbol(state, "(");
+
+    switch (modifier) {
+      case "rate":
+      case "fast":
+      case "slow":
+      case "transpose":
+      case "repeat":
+      case "offset":
+        value = expectNumber(state);
+        break;
+
+      case "loop":
+        break;
+
+      default:
+        throw new Error(`Unknown modifier: ${modifier}`);
+    }
+
+    expectSymbol(state, ")");
+
+    switch (modifier) {
+      case "rate":
+        checkSaneRange(value, "rate");
+        rate = value;
+        break;
+
+      case "fast":
+        checkSaneRange(value, "fast");
+        rate *= value;
+        break;
+
+      case "slow":
+        checkSaneRange(value, "slow");
+        rate /= value;
+        break;
+
+      case "transpose":
+        if (!Number.isInteger(value)) {
+          throw new Error(`Transpose value must be an integer: ${value}`);
         }
+        transpose += value;
+        break;
 
-        return node;
-    }
-
-    private parseExpression(): AstNode {
-        const token = this.peek();
-
-        if (token?.type !== "identifier") {
-            throw new Error("Expected expression.");
+      case "offset":
+        if (!Number.isInteger(value)) {
+          throw new Error(`Offset value must be an integer: ${value}`);
         }
+        offset += value;
+        break;
 
-        switch (token.value) {
-            case 'beat':
-                return this.parseBeatExpression();
-            case 'melody':
-                return this.parseMelodyExpression();
-            case 'sequence':
-                return this.parseSequenceExpression();
-            case 'song':
-                return this.parseSongExpression();
-            default:
-                throw new Error(`Unknown expression: ${token.value}`);
+      case "repeat":
+        if (!Number.isInteger(value) || value <= 0) {
+          throw new Error(`Repeat value must be an integer: ${value}`);
         }
+        repeat = value;
+        break;
+
+      case "loop":
+        loop = true;
+        break;
     }
+  }
 
-    private expectAnyIdentifier(): string {
-        const token = this.advance();
+  return { rate, transpose, repeat, loop, offset };
+};
 
-        if (token?.type !== "identifier") {
-            throw new Error("Expected identifier.");
-        }
+const parseBeatExpression = (state: ParserState): AstNode => {
+  expectIdentifier(state, "beat");
+  expectSymbol(state, "(");
 
-        return token.value;
-    }
+  const body = expectString(state);
 
-    private checkSaneRange(value: number, name: string): void {
-        if (!Number.isFinite(value) || value <= 0 || value > 100) {
-            throw new Error(`Invalid ${name}: ${value}`);
-        }
-    }
+  expectSymbol(state, ")");
 
-    private parseModifiers(): {
-        rate: number;
-        transpose: number;
-        repeat: number;
-        loop: boolean;
-        offset: number;
-    } {
-        let rate = 1;
-        let transpose = 0;
-        let repeat = 1;
-        let loop = false;
-        let offset = 0;
+  const { rate, repeat, loop, offset } = parseModifiers(state);
 
-        while (this.matchSymbol(".")) {
-            const modifier = this.expectAnyIdentifier();
+  return {
+    kind: "BeatExpression",
+    steps: parseBeatPattern(body),
+    rate,
+    repeat,
+    loop,
+    offset,
+  };
+};
 
-            let value = 0;
-            this.expectSymbol("(");
-            switch (modifier) {
-                case 'rate':
-                case 'fast':
-                case 'slow':
-                case 'transpose':
-                case 'repeat':
-                case 'offset':
-                    value = this.expectNumber();
-                    break;
-            }
+const parseMelodyExpression = (state: ParserState): AstNode => {
+  expectIdentifier(state, "melody");
+  expectSymbol(state, "(");
 
-            this.expectSymbol(")");
-            switch (modifier) {
-                case 'rate':
-                    this.checkSaneRange(value, "rate");
-                    rate = value;
-                    break;
-                case 'fast':
-                    this.checkSaneRange(value, "fast");
-                    rate *= value;
-                    break;
-                case 'slow':
-                    this.checkSaneRange(value, "slow");
-                    rate /= value;
-                    break;
-                case 'transpose':
-                    if (!Number.isInteger(value)) {
-                        throw new Error(`Transpose value must be an integer: ${value}`);
-                    }
-                    transpose += value;
-                    break;
-                case 'offset':
-                    if (!Number.isInteger(value)) {
-                        throw new Error(`Offset value must be an integer: ${value}`);
-                    }
-                    offset += value;
-                    break;
-                case 'repeat':
-                    if (!Number.isInteger(value) || value <= 0) {
-                        throw new Error(`Repeat value must be an integer: ${value}`);
-                    }
-                    repeat = value;
-                    break;
-                case 'loop':
-                    loop = true;
-                    break;
-                default:
-                    throw new Error(`Unknown modifier: ${modifier}`);
-            }
-        }
-        return { rate, transpose, repeat, loop, offset };
-    }
+  const body = expectString(state);
 
-    private parseBeatExpression(): AstNode {
-        this.expectIdentifier("beat");
-        this.expectSymbol("(");
+  expectSymbol(state, ")");
 
-        const body = this.expectString();
+  const { rate, transpose, repeat, loop, offset } = parseModifiers(state);
 
-        this.expectSymbol(")");
+  return {
+    kind: "MelodyExpression",
+    notes: parseMelodyPattern(body),
+    rate,
+    transpose,
+    repeat,
+    loop,
+    offset,
+  };
+};
 
-        const { rate, repeat, loop, offset } = this.parseModifiers();
+const parseSequenceExpression = (state: ParserState): AstNode => {
+  expectIdentifier(state, "sequence");
+  expectSymbol(state, "(");
 
-        return {
-            kind: "BeatExpression",
-            steps: parseBeatPattern(body),
-            rate,
-            repeat,
-            loop,
-            offset
-        };
-    }
+  const patterns: AstNode[] = [];
 
-    private parseMelodyExpression(): AstNode {
-        this.expectIdentifier("melody");
-        this.expectSymbol("(");
+  if (!matchSymbol(state, ")")) {
+    do {
+      patterns.push(parseExpression(state));
+    } while (matchSymbol(state, ","));
 
-        const body = this.expectString();
+    expectSymbol(state, ")");
+  }
 
-        this.expectSymbol(")");
+  if (patterns.length === 0) {
+    throw new Error("sequence() requires at least one pattern.");
+  }
 
-        const { rate, transpose, repeat, loop, offset } = this.parseModifiers();
+  const { repeat, loop, offset } = parseModifiers(state);
 
-        return {
-            kind: "MelodyExpression",
-            notes: parseMelodyPattern(body),
-            rate,
-            transpose,
-            repeat,
-            loop,
-            offset
-        };
-    }
-    
-    private parseSequenceExpression(): AstNode {
-        this.expectIdentifier("sequence");
-        this.expectSymbol("(");
+  return {
+    kind: "SequenceExpression",
+    patterns,
+    repeat,
+    loop,
+    offset,
+  };
+};
 
-        const patterns: AstNode[] = [];
+const parseSongExpression = (state: ParserState): AstNode => {
+  expectIdentifier(state, "song");
+  expectSymbol(state, "(");
 
-        if (!this.matchSymbol(")")) {
-            do {
-                patterns.push(this.parseExpression());
-            } while (this.matchSymbol(","));
+  const tracks: AstNode[] = [];
 
-            this.expectSymbol(")");
-        }
+  if (!matchSymbol(state, ")")) {
+    do {
+      tracks.push(parseExpression(state));
+    } while (matchSymbol(state, ","));
 
-        if (patterns.length === 0) {
-            throw new Error("sequence() requires at least one pattern.");
-        }
+    expectSymbol(state, ")");
+  }
 
-        const { repeat, loop, offset } = this.parseModifiers();
+  if (tracks.length === 0) {
+    throw new Error("song() requires at least one track.");
+  }
 
-        return {
-            kind: "SequenceExpression",
-            patterns,
-            repeat,
-            loop,
-            offset,
-        };
-    }
+  return {
+    kind: "SongExpression",
+    tracks,
+  };
+};
 
-    private parseSongExpression(): AstNode {
-        this.expectIdentifier("song");
-        this.expectSymbol("(");
+const parseExpression = (state: ParserState): AstNode => {
+  const token = peek(state);
 
-        const tracks: AstNode[] = [];
+  if (token?.type !== "identifier") {
+    throw new Error("Expected expression.");
+  }
 
-        if (!this.matchSymbol(")")) {
-            do {
-                tracks.push(this.parseExpression());
-            } while (this.matchSymbol(","));
+  switch (token.value) {
+    case "beat":
+      return parseBeatExpression(state);
 
-            this.expectSymbol(")");
-        }
+    case "melody":
+      return parseMelodyExpression(state);
 
-        if (tracks.length === 0) {
-            throw new Error("song() requires at least one track.");
-        }
+    case "sequence":
+      return parseSequenceExpression(state);
 
-        return {
-            kind: "SongExpression",
-            tracks,
-        };
-    }
+    case "song":
+      return parseSongExpression(state);
 
-    private expectIdentifier(value: string): void {
-        const token = this.advance();
-
-        if (token?.type !== "identifier" || token.value !== value) {
-            throw new Error(`Expected identifier "${value}".`);
-        }
-    }
-
-    private expectString(): string {
-        const token = this.advance();
-
-        if (token?.type !== "string") {
-            throw new Error("Expected string.");
-        }
-
-        return token.value;
-    }
-
-    private expectNumber(): number {
-        const token = this.advance();
-
-        if (token?.type !== "number") {
-            throw new Error("Expected number.");
-        }
-
-        return token.value;
-    }
-
-    private expectSymbol(value: "(" | ")" | "." | ","): void {
-        const token = this.advance();
-
-        if (token?.type !== "symbol" || token.value !== value) {
-            throw new Error(`Expected "${value}".`);
-        }
-    }
-
-    private matchSymbol(value: "(" | ")" | "." | ","): boolean {
-        const token = this.peek();
-
-        if (token?.type === "symbol" && token.value === value) {
-            this.advance();
-            return true;
-        }
-
-        return false;
-    }
-
-    private advance(): Token | undefined {
-        return this.tokens[this.index++];
-    }
-
-    private peek(): Token | undefined {
-        return this.tokens[this.index];
-    }
-
-    private isAtEnd(): boolean {
-        return this.index >= this.tokens.length;
-    }
-}
+    default:
+      throw new Error(`Unknown expression: ${token.value}`);
+  }
+};
 
 export const parse = (source: string): AstNode => {
-    return new Parser(tokenize(source)).parse();
+  const state = createState(tokenize(source));
+  const node = parseExpression(state);
+
+  if (!isAtEnd(state)) {
+    throw new Error("Unexpected tokens after expression.");
+  }
+
+  return node;
 };
