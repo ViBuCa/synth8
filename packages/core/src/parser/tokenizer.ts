@@ -46,8 +46,13 @@ export const tokenize = (source: string): Token[] => {
             continue;
         }
 
-        if (/\d/.test(char)) {
+        if (/\d/.test(char) || (char === "-" && /\d/.test(source[index + 1] ?? ""))) {
             let value = "";
+
+            if (char === "-") {
+                value += char;
+                index++;
+            }
 
             while (/[\d.]/.test(source[index] ?? "")) {
                 value += source[index];

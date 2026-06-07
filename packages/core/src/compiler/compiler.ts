@@ -1,5 +1,6 @@
 import type { AstNode, Event, Pattern, BeatStep, MelodyStep } from "../model";
 import { parse } from "../parser/parser";
+import { transposeNote } from "./transpose-helper";
 
 const REST = '_';
 const VALID_DRUMS = new Set([
@@ -106,10 +107,11 @@ const compileAst = (ast: AstNode): Pattern => {
     case "MelodyExpression": {
       const beatDuration = 1 / ast.rate;
       const length = ast.notes.length * beatDuration;
+      const transpose = ast.transpose;
 
       return {
         length,
-        events: compileMelodySteps(ast.notes, 0, length),
+        events: compileMelodySteps(ast.notes, 0, length, transpose),
       };
     }
     case "SongExpression": {
@@ -129,7 +131,8 @@ const compileAst = (ast: AstNode): Pattern => {
 const compileMelodySteps = (
   notes: MelodyStep[],
   start: number,
-  dur: number
+  dur: number,
+  transpose: number
 ): Event[] => {
   const stepDur = dur / notes.length;
 
@@ -143,7 +146,7 @@ const compileMelodySteps = (
         time,
         dur: stepDur,
         type: "note",
-        value: note.value,
+        value: transposeNote(note.value, transpose),
         velocity: note.velocity,
       }];
     }
@@ -155,11 +158,11 @@ const compileMelodySteps = (
           time,
           dur: stepDur,
           type: "note",
-          value: child.value,
+          value: transposeNote(child.value, transpose),
           velocity: child.velocity,
         }));
     }
-    return compileMelodySteps(note.notes, time, stepDur);
+    return compileMelodySteps(note.notes, time, stepDur, transpose);
   });
 }
 

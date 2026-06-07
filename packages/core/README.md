@@ -1,8 +1,8 @@
 # @vibuca/synth8-core
 
-Core parser and compiler for Synt8, an MIT-licensed pattern music toolkit written in TypeScript.
+Core parser and compiler for Synth8, an MIT-licensed pattern music toolkit written in TypeScript.
 
-Synt8 defines its own small pattern DSL for rhythmic and melodic music patterns.
+Synth8 defines a small music DSL for rhythmic and melodic patterns.
 
 ## Install
 
@@ -17,29 +17,29 @@ import { compile } from "@vibuca/synth8-core";
 
 const pattern = compile(`
   song(
-    beat("kick+hihat snare hihat snare"),
-    melody("c4 e4 g4 _")
+    beat("kick+hihat _ snare hihat"),
+    melody("c4+e4+g4 f4").transpose(12)
   )
 `);
 
 console.log(pattern);
 ```
 
-## Supported syntax
+## Syntax
 
-### Beat patterns
+### Beats
 
 ```ts
 beat("kick snare hihat hihat")
 ```
 
-### Melody patterns
+### Melody
 
 ```ts
 melody("c4 e4 g4 _")
 ```
 
-### Songs
+### Song
 
 ```ts
 song(
@@ -48,18 +48,11 @@ song(
 )
 ```
 
-### Rate
-
-```ts
-beat("kick snare").rate(2)
-melody("c4 e4 g4").rate(2)
-```
-
 ### Rests
 
 ```ts
-beat("kick _ snare hihat")
-melody("c4 _ e4 g4")
+beat("kick _ snare")
+melody("c4 _ e4")
 ```
 
 ### Groups
@@ -69,15 +62,40 @@ beat("kick [snare hihat] kick")
 melody("c4 [e4 g4] c5")
 ```
 
-### Parallel drum hits
+### Parallel hits and chords
 
 ```ts
-beat("kick+hihat snare hihat snare")
+beat("kick+hihat snare")
+melody("c4+e4+g4 f4")
 ```
+
+### Velocity
+
+```ts
+beat("kick:1 snare:0.7 hihat:0.4")
+melody("c4:1 e4:0.6 g4:0.3")
+```
+
+### Timing modifiers
+
+```ts
+beat("kick snare").fast(2)
+beat("kick snare").slow(2)
+melody("c4 e4").rate(2)
+```
+
+### Transpose
+
+```ts
+melody("c4 e4 g4").transpose(12)
+melody("c5 e5 g5").transpose(-12)
+```
+
+`transpose()` uses semitones and is only supported on melody patterns.
 
 ## Output
 
-`compile()` returns a pattern:
+`compile()` returns:
 
 ```ts
 type Pattern = {
@@ -95,12 +113,14 @@ type Event =
       dur: number;
       type: "drum";
       value: string;
+      velocity?: number;
     }
   | {
       time: number;
       dur: number;
       type: "note";
       value: string;
+      velocity?: number;
     };
 ```
 
@@ -118,6 +138,20 @@ cowbell
 ```
 
 Use `_` for rests.
+
+## Note names
+
+Synth8 supports note names like:
+
+```txt
+c4
+c#4
+db4
+f#5
+bb3
+```
+
+Use `#` and `b` for accidentals.
 
 ## License
 

@@ -188,4 +188,26 @@ describe("compile", () => {
     ]);
   });
 
+  it("transposes melody notes", () => {
+    expect(compile('melody("c4 d4 e4").transpose(12)').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c5" },
+      { time: 1, dur: 1, type: "note", value: "d5" },
+      { time: 2, dur: 1, type: "note", value: "e5" },
+    ]);
+  });
+
+  it("transposes melody chords", () => {
+    expect(compile('melody("c4+e4+g4").transpose(12)').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c5" },
+      { time: 0, dur: 1, type: "note", value: "e5" },
+      { time: 0, dur: 1, type: "note", value: "g5" },
+    ]);
+  });
+
+  it("composes transpose modifiers", () => {
+    expect(compile('melody("c4").transpose(12).transpose(-12)').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4" },
+    ]);
+  });
+
 });

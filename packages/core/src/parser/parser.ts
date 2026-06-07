@@ -50,8 +50,15 @@ class Parser {
         return token.value;
     }
 
-    private parseOptionalRate(): { rate: number } {
+    private checkSaneRange (value: number, name: string): void {
+        if (!Number.isFinite(value) || value <= 0 || value > 100) {
+            throw new Error(`Invalid ${name}: ${value}`);
+        }
+    }
+
+    private parseOptionalRate(): { rate: number; transpose: number } {
         let rate = 1;
+        let transpose = 0;
 
         while (this.matchSymbol(".")) {
             const modifier = this.expectAnyIdentifier();
@@ -60,25 +67,29 @@ class Parser {
             const value = this.expectNumber();
             this.expectSymbol(")");
             switch (modifier) {
-                case 'rate':
+                case 'rate':                     
+                    this.checkSaneRange(value, "rate");
                     rate *= value;
                     break;
                 case 'fast':
+                    this.checkSaneRange(value, "fast");
                     rate *= value;
                     break;
                 case 'slow':
+                    this.checkSaneRange(value, "slow");
                     rate /= value;
+                    break;
+                case 'transpose':
+                    if (!Number.isInteger(value)) {
+                        throw new Error(`Transpose value must be an integer: ${value}`);
+                    }
+                    transpose = value;
                     break;
                 default:
                     throw new Error(`Unknown modifier: ${modifier}`);
             }
         }
-
-        if (!Number.isFinite(rate) || rate <= 0) {
-            throw new Error(`Invalid rate: ${rate}`);
-        }
-
-        return { rate };
+        return { rate, transpose };
     }
 
     private parseBeatExpression(): AstNode {
@@ -106,12 +117,13 @@ class Parser {
 
         this.expectSymbol(")");
 
-        const { rate } = this.parseOptionalRate();
+        const { rate, transpose } = this.parseOptionalRate();
 
         return {
             kind: "MelodyExpression",
             notes: parseMelodyPattern(body),
             rate,
+            transpose,
         };
     }
 

@@ -1,6 +1,6 @@
 # @vibuca/synth8-player
 
-Tone.js player for Synt8 patterns.
+Tone.js player for Synth8 patterns.
 
 This package plays patterns compiled by `@vibuca/synth8-core`.
 
@@ -18,8 +18,8 @@ import { play, stop } from "@vibuca/synth8-player";
 
 const pattern = compile(`
   song(
-    beat("kick+hihat snare hihat snare"),
-    melody("c4 e4 g4 e4")
+    beat("kick+hihat _ snare hihat"),
+    melody("c4+e4+g4 f4").transpose(12)
   )
 `);
 
@@ -33,7 +33,7 @@ stop();
 
 ### `play(pattern, options)`
 
-Plays a compiled Synt8 pattern.
+Plays a compiled Synth8 pattern.
 
 ```ts
 play(pattern, { bpm: 120 });
@@ -55,18 +55,32 @@ Stops playback.
 stop();
 ```
 
-## Supported events
-
-`@vibuca/synth8-player` supports:
+## Supported event types
 
 ```ts
 { type: "drum", value: "kick" }
 { type: "note", value: "c4" }
 ```
 
-Drums are synthesized with Tone.js percussion voices.
+Velocity is supported when present:
 
-Notes are played with a Tone.js synth.
+```ts
+{ type: "note", value: "c4", velocity: 0.5 }
+```
+
+## Example
+
+```ts
+const pattern = compile(`
+  song(
+    beat("kick+hihat _ snare hihat"),
+    melody("c4 e4 g4 c5"),
+    melody("c3+g3 _ f3+a3 _")
+  )
+`);
+
+await play(pattern, { bpm: 110 });
+```
 
 ## License
 

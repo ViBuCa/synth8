@@ -18,6 +18,7 @@ export type MelodyExpression = {
   kind: "MelodyExpression";
   notes: MelodyStep[];
   rate: number;
+  transpose: number;
 };
 
 export type MelodyStep =
