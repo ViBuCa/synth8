@@ -1,7 +1,13 @@
 export type AstNode =
   | BeatExpression
   | MelodyExpression
-  | SongExpression;
+  | SongExpression
+  | SequenceExpression;
+
+export type SequenceExpression = {
+  kind: "SequenceExpression";
+  patterns: AstNode[];
+};
 
 export type BeatExpression = {
   kind: "BeatExpression";

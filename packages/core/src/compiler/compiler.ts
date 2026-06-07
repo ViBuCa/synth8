@@ -115,7 +115,7 @@ const compileAst = (ast: AstNode): Pattern => {
     case "MelodyExpression": {
       const notes = repeatArray(ast.notes, ast.repeat);
       const beatDuration = 1 / ast.rate;
-      
+
       const patternLength = notes.length * beatDuration;
       const length = ast.offset + patternLength;
 
@@ -142,6 +142,31 @@ const compileAst = (ast: AstNode): Pattern => {
         loopLength: length,
         events: events.sort((a, b) => a.time - b.time),
         loop: true
+      };
+    }
+
+    case "SequenceExpression": {
+      let offset = 0;
+      const events: Event[] = [];
+
+      for (const patternAst of ast.patterns) {
+        const pattern = compileAst(patternAst);
+
+        events.push(
+          ...pattern.events.map((event) => ({
+            ...event,
+            time: event.time + offset,
+          }))
+        );
+
+        offset += pattern.length;
+      }
+
+      return {
+        length: offset,
+        loopLength: offset,
+        events,
+        loop: false,
       };
     }
 

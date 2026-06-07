@@ -25,19 +25,18 @@ class Parser {
             throw new Error("Expected expression.");
         }
 
-        if (token.value === "beat") {
-            return this.parseBeatExpression();
+        switch(token.value) {
+            case 'beat':
+                return this.parseBeatExpression();
+            case 'melody':
+                return this.parseMelodyExpression();
+            case 'sequence':
+                return this.parseSequenceExpression();
+            case 'song':
+                return this.parseSongExpression();
+            default:
+                throw new Error(`Unknown expression: ${token.value}`);
         }
-
-        if (token.value === "melody") {
-            return this.parseMelodyExpression();
-        }
-
-        if (token.value === "song") {
-            return this.parseSongExpression();
-        }
-
-        throw new Error(`Unknown expression: ${token.value}`);
     }
 
     private expectAnyIdentifier(): string {
@@ -50,16 +49,15 @@ class Parser {
         return token.value;
     }
 
-    private checkSaneRange (value: number, name: string): void {
+    private checkSaneRange(value: number, name: string): void {
         if (!Number.isFinite(value) || value <= 0 || value > 100) {
             throw new Error(`Invalid ${name}: ${value}`);
         }
     }
 
-    private parseOptionalRate(): 
-    { 
-        rate: number; 
-        transpose: number; 
+    private parseOptionalRate(): {
+        rate: number;
+        transpose: number;
         repeat: number;
         loop: boolean;
         offset: number;
@@ -88,7 +86,7 @@ class Parser {
 
             this.expectSymbol(")");
             switch (modifier) {
-                case 'rate':                     
+                case 'rate':
                     this.checkSaneRange(value, "rate");
                     rate = value;
                     break;
@@ -166,6 +164,30 @@ class Parser {
             repeat,
             loop,
             offset
+        };
+    }
+
+    private parseSequenceExpression(): AstNode {
+        this.expectIdentifier("sequence");
+        this.expectSymbol("(");
+
+        const patterns: AstNode[] = [];
+
+        if (!this.matchSymbol(")")) {
+            do {
+                patterns.push(this.parseExpression());
+            } while (this.matchSymbol(","));
+
+            this.expectSymbol(")");
+        }
+
+        if (patterns.length === 0) {
+            throw new Error("sequence() requires at least one pattern.");
+        }
+
+        return {
+            kind: "SequenceExpression",
+            patterns,
         };
     }
 
