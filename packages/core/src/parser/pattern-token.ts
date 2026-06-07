@@ -1,17 +1,30 @@
 export type PatternToken = {
     value: string;
     velocity?: number;
+    duration: number;
 };
 
 export const parsePatternToken = (token: string): PatternToken => {
-    const [value, velocityRaw, ...rest] = token.split(":");
+    const [valueAndVelocity, durationRaw, ...durationRest] = token.split("/");
 
-    if (!value || rest.length > 0) {
+    if (!valueAndVelocity || durationRest.length > 0) {
         throw new Error(`Invalid pattern token: ${token}`);
     }
 
+    const [value, velocityRaw, ...velocityRest] = valueAndVelocity.split(":");
+
+    if (!value || velocityRest.length > 0) {
+        throw new Error(`Invalid pattern token: ${token}`);
+    }
+
+    const duration = durationRaw === undefined ? 1 : Number(durationRaw);
+
+    if (!Number.isFinite(duration) || duration <= 0) {
+        throw new Error(`Invalid duration: ${durationRaw}`);
+    }
+
     if (velocityRaw === undefined) {
-        return { value };
+        return { value, duration };
     }
 
     const velocity = Number(velocityRaw);
@@ -20,5 +33,5 @@ export const parsePatternToken = (token: string): PatternToken => {
         throw new Error(`Invalid velocity: ${velocityRaw}`);
     }
 
-    return { value, velocity };
+    return { value, velocity, duration };
 };

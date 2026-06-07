@@ -351,4 +351,31 @@ describe("compile", () => {
       { time: 7, dur: 1, type: "note", value: "c4" },
     ]);
   });
+  
+  it("supports beat durations", () => {
+    expect(compile(`beat("kick/2 snare hihat")`).events).toEqual([
+      { time: 0, dur: 2, type: "drum", value: "kick" },
+      { time: 2, dur: 1, type: "drum", value: "snare" },
+      { time: 3, dur: 1, type: "drum", value: "hihat" },
+    ]);
+  });
+
+  it("supports melody durations", () => {
+    expect(compile(`melody("c4/2 d4 e4")`).events).toEqual([
+      { time: 0, dur: 2, type: "note", value: "c4" },
+      { time: 2, dur: 1, type: "note", value: "d4" },
+      { time: 3, dur: 1, type: "note", value: "e4" },
+    ]);
+  });
+
+  it("supports velocity and duration together", () => {
+    expect(compile(`melody("c4:0.5/2 d4")`).events).toEqual([
+      { time: 0, dur: 2, type: "note", value: "c4", velocity: 0.5 },
+      { time: 2, dur: 1, type: "note", value: "d4" },
+    ]);
+  });
+
+  it("uses durations for pattern length", () => {
+    expect(compile(`melody("c4/2 d4 e4")`).length).toBe(4);
+  });
 });

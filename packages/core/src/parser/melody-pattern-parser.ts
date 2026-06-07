@@ -9,7 +9,7 @@ const toMelodyNote = (value: string): MelodyNote => {
         kind: "MelodyNote",
         value: token.value,
         velocity: token.velocity,
-        duration: 1
+        duration: token.duration
     };
 };
 

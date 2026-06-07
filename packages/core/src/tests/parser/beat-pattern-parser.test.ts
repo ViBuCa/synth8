@@ -132,4 +132,5 @@ describe("parseBeatPattern", () => {
             "Unterminated group '['."
         );
     });
+
 });

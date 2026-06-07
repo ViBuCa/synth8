@@ -3,7 +3,8 @@ import { parse } from "../parser/parser";
 import { loopEvents, repeatArray } from "./repeat-helper";
 import { transposeNote } from "./transpose-helper";
 
-const REST = '_';
+const REST = "_";
+
 const VALID_DRUMS = new Set([
   "kick",
   "snare",
@@ -41,6 +42,64 @@ const validateStep = (step: BeatStep): void => {
   validateSound(step.value);
 };
 
+const createDrumEvent = (
+  time: number,
+  dur: number,
+  value: string,
+  velocity?: number
+): Event => ({
+  time,
+  dur,
+  type: "drum",
+  value,
+  ...(velocity !== undefined ? { velocity } : {}),
+});
+
+const createNoteEvent = (
+  time: number,
+  dur: number,
+  value: string,
+  velocity?: number
+): Event => ({
+  time,
+  dur,
+  type: "note",
+  value,
+  ...(velocity !== undefined ? { velocity } : {}),
+});
+
+const getBeatStepDuration = (step: BeatStep): number => {
+  switch (step.kind) {
+    case "BeatSound":
+      return step.duration;
+
+    case "BeatGroup":
+      return 1;
+
+    case "BeatParallel":
+      return Math.max(...step.sounds.map((sound) => sound.duration));
+  }
+};
+
+const getMelodyStepDuration = (step: MelodyStep): number => {
+  switch (step.kind) {
+    case "MelodyNote":
+      return step.duration;
+
+    case "MelodyGroup":
+      return 1;
+
+    case "MelodyParallel":
+      return Math.max(...step.notes.map((note) => note.duration));
+  }
+};
+
+const getBeatStepsDuration = (steps: BeatStep[]): number =>
+  steps.reduce((sum, step) => sum + getBeatStepDuration(step), 0);
+
+const getMelodyStepsDuration = (notes: MelodyStep[]): number =>
+  notes.reduce((sum, note) => sum + getMelodyStepDuration(note), 0);
+
 const compileBeatSteps = (
   steps: BeatStep[],
   start: number,
@@ -49,10 +108,13 @@ const compileBeatSteps = (
   if (steps.length === 0) return [];
 
   const events: Event[] = [];
-  const stepDuration = duration / steps.length;
+  const totalDuration = getBeatStepsDuration(steps);
+  const unitDuration = duration / totalDuration;
 
-  steps.forEach((step, index) => {
-    const time = start + index * stepDuration;
+  let time = start;
+
+  for (const step of steps) {
+    const stepDuration = getBeatStepDuration(step) * unitDuration;
 
     switch (step.kind) {
       case "BeatGroup":
@@ -63,36 +125,89 @@ const compileBeatSteps = (
         for (const sound of step.sounds) {
           if (sound.value === REST) continue;
 
-          events.push({
-            time,
-            dur: stepDuration,
-            type: "drum",
-            value: sound.value,
-            velocity: sound.velocity,
-          });
+          events.push(
+            createDrumEvent(
+              time,
+              sound.duration * unitDuration,
+              sound.value,
+              sound.velocity
+            )
+          );
         }
         break;
 
       case "BeatSound":
-        if (step.value === REST) break;
-
-        events.push({
-          time,
-          dur: stepDuration,
-          type: "drum",
-          value: step.value,
-          velocity: step.velocity,
-        });
+        if (step.value !== REST) {
+          events.push(
+            createDrumEvent(time, stepDuration, step.value, step.velocity)
+          );
+        }
         break;
     }
-  });
+
+    time += stepDuration;
+  }
+
+  return events;
+};
+
+const compileMelodySteps = (
+  notes: MelodyStep[],
+  start: number,
+  dur: number,
+  transpose: number
+): Event[] => {
+  if (notes.length === 0) return [];
+
+  const events: Event[] = [];
+  const totalDuration = getMelodyStepsDuration(notes);
+  const unitDuration = dur / totalDuration;
+
+  let time = start;
+
+  for (const note of notes) {
+    const noteDuration = getMelodyStepDuration(note) * unitDuration;
+
+    if (note.kind === "MelodyNote") {
+      if (note.value !== REST) {
+        events.push(
+          createNoteEvent(
+            time,
+            noteDuration,
+            transposeNote(note.value, transpose),
+            note.velocity
+          )
+        );
+      }
+    }
+
+    if (note.kind === "MelodyParallel") {
+      for (const child of note.notes) {
+        if (child.value === REST) continue;
+
+        events.push(
+          createNoteEvent(
+            time,
+            child.duration * unitDuration,
+            transposeNote(child.value, transpose),
+            child.velocity
+          )
+        );
+      }
+    }
+
+    if (note.kind === "MelodyGroup") {
+      events.push(...compileMelodySteps(note.notes, time, noteDuration, transpose));
+    }
+
+    time += noteDuration;
+  }
 
   return events;
 };
 
 const compileAst = (ast: AstNode): Pattern => {
   switch (ast.kind) {
-
     case "BeatExpression": {
       for (const step of ast.steps) {
         validateStep(step);
@@ -101,7 +216,7 @@ const compileAst = (ast: AstNode): Pattern => {
       const steps = repeatArray(ast.steps, ast.repeat);
       const beatDuration = 1 / ast.rate;
 
-      const patternLength = steps.length * beatDuration;
+      const patternLength = getBeatStepsDuration(steps) * beatDuration;
       const length = ast.offset + patternLength;
 
       return {
@@ -116,7 +231,7 @@ const compileAst = (ast: AstNode): Pattern => {
       const notes = repeatArray(ast.notes, ast.repeat);
       const beatDuration = 1 / ast.rate;
 
-      const patternLength = notes.length * beatDuration;
+      const patternLength = getMelodyStepsDuration(notes) * beatDuration;
       const length = ast.offset + patternLength;
 
       return {
@@ -130,10 +245,12 @@ const compileAst = (ast: AstNode): Pattern => {
     case "SongExpression": {
       const patterns = ast.tracks.map(compileAst);
       const length = Math.max(...patterns.map((p) => p.length));
+
       const events = patterns.flatMap((pattern) => {
         if (!pattern.loop) {
           return pattern.events;
         }
+
         return loopEvents(pattern.events, pattern.loopLength, length);
       });
 
@@ -141,10 +258,10 @@ const compileAst = (ast: AstNode): Pattern => {
         length,
         loopLength: length,
         events: events.sort((a, b) => a.time - b.time),
-        loop: true
+        loop: true,
       };
     }
-    
+
     case "SequenceExpression": {
       let sequenceLength = 0;
       const sequenceEvents: Event[] = [];
@@ -187,45 +304,7 @@ const compileAst = (ast: AstNode): Pattern => {
       throw new Error("Unknown AST node");
     }
   }
-}
-
-const compileMelodySteps = (
-  notes: MelodyStep[],
-  start: number,
-  dur: number,
-  transpose: number
-): Event[] => {
-  const stepDur = dur / notes.length;
-
-  return notes.flatMap((note, index) => {
-    const time = start + index * stepDur;
-
-    if (note.kind === "MelodyNote") {
-      if (note.value === "_") return [];
-
-      return [{
-        time,
-        dur: stepDur,
-        type: "note",
-        value: transposeNote(note.value, transpose),
-        velocity: note.velocity,
-      }];
-    }
-
-    if (note.kind === "MelodyParallel") {
-      return note.notes
-        .filter((child) => child.value !== "_")
-        .map((child) => ({
-          time,
-          dur: stepDur,
-          type: "note",
-          value: transposeNote(child.value, transpose),
-          velocity: child.velocity,
-        }));
-    }
-    return compileMelodySteps(note.notes, time, stepDur, transpose);
-  });
-}
+};
 
 export const compile = (source: string): Pattern => {
   return compileAst(parse(source));

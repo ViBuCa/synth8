@@ -8,10 +8,9 @@ const toBeatSound = (value: string): BeatSound => {
         kind: "BeatSound",
         value: token.value,
         velocity: token.velocity,
-        duration: 1
+        duration: token.duration
     };
 };
-
 
 const toBeatStep = (value: string): BeatStep => {
     const parts = value.split("+").filter(Boolean);
