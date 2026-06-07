@@ -1,5 +1,6 @@
 import type { AstNode, Event, Pattern, BeatStep, MelodyStep } from "../model";
 import { parse } from "../parser/parser";
+import { repeatArray } from "./repeat-helper";
 import { transposeNote } from "./transpose-helper";
 
 const REST = '_';
@@ -91,29 +92,34 @@ const compileBeatSteps = (
 
 const compileAst = (ast: AstNode): Pattern => {
   switch (ast.kind) {
+
     case "BeatExpression": {
       for (const step of ast.steps) {
         validateStep(step);
       }
 
+      const steps = repeatArray(ast.steps, ast.repeat);
       const beatDuration = 1 / ast.rate;
-      const length = ast.steps.length * beatDuration;
+      const length = steps.length * beatDuration;
 
       return {
         length,
-        events: compileBeatSteps(ast.steps, 0, length),
+        events: compileBeatSteps(steps, 0, length),
       };
     }
+
     case "MelodyExpression": {
+      const notes = repeatArray(ast.notes, ast.repeat);
       const beatDuration = 1 / ast.rate;
-      const length = ast.notes.length * beatDuration;
+      const length = notes.length * beatDuration;
       const transpose = ast.transpose;
 
       return {
         length,
-        events: compileMelodySteps(ast.notes, 0, length, transpose),
+        events: compileMelodySteps(notes, 0, length, transpose),
       };
     }
+
     case "SongExpression": {
       const patterns = ast.tracks.map(compileAst);
 
@@ -122,6 +128,7 @@ const compileAst = (ast: AstNode): Pattern => {
         events: patterns.flatMap((pattern) => pattern.events),
       };
     }
+
     default: {
       throw new Error("Unknown AST node");
     }

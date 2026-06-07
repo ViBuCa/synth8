@@ -210,4 +210,57 @@ describe("compile", () => {
     ]);
   });
 
+  it("repeats beat patterns", () => {
+    expect(compile('beat("kick snare").repeat(2)').events).toEqual([
+      { time: 0, dur: 1, type: "drum", value: "kick" },
+      { time: 1, dur: 1, type: "drum", value: "snare" },
+      { time: 2, dur: 1, type: "drum", value: "kick" },
+      { time: 3, dur: 1, type: "drum", value: "snare" },
+    ]);
+  });
+
+  it("repeats melody patterns", () => {
+    expect(compile('melody("c4 e4").repeat(2)').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4" },
+      { time: 1, dur: 1, type: "note", value: "e4" },
+      { time: 2, dur: 1, type: "note", value: "c4" },
+      { time: 3, dur: 1, type: "note", value: "e4" },
+    ]);
+  });
+
+  it("combines repeat and fast", () => {
+    expect(compile('beat("kick snare").repeat(2).fast(2)').events).toEqual([
+      { time: 0, dur: 0.5, type: "drum", value: "kick" },
+      { time: 0.5, dur: 0.5, type: "drum", value: "snare" },
+      { time: 1, dur: 0.5, type: "drum", value: "kick" },
+      { time: 1.5, dur: 0.5, type: "drum", value: "snare" },
+    ]);
+  });
+
+  it("combines repeat and transpose", () => {
+    expect(compile('melody("c4 e4").repeat(2).transpose(12)').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c5" },
+      { time: 1, dur: 1, type: "note", value: "e5" },
+      { time: 2, dur: 1, type: "note", value: "c5" },
+      { time: 3, dur: 1, type: "note", value: "e5" },
+    ]);
+  });
+
+  it("preserves velocity when repeating melody", () => {
+    expect(compile('melody("c4:0.5 e4").repeat(2)').events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4", velocity: 0.5 },
+      { time: 1, dur: 1, type: "note", value: "e4", velocity: undefined },
+      { time: 2, dur: 1, type: "note", value: "c4", velocity: 0.5 },
+      { time: 3, dur: 1, type: "note", value: "e4", velocity: undefined },
+    ]);
+  });
+
+  it("preserves velocity when repeating beats", () => {
+    expect(compile('beat("kick:0.8 snare").repeat(2)').events).toEqual([
+      { time: 0, dur: 1, type: "drum", value: "kick", velocity: 0.8 },
+      { time: 1, dur: 1, type: "drum", value: "snare", velocity: undefined },
+      { time: 2, dur: 1, type: "drum", value: "kick", velocity: 0.8 },
+      { time: 3, dur: 1, type: "drum", value: "snare", velocity: undefined },
+    ]);
+  });
 });

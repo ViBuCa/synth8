@@ -12,7 +12,8 @@ describe("parse", () => {
                 { kind: "BeatSound", value: "hihat" },
                 { kind: "BeatSound", value: "hihat" }
             ],
-            rate: 2
+            rate: 2,
+            repeat: 1
         });
     });
 
@@ -23,7 +24,8 @@ describe("parse", () => {
                 { kind: "BeatSound", value: "kick" },
                 { kind: "BeatSound", value: "snare" }
             ],
-            rate: 1
+            rate: 1,
+            repeat: 1
         });
     });
 
@@ -39,6 +41,8 @@ describe("parse", () => {
         expect(parse('melody("c4 e4 g4")')).toEqual({
             kind: "MelodyExpression",
             rate: 1,
+            repeat: 1,
+            transpose: 0,
             notes: [
                 { kind: "MelodyNote", value: "c4" },
                 { kind: "MelodyNote", value: "e4" },
@@ -51,6 +55,8 @@ describe("parse", () => {
         expect(parse('melody("c4+e4+g4")')).toEqual({
             kind: "MelodyExpression",
             rate: 1,
+            repeat: 1,
+            transpose: 0,
             notes: [
                 {
                     kind: "MelodyParallel",
