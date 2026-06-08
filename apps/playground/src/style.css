@@ -1,0 +1,71 @@
+:root {
+  color: #f8f8f2;
+  background: #101018;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.hero {
+  margin-bottom: 24px;
+}
+
+h1 {
+  font-size: 48px;
+  margin: 0 0 8px;
+}
+
+textarea,
+input,
+pre {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #44475a;
+  border-radius: 12px;
+  background: #1b1b2b;
+  color: #f8f8f2;
+  padding: 12px;
+  font: inherit;
+}
+
+textarea {
+  min-height: 260px;
+  font-family: monospace;
+}
+
+pre {
+  overflow: auto;
+  min-height: 180px;
+  font-size: 13px;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#play {
+  background: #50fa7b;
+}
+
+#stop {
+  background: #ff5555;
+  color: white;
+}

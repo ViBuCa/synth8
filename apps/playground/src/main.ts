@@ -1,3 +1,4 @@
+import './style.css';
 import { compile } from "@vibuca/synth8-core";
 import { play, stop } from "@vibuca/synth8-player";
 

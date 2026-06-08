@@ -1,0 +1,15 @@
+{
+  "name": "synth8",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:playground": "pnpm --filter @vibuca/playground dev",
+    "build:playground": "pnpm --filter @vibuca/playground build"
+  }
+}
