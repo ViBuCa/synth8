@@ -2,6 +2,10 @@
 
 Synth8 is an MIT-licensed music DSL and playback toolkit for TypeScript.
 
+🎹 *Live Plaground:* https://vibuca.github.io/synth8/
+📦 *Core Package:* @vibuca/synth8-core
+🔊 *Player Package:* @vibuca/synth8-player
+
 Inspired by pattern-based composition systems and live-coding environments, Synth8 provides a small declarative language for creating rhythmic and melodic music directly in code.
 
 Synth8 is designed for:
