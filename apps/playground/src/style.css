@@ -115,3 +115,8 @@ button {
 .example-button:hover {
   background: #44475a;
 }
+
+#share {
+  background: #8be9fd;
+  color: #101018;
+}

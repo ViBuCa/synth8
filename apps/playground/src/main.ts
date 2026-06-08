@@ -35,6 +35,41 @@ const examples = {
   .sound("triangle")`,
 };
 
+function encodeSource(source: string): string {
+  const bytes = new TextEncoder().encode(source);
+
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function decodeSource(encoded: string): string {
+  const padded = encoded
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(Math.ceil(encoded.length / 4) * 4, "=");
+
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+
+  return new TextDecoder().decode(bytes);
+}
+
+const params = new URLSearchParams(window.location.search);
+
+let startupSource = initialSource;
+
+try {
+  const code = params.get("code");
+
+  if (code) {
+    startupSource = decodeSource(code);
+  }
+} catch {
+  console.warn("Invalid shared URL");
+}
+
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <main>
     <h1>Synth8 Playground</h1>
@@ -44,11 +79,11 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 
     <div class="examples">
       ${Object.keys(examples)
-        .map((name) => `<button class="example-button" data-example="${name}">${name}</button>`)
-        .join("")}
+    .map((name) => `<button class="example-button" data-example="${name}">${name}</button>`)
+    .join("")}
     </div>
 
-    <textarea id="source" rows="6">${initialSource}</textarea>
+    <textarea id="source" rows="6">${startupSource}</textarea>
 
     <label for="bpm">BPM</label>
     <input id="bpm" type="number" value="120" min="40" max="240" />
@@ -56,6 +91,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     <div>
       <button id="play">Play</button>
       <button id="stop">Stop</button>
+      <button id="share">Copy Share Link</button>
     </div>
 
     <pre id="output"></pre>
@@ -100,5 +136,16 @@ document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button)
 
     sourceInput.value = examples[name as keyof typeof examples];
     output.textContent = "";
+  });
+
+  document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", async () => {
+    const encoded = encodeSource(sourceInput.value);
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("code", encoded);
+
+    await navigator.clipboard.writeText(url.toString());
+
+    output.textContent = "Share link copied to clipboard.";
   });
 });
