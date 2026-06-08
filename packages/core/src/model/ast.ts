@@ -16,6 +16,7 @@ export type SequenceExpression = {
   kind: "SequenceExpression";
   patterns: AstNode[];
   sound?: Waveform;
+  gain?: number;
 } & Modifiers;
 
 export type BeatExpression = {
@@ -23,6 +24,7 @@ export type BeatExpression = {
   steps: BeatStep[];
   rate: number;
   sound?: Waveform;
+  gain?: number;
 } & Modifiers;
 
 export type SongExpression = {
@@ -36,6 +38,7 @@ export type MelodyExpression = {
   rate: number;
   transpose: number;
   sound?: Waveform;
+  gain?: number;
 } & Modifiers;
 
 export type MelodyStep =

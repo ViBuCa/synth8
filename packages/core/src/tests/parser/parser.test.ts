@@ -179,4 +179,14 @@ describe("parse", () => {
             "Unknown modifier: blub"
         );
     });
+
+    it("parses gain modifier", () => {
+        const ast = parse(
+            `melody("c4").gain(0.5)`
+        );
+
+        expect(ast).toMatchObject({
+            gain: 0.5,
+        });
+    });
 });

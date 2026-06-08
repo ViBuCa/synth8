@@ -6,4 +6,5 @@ export type Waveform =
 
 export type PlaybackConfig = {
   sound?: Waveform;
+  gain?: number;
 };

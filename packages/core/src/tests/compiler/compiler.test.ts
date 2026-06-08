@@ -351,7 +351,7 @@ describe("compile", () => {
       { time: 7, dur: 1, type: "note", value: "c4" },
     ]);
   });
-  
+
   it("supports beat durations", () => {
     expect(compile(`beat("kick/2 snare hihat")`).events).toEqual([
       { time: 0, dur: 2, type: "drum", value: "kick" },
@@ -377,5 +377,36 @@ describe("compile", () => {
 
   it("uses durations for pattern length", () => {
     expect(compile(`melody("c4/2 d4 e4")`).length).toBe(4);
+  });
+
+  it("compiles gain playback config", () => {
+    expect(
+      compile(
+        `melody("c4").gain(0.5)`
+      ).layers
+    ).toMatchObject([
+      {
+        playback: {
+          gain: 0.5,
+        },
+      },
+    ]);
+  });
+
+  it("compiles sound and gain", () => {
+    expect(
+      compile(
+        `melody("c4")
+        .sound("triangle")
+        .gain(0.5)`
+      ).layers
+    ).toMatchObject([
+      {
+        playback: {
+          sound: "triangle",
+          gain: 0.5,
+        },
+      },
+    ]);
   });
 });

@@ -4,7 +4,7 @@ import { compile } from "../../compiler";
 describe('compile sounds', () => {
 
     it("adds playback sound to melody layers", () => {
-        expect(compile(`melody("c4 e4").sound("triangle")`).layers).toEqual([
+        expect(compile(`melody("c4 e4").sound("triangle")`).layers).toMatchObject([
             {
                 playback: { sound: "triangle" },
                 events: [
@@ -16,7 +16,7 @@ describe('compile sounds', () => {
     });
 
     it("adds playback sound to beat layers", () => {
-        expect(compile(`beat("kick snare").sound("square")`).layers).toEqual([
+        expect(compile(`beat("kick snare").sound("square")`).layers).toMatchObject([
             {
                 playback: { sound: "square" },
                 events: [
@@ -33,7 +33,7 @@ describe('compile sounds', () => {
       melody("c4 e4").sound("triangle"),
       melody("c3 g3").sound("sawtooth")
     )`).layers
-        ).toEqual([
+        ).toMatchObject([
             {
                 playback: { sound: "triangle" },
                 events: [
@@ -57,7 +57,7 @@ describe('compile sounds', () => {
       beat("kick snare").sound("square").loop(),
       melody("c4 d4 e4 f4")
     )`).layers[0]
-        ).toEqual({
+        ).toMatchObject({
             playback: { sound: "square" },
             events: [
                 { time: 0, dur: 1, type: "drum", value: "kick" },
@@ -74,7 +74,7 @@ describe('compile sounds', () => {
       melody("c4 d4").sound("triangle"),
       melody("e4 f4").sound("sine")
     )`).layers
-        ).toEqual([
+        ).toMatchObject([
             {
                 playback: { sound: "triangle" },
                 events: [

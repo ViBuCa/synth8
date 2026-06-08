@@ -1,4 +1,4 @@
-import type { AstNode, Event, Pattern, BeatStep, MelodyStep } from "../model";
+import type { AstNode, Event, Pattern, BeatStep, MelodyStep, Waveform, PlaybackConfig } from "../model";
 import { parse } from "../parser/parser";
 import { loopEvents, repeatArray } from "./repeat-helper";
 import { transposeNote } from "./transpose-helper";
@@ -206,6 +206,25 @@ const compileMelodySteps = (
   return events;
 };
 
+const compilePlayback = (ast: {
+  sound?: Waveform;
+  gain?: number;
+}): PlaybackConfig | undefined => {
+  const playback: PlaybackConfig = {};
+
+  if (ast.sound !== undefined) {
+    playback.sound = ast.sound;
+  }
+
+  if (ast.gain !== undefined) {
+    playback.gain = ast.gain;
+  }
+
+  return Object.keys(playback).length > 0
+    ? playback
+    : undefined;
+};
+
 const compileAst = (ast: AstNode): Pattern => {
   switch (ast.kind) {
     case "BeatExpression": {
@@ -227,7 +246,7 @@ const compileAst = (ast: AstNode): Pattern => {
         loop: ast.loop,
         layers: [{
           events,
-          playback: { sound: ast.sound }
+          playback: compilePlayback(ast)
         }]
       };
     }
@@ -247,7 +266,7 @@ const compileAst = (ast: AstNode): Pattern => {
         loop: ast.loop,
         layers: [{
           events,
-          playback: { sound: ast.sound }
+          playback: compilePlayback(ast)
         }]
       };
     }
