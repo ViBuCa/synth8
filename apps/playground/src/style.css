@@ -95,3 +95,23 @@ button {
 .site-footer span {
   color: #44475a;
 }
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.example-button {
+  background: #282a36;
+  color: #f8f8f2;
+  border: 1px solid #44475a;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.example-button:hover {
+  background: #44475a;
+}

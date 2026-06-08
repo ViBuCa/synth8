@@ -20,11 +20,34 @@ const initialSource = `song(
   ).offset(8)
 )`;
 
+const examples = {
+  "Full Song": initialSource,
+  "Drum Loop": `song(
+  beat("kick _ snare _").loop(),
+  beat("_ hihat _ hihat").fast(2).loop()
+)`,
+
+  "Bass Loop": `melody("c2 _ g1 _ bb1 _ g1 _")
+  .sound("sawtooth")
+  .loop()`,
+
+  "Chords": `melody("c4+e4+g4 _ f4+a4+c5 _ g4+b4+d5 _ c4+e4+g4")
+  .sound("triangle")`,
+};
+
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <main>
     <h1>Synth8 Playground</h1>
 
     <label for="source">Pattern</label>
+    <label for="source">Pattern</label>
+
+    <div class="examples">
+      ${Object.keys(examples)
+        .map((name) => `<button class="example-button" data-example="${name}">${name}</button>`)
+        .join("")}
+    </div>
+
     <textarea id="source" rows="6">${initialSource}</textarea>
 
     <label for="bpm">BPM</label>
@@ -65,4 +88,17 @@ document.querySelector<HTMLButtonElement>("#play")!.addEventListener("click", as
 
 document.querySelector<HTMLButtonElement>("#stop")!.addEventListener("click", () => {
   stop();
+});
+
+document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const name = button.dataset.example;
+
+    if (!name) {
+      return;
+    }
+
+    sourceInput.value = examples[name as keyof typeof examples];
+    output.textContent = "";
+  });
 });
