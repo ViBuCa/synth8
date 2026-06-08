@@ -2,6 +2,13 @@ import './style.css';
 import { compile } from "@vibuca/synth8-core";
 import { play, stop } from "@vibuca/synth8-player";
 
+type OutputKind = "info" | "success" | "error" | "json";
+
+function setOutput(kind: OutputKind, message: string) {
+  output.className = `output output-${kind}`;
+  output.textContent = message;
+}
+
 const initialSource = `song(
   sequence(
     melody("d4/2 f#4 a4 c5").sound("triangle"),
@@ -114,16 +121,19 @@ document.querySelector<HTMLButtonElement>("#play")!.addEventListener("click", as
     const pattern = compile(sourceInput.value);
     const bpm = Number(bpmInput.value);
 
-    output.textContent = JSON.stringify(pattern, null, 2);
+    setOutput("json", JSON.stringify(pattern, null, 2));
 
     await play(pattern, { bpm });
+
+    output.className = "output output-success";
   } catch (error) {
-    output.textContent = error instanceof Error ? error.message : String(error);
+    setOutput("error", error instanceof Error ? error.message : String(error));
   }
 });
 
 document.querySelector<HTMLButtonElement>("#stop")!.addEventListener("click", () => {
   stop();
+  setOutput("info", "Stopped.");
 });
 
 document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button) => {

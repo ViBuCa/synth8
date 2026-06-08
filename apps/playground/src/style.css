@@ -120,3 +120,23 @@ button {
   background: #8be9fd;
   color: #101018;
 }
+.output {
+  border-left: 4px solid #44475a;
+}
+
+.output-info {
+  border-left-color: #8be9fd;
+}
+
+.output-success {
+  border-left-color: #50fa7b;
+}
+
+.output-error {
+  border-left-color: #ff5555;
+  color: #ffb8b8;
+}
+
+.output-json {
+  border-left-color: #bd93f9;
+}
