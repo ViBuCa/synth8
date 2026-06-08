@@ -15,8 +15,8 @@ type Modifiers = {
   repeat: number;
   loop: boolean;
   offset: number;
-  sound: Waveform;
-  gain: number;
+  sound?: Waveform;
+  gain?: number;
 };
 
 const createState = (tokens: Token[]): ParserState => ({
@@ -111,8 +111,8 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let repeat = 1;
   let loop = false;
   let offset = 0;
-  let gain = 1;
-  let sound: Waveform = 'square';
+  let gain: number | undefined = undefined;
+  let sound: Waveform | undefined = undefined;
 
   while (matchSymbol(state, ".")) {
     const modifier = expectAnyIdentifier(state);

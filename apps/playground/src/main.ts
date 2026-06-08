@@ -40,6 +40,44 @@ const examples = {
 
   "Chords": `melody("c4+e4+g4 _ f4+a4+c5 _ g4+b4+d5 _ c4+e4+g4")
   .sound("triangle")`,
+  "8bit Toccata": `
+  song(
+  sequence(
+    melody("d5/2 c#5/2 d5/2 _ a4/2 g4/2 f4/2 e4/2")
+      .sound("square")
+      .gain(0.45),
+
+    melody("d5/2 e5/2 f5/2 g5/2 a5/2 _ a4/2 _")
+      .sound("square")
+      .gain(0.45),
+
+    melody("bb4/2 a4/2 g4/2 f4/2 e4/2 d4/2 c#4/2 d4/2")
+      .sound("square")
+      .gain(0.45)
+  ).repeat(2),
+
+  sequence(
+    melody("d3/2 _ a2/2 _ d3/2 _ a2/2 _"),
+    melody("bb2/2 _ f2/2 _ c3/2 _ g2/2 _")
+  )
+    .sound("triangle")
+    .gain(0.65)
+    .loop(),
+
+  melody("d4+a4 _ f4+a4 _ e4+g4 _ d4+f4 _")
+    .sound("sawtooth")
+    .gain(0.22)
+    .loop(),
+
+  beat("kick _ _ _ snare _ _ _")
+    .gain(0.55)
+    .loop(),
+
+  beat("_ hihat:0.2 _ hihat:0.15")
+    .fast(2)
+    .gain(0.25)
+    .loop()
+)`
 };
 
 function encodeSource(source: string): string {

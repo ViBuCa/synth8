@@ -107,13 +107,13 @@ Implemented:
 * Transposition
 * Layered playback model
 * Waveform selection
+* Gain
 * Tone.js player
 * Drum synthesizers
 * Test suite
 
 Planned:
 
-* Gain
 * Panning
 * Instrument banks
 * Effects

@@ -6,6 +6,8 @@ This package plays compiled patterns produced by @vibuca/synth8-core.
 
 All musical structure such as repeats, sequences, offsets, durations, transposition and looping is resolved during compilation. The player receives fully compiled events with absolute timing information.
 
+🎹 **Live Plaground:** https://vibuca.github.io/synth8/
+
 ## Install
 
 ```bash
@@ -155,22 +157,35 @@ Playback configuration is stored on pattern layers rather than individual events
 ```
 This allows multiple tracks in the same song to use different synthesizer waveforms while keeping the event model simple.
 
+### Gain
+
+The player supports layer gain compiled by `@vibuca/synth8-core`.
+
+```ts
+song(
+  melody("c5 e5 g5").sound("square").gain(0.7),
+  melody("c2 _ g1 _").sound("triangle").gain(0.4)
+)
+```
+
+The player applies gain per layer, so different melodies, bass lines and drum tracks can be mixed independently.
+
 ## Example
 
 ```ts
 const pattern = compile(`
   song(
-    melody("d4/2 f#4 a4 c5")
-      .sound("triangle"),
+    melody("d5/2 c#5/2 d5/2 _ a4/2 g4/2 f4/2 e4/2")
+      .sound("square")
+      .gain(0.45),
 
-    melody("d3 _ a2 _")
-      .sound("sawtooth")
+    melody("d3/2 _ a2/2 _")
+      .sound("triangle")
+      .gain(0.65)
       .loop(),
 
-    melody("d5+a5 f#5+a5 g5+b5")
-      .sound("square"),
-
-    beat("kick _ snare _")
+    beat("kick _ _ _ snare _ _ _")
+      .gain(0.55)
       .loop()
   )
 `);

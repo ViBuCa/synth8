@@ -22,7 +22,7 @@ const createSynth = (sound: Waveform): Tone.PolySynth<Tone.Synth> => {
         oscillator: {
             type: sound,
         },
-    }).toDestination();
+    });
 };
 
 const playDrum = (value: string, time: number) => {
@@ -96,7 +96,11 @@ export const play = async (
 
     for (const layer of layers) {
         const sound = layer.playback?.sound ?? DEFAULT_SOUND;
-        const synth = createSynth(sound);
+        const gainNode = new Tone.Gain(
+            layer.playback?.gain ?? 1
+        ).toDestination();
+        console.log(layer.playback?.gain ?? 1)
+        const synth = createSynth(sound).connect(gainNode);
 
         for (const event of layer.events) {
             const eventOffset = event.time * secondsPerBeat;

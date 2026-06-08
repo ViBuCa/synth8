@@ -81,6 +81,27 @@ beat("kick:1 snare:0.7 hihat:0.4")
 melody("c4:1 e4:0.6 g4:0.3")
 ```
 
+### Gain
+
+```ts
+melody("c4 e4 g4").gain(0.5)
+beat("kick _ snare _").gain(0.7)
+```
+
+gain() controls the volume of a compiled playback layer.
+
+It uses a value between 0 and 1:
+
+```ts
+0   = silent
+0.5 = half volume
+1   = full volume
+```
+
+Gain is layer-level playback information. It does not modify events.
+
+Velocity controls individual notes or hits. Gain controls the whole layer.
+
 ### Duration
 
 ```ts
