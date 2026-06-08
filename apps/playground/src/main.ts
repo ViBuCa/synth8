@@ -22,7 +22,7 @@ const initialSource = `song(
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <main>
-    <h1>Synt8 Playground</h1>
+    <h1>Synth8 Playground</h1>
 
     <label for="source">Pattern</label>
     <textarea id="source" rows="6">${initialSource}</textarea>
@@ -37,6 +37,13 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 
     <pre id="output"></pre>
   </main>
+  <footer class="site-footer">
+    <a href="https://github.com/ViBuCa/synth8">GitHub</a>
+    <span aria-hidden="true">|</span>
+    <a href="https://www.npmjs.com/package/@vibuca/synth8-core">npm core</a>
+    <span aria-hidden="true">|</span>
+    <a href="https://www.npmjs.com/package/@vibuca/synth8-player">npm player</a>
+  </footer>
 `;
 
 const sourceInput = document.querySelector<HTMLTextAreaElement>("#source")!;
