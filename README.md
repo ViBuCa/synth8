@@ -1,240 +1,117 @@
-# Synt8
+# Synth8
 
-Synt8 is an MIT-licensed pattern music toolkit for TypeScript projects.
+Synth8 is an MIT-licensed music DSL and playback toolkit for TypeScript.
 
-The long-term goal is to provide:
+Inspired by pattern-based composition systems and live-coding environments, Synth8 provides a small declarative language for creating rhythmic and melodic music directly in code.
 
-* A pattern language inspired by live-coding environments
-* A TypeScript parser and compiler
-* A Web Audio / Tone.js playback engine
-* A reusable web editor
-* A browser playground
-* Easy integration with game engines such as Phaser
+Synth8 is designed for:
 
-Synt8 is intended to be MIT licensed and suitable for inclusion in proprietary applications.
+* Games
+* Interactive applications
+* Procedural music
+* Web audio projects
+* Creative coding
 
----
+Unlike many live-coding environments, Synth8 is designed from the ground up for integration into proprietary applications and commercial games.
 
-## Repository Structure
+## Features
 
-```text
-synt8/
-├── apps/
-│   └── playground/
-├── packages/
-│   ├── core/
-│   ├── player/
-│   └── editor/
-├── package.json
-├── pnpm-workspace.yaml
-└── tsconfig.base.json
-```
+### Composition
 
-### Packages
+* Beat patterns
+* Melody patterns
+* Songs
+* Sequences
+* Groups
+* Chords / parallel notes
+* Rests
 
-| Package                     | Purpose                              |
-| --------------------------- | ------------------------------------ |
-| `@vibuca/synth8-core`       | Parser, AST, compiler, pattern model |
-| `@vibuca/synth8-player`     | Audio playback engine                |
-| `@vibuca/synth8-editor`     | Reusable editor component            |
-| `@vibuca/playground`        | Browser-based development playground |
+### Timing
 
----
+* rate()
+* fast()
+* slow()
+* repeat()
+* offset()
+* loop()
 
-## Requirements
+### Musical Expression
 
-* Node.js 22+
-* pnpm 11+
+* Velocity
+* Duration
+* Transposition
 
----
+### Playback Layers
 
-## Initial Setup
+* Multiple independent layers
+* Per-layer waveform selection
+* Future support for gain, panning, effects and instrument banks
 
-Clone the repository:
+### Audio Playback
 
-```bash
-git clone git@github.com:ViBuCa/synth8.git
-cd synt8
-```
+* Tone.js based playback engine
+* Drum synthesizers
+* Polyphonic note playback
+* Loop scheduling
 
-Install dependencies:
-
-```bash
-pnpm install
-```
-
-Build all packages:
-
-```bash
-pnpm build
-```
-
----
-
-## Development
-
-Start the playground:
-
-```bash
-pnpm dev
-```
-
-This launches the development server for:
-
-```text
-apps/playground
-```
-
----
-
-## Building
-
-Build everything:
-
-```bash
-pnpm build
-```
-
-Build a single package:
-
-```bash
-pnpm --filter @vibuca/synth8-core build
-```
-
-or
-
-```bash
-pnpm --filter @vibuca/synth8-player build
-```
-
----
-
-## Workspace Packages
-
-Packages depend on each other using pnpm workspace references:
-
-```json
-{
-  "dependencies": {
-    "@vibuca/syth8-core": "workspace:*"
-  }
-}
-```
-
-This allows local development without publishing packages.
-
----
-
-## Testing
-
-Testing has not yet been configured.
-
-Planned tooling:
-
-* Vitest
-* Playwright
-* GitHub Actions
-
----
-
-## Publishing Packages
-
-Log into npm:
-
-```bash
-pnpm login
-```
-
-Build packages:
-
-```bash
-pnpm build
-```
-
-Publish a package:
-
-```bash
-pnpm --filter @vibuca/synth8-core publish --access public
-```
-
-Publish all public packages:
-
-```bash
-pnpm -r publish --access public
-```
-
-Only packages inside `packages/` should be published.
-
-The playground application should remain private.
-
----
-
-## Local Package Usage
-
-After publishing:
-
-```bash
-pnpm add @vibuca/synth8-core
-```
-
-Example:
+## Example
 
 ```ts
-import { hello } from "@vibuca/synth8-core";
+import { compile } from "@vibuca/synth8-core";
+import { play } from "@vibuca/synth8-player";
 
-console.log(hello());
+const pattern = compile(`
+  song(
+    melody("d5/2 f#5 a5 d6")
+      .sound("square"),
+
+    melody("d3 _ a2 _")
+      .sound("triangle")
+      .loop(),
+
+    beat("kick _ snare _")
+      .loop()
+  )
+`);
+
+await play(pattern, { bpm: 120 });
 ```
 
----
+## Packages
 
-## Git Workflow
+| Package               | Description                           |
+| --------------------- | ------------------------------------- |
+| @vibuca/synth8-core   | Parser, AST and compiler              |
+| @vibuca/synth8-player | Tone.js playback engine               |
+| Playground            | Browser-based development environment |
 
-Create a feature branch:
+## Current Status
 
-```bash
-git checkout -b feature/my-feature
-```
+Implemented:
 
-Commit changes:
+* Parser
+* AST
+* Compiler
+* Repeat
+* Offset
+* Looping
+* Sequence composition
+* Velocity
+* Durations
+* Transposition
+* Layered playback model
+* Waveform selection
+* Tone.js player
+* Drum synthesizers
+* Test suite
 
-```bash
-git add .
-git commit -m "feat: add parser support"
-```
+Planned:
 
-Push:
-
-```bash
-git push origin feature/my-feature
-```
-
----
-
-## License
-
-MIT
-
-```
-Copyright (c) 2026 Vibuca
-```
-
----
-
-## Project Status
-
-Early development.
-
-Current milestone:
-
-* [x] Monorepo setup
-* [x] pnpm workspaces
-* [x] Vite library builds
-* [x] Playground application
-* [x] Pattern parser
-* [x] AST
-* [x] Compiler
-* [x] Audio scheduler
-* [x] Tone.js player
-* [ ] Web editor
-* [ ] MIDI export
-* [ ] Phaser integration examples
+* Gain
+* Panning
+* Instrument banks
+* Effects
+* MIDI export
+* Editor package
+* Phaser examples
+* Procedural composition helpers
