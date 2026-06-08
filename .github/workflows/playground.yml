@@ -28,6 +28,8 @@ jobs:
           cache: pnpm
 
       - run: pnpm install
+      - run: pnpm --filter @vibuca/synth8-core build
+      - run: pnpm --filter @vibuca/synth8-player build
       - run: pnpm --filter @vibuca/playground build
 
       - uses: actions/upload-pages-artifact@v3
