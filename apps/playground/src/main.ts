@@ -81,14 +81,13 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <main>
     <h1>Synth8 Playground</h1>
 
-    <label for="source">Pattern</label>
-    <label for="source">Pattern</label>
-
     <div class="examples">
       ${Object.keys(examples)
     .map((name) => `<button class="example-button" data-example="${name}">${name}</button>`)
     .join("")}
     </div>
+
+    <label for="source">Pattern</label>
 
     <textarea id="source" rows="6">${startupSource}</textarea>
 
@@ -103,6 +102,20 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 
     <pre id="output"></pre>
   </main>
+  <section class="guide">
+    <h2>Mini Guide</h2>
+
+    <div class="guide-grid">
+      <code>beat("kick _ snare _")</code>
+      <code>melody("c4 d4 e4 g4")</code>
+      <code>melody("c4+e4+g4 _ f4+a4+c5")</code>
+      <code>beat("kick _ snare _").loop()</code>
+      <code>melody("c4 d4").repeat(4)</code>
+      <code>beat("hihat _ hihat _").fast(2)</code>
+      <code>melody("c4 e4 g4").transpose(12)</code>
+      <code>sequence(melody("c4 e4"), melody("g4 c5"))</code>
+    </div>
+  </section>
   <footer class="site-footer">
     <a href="https://github.com/ViBuCa/synth8">GitHub</a>
     <span aria-hidden="true">|</span>
