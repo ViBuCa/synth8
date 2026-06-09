@@ -17,6 +17,8 @@ export type PlayOptions = {
 
 const DEFAULT_SOUND: Waveform = "sine";
 
+let activeNodes: Tone.ToneAudioNode[] = [];
+
 const createSynth = (sound: Waveform): Tone.PolySynth<Tone.Synth> => {
     return new Tone.PolySynth(Tone.Synth, {
         oscillator: {
@@ -25,6 +27,13 @@ const createSynth = (sound: Waveform): Tone.PolySynth<Tone.Synth> => {
     });
 };
 
+const disposeActiveNodes = (): void => {
+    for (const node of activeNodes) {
+        node.dispose();
+    }
+
+    activeNodes = [];
+};
 const playDrum = (value: string, time: number) => {
     switch (value) {
         case "kick":
@@ -65,15 +74,11 @@ const playDrum = (value: string, time: number) => {
 };
 
 const getLayers = (pattern: Pattern): PatternLayer[] => {
-    if (pattern.layers.length > 0) {
+    if (pattern.layers?.length > 0) {
         return pattern.layers;
     }
 
-    return [
-        {
-            events: pattern.events,
-        },
-    ];
+    return [{ events: pattern.events }];
 };
 
 export const play = async (
@@ -85,45 +90,48 @@ export const play = async (
     await Tone.start();
 
     const transport = Tone.getTransport();
+
     transport.stop();
     transport.cancel();
+
     transport.bpm.value = bpm;
 
     const secondsPerBeat = 60 / bpm;
     const loopDuration = pattern.length * secondsPerBeat;
 
+    transport.loop = true;
+    transport.loopStart = 0;
+    transport.loopEnd = loopDuration;
+
     const layers = getLayers(pattern);
 
     for (const layer of layers) {
         const sound = layer.playback?.sound ?? DEFAULT_SOUND;
-        const gainNode = new Tone.Gain(
-            layer.playback?.gain ?? 1
-        ).toDestination();
-        console.log(layer.playback?.gain ?? 1)
+        const gain = layer.playback?.gain ?? 1;
+
+        const gainNode = new Tone.Gain(gain).toDestination();
         const synth = createSynth(sound).connect(gainNode);
 
+        activeNodes.push(gainNode, synth);
+
         for (const event of layer.events) {
-            const eventOffset = event.time * secondsPerBeat;
+            const eventTime = event.time * secondsPerBeat;
             const eventDuration = event.dur * secondsPerBeat;
 
-            transport.scheduleRepeat(
-                (time) => {
-                    if (event.type === "drum") {
-                        playDrum(event.value, time);
-                    }
+            transport.schedule((time) => {
+                if (event.type === "drum") {
+                    playDrum(event.value, time);
+                }
 
-                    if (event.type === "note") {
-                        synth.triggerAttackRelease(
-                            event.value,
-                            eventDuration,
-                            time,
-                            event.velocity ?? 0.8
-                        );
-                    }
-                },
-                loopDuration,
-                eventOffset
-            );
+                if (event.type === "note") {
+                    synth.triggerAttackRelease(
+                        event.value,
+                        eventDuration,
+                        time,
+                        event.velocity ?? 0.8
+                    );
+                }
+            }, eventTime);
         }
     }
 
@@ -132,6 +140,10 @@ export const play = async (
 
 export const stop = (): void => {
     const transport = Tone.getTransport();
+
     transport.stop();
     transport.cancel();
+    transport.loop = false;
+
+    disposeActiveNodes();
 };

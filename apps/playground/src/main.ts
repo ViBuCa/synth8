@@ -104,12 +104,18 @@ function decodeSource(encoded: string): string {
 const params = new URLSearchParams(window.location.search);
 
 let startupSource = initialSource;
+let startupBpm = 120;
 
 try {
   const code = params.get("code");
 
   if (code) {
     startupSource = decodeSource(code);
+  }
+
+  const bpm = Number(params.get('bpm'));
+  if (Number.isFinite(bpm) && bpm >= 40 && bpm <= 240) {
+    startupBpm = bpm;
   }
 } catch {
   console.warn("Invalid shared URL");
@@ -130,7 +136,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     <textarea id="source" rows="6">${startupSource}</textarea>
 
     <label for="bpm">BPM</label>
-    <input id="bpm" type="number" value="120" min="40" max="240" />
+    <input id="bpm" type="number" value="${startupBpm}" min="40" max="240" />
 
     <div>
       <button id="play">Play</button>
@@ -201,9 +207,14 @@ document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button)
 
   document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", async () => {
     const encoded = encodeSource(sourceInput.value);
+    const bpm = Number(bpmInput.value);
 
     const url = new URL(window.location.href);
     url.searchParams.set("code", encoded);
+
+    if (Number.isFinite(bpm)) {
+      url.searchParams.set("bpm", String(bpm));
+    }
 
     await navigator.clipboard.writeText(url.toString());
 
