@@ -123,7 +123,6 @@ export const play = async (
             transport.schedule((time) => {
                 if (event.type === "drum") {
                     playDrum(drums, event.value, time, event.velocity ?? 1);
-                    console.log("drum", event.value, event.velocity, layer.playback?.gain);
                 }
 
                 if (event.type === "note") {
