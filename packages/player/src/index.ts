@@ -1,14 +1,5 @@
 import * as Tone from "tone";
-import {
-    kick,
-    snare,
-    hihat,
-    clap,
-    openhat,
-    tom,
-    cowbell,
-    rim,
-} from "./drum/drum-synths";
+import { createDrums } from "./drum/drum-synths";
 import type { Pattern, PatternLayer, Waveform } from "@vibuca/synth8-core";
 
 export type PlayOptions = {
@@ -18,6 +9,7 @@ export type PlayOptions = {
 const DEFAULT_SOUND: Waveform = "sine";
 
 let activeNodes: Tone.ToneAudioNode[] = [];
+let activeDisposables: { dispose: () => void}[] = []
 
 const createSynth = (sound: Waveform): Tone.PolySynth<Tone.Synth> => {
     return new Tone.PolySynth(Tone.Synth, {
@@ -32,40 +24,47 @@ const disposeActiveNodes = (): void => {
         node.dispose();
     }
 
+    for (const disposable of activeDisposables) {
+        disposable.dispose();
+    }
+
     activeNodes = [];
 };
-const playDrum = (value: string, time: number) => {
+
+type DrumKit = ReturnType<typeof createDrums>;
+
+const playDrum = (drums: DrumKit, value: string, time: number, velocity = 1) => {
     switch (value) {
         case "kick":
-            kick.triggerAttackRelease("C1", "8n", time);
+            drums.kick.triggerAttackRelease("C1", "8n", time, velocity);
             break;
 
         case "snare":
-            snare.triggerAttackRelease("16n", time);
+            drums.snare.triggerAttackRelease("16n", time, velocity);
             break;
 
         case "clap":
-            clap.triggerAttackRelease("16n", time);
+            drums.clap.triggerAttackRelease("16n", time, velocity);
             break;
 
         case "hihat":
-            hihat.triggerAttackRelease("32n", time);
+            drums.hihat.triggerAttackRelease("16n", time, velocity);
             break;
 
         case "openhat":
-            openhat.triggerAttackRelease("8n", time);
+            drums.openhat.triggerAttackRelease("8n", time, velocity);
             break;
 
         case "tom":
-            tom.triggerAttackRelease("G1", "8n", time);
+            drums.tom.triggerAttackRelease("G1", "8n", time, velocity);
             break;
 
         case "rim":
-            rim.triggerAttackRelease("32n", time);
+            drums.rim.triggerAttackRelease("C5", "32n", time, velocity);
             break;
 
         case "cowbell":
-            cowbell.triggerAttackRelease("16n", time);
+            drums.cowbell.triggerAttackRelease("16n", time, velocity);
             break;
 
         default:
@@ -111,8 +110,11 @@ export const play = async (
 
         const gainNode = new Tone.Gain(gain).toDestination();
         const synth = createSynth(sound).connect(gainNode);
+        const drums = createDrums();
+        drums.connect(gainNode);
 
         activeNodes.push(gainNode, synth);
+        activeDisposables.push(drums);
 
         for (const event of layer.events) {
             const eventTime = event.time * secondsPerBeat;
@@ -120,7 +122,8 @@ export const play = async (
 
             transport.schedule((time) => {
                 if (event.type === "drum") {
-                    playDrum(event.value, time);
+                    playDrum(drums, event.value, time, event.velocity ?? 1);
+                    console.log("drum", event.value, event.velocity, layer.playback?.gain);
                 }
 
                 if (event.type === "note") {

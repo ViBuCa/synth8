@@ -1,76 +1,104 @@
 import * as Tone from "tone";
 
-const kick = new Tone.MembraneSynth().toDestination();
+export const createDrums = () => {
 
-const snare = new Tone.NoiseSynth({
-    noise: { type: "white" },
-    envelope: {
-        attack: 0.001,
-        decay: 0.15,
-        sustain: 0
-    }
-}).toDestination();
+    const kick = new Tone.MembraneSynth();
 
-const hihat = new Tone.MetalSynth({
-    envelope: {
-        attack: 0.001,
-        decay: 0.05,
-        release: 0.01
-    },
-    harmonicity: 5.1,
-    modulationIndex: 32,
-    resonance: 4000,
-    octaves: 1.5
-})
-hihat.frequency.value = 300;
-hihat.toDestination();
+    const snare = new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: {
+            attack: 0.001,
+            decay: 0.15,
+            sustain: 0
+        }
+    });
 
-const clap = new Tone.NoiseSynth({
-    noise: { type: "white" },
-    envelope: {
+    const hihat = new Tone.NoiseSynth({
+        noise: {
+            type: "white",
+        },
+        envelope: {
+            attack: 0.001,
+            decay: 0.08,
+            sustain: 0,
+            release: 0.02,
+        },
+    });
+
+    const hihatGain = new Tone.Gain(6);
+
+    hihat.connect(hihatGain);
+
+    const clap = new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: {
+            attack: 0.001,
+            decay: 0.12,
+            sustain: 0,
+        },
+    });
+
+    const openhat = new Tone.NoiseSynth({
+        noise: {
+            type: "white",
+        },
+        envelope: {
+            attack: 0.001,
+            decay: 0.35,
+            sustain: 0,
+            release: 0.08,
+        },
+    });
+
+    const tom = new Tone.MembraneSynth();
+
+    const rim = new Tone.MembraneSynth({
+        pitchDecay: 0.005,
+        octaves: 2,
+        oscillator: {
+            type: "square",
+        },
+        envelope: {
+            attack: 0.001,
+            decay: 0.05,
+            sustain: 0,
+            release: 0.01,
+        },
+    });
+
+    const cowbell = new Tone.AmplitudeEnvelope({
         attack: 0.001,
-        decay: 0.12,
+        decay: 0.18,
         sustain: 0,
-    },
-}).toDestination();
+        release: 0.03,
+    });
 
-const openhat = new Tone.MetalSynth({
-    envelope: {
-        attack: 0.001,
-        decay: 0.35,
-        release: 0.1,
-    },
-    harmonicity: 5.1,
-    modulationIndex: 24,
-    resonance: 5000,
-    octaves: 1.5,
-});
-openhat.frequency.value = 350;
-openhat.toDestination();
+    const cowbellA = new Tone.Oscillator(540, "square").connect(cowbell);
+    const cowbellB = new Tone.Oscillator(800, "square").connect(cowbell);
 
-const tom = new Tone.MembraneSynth().toDestination();
+    cowbellA.start();
+    cowbellB.start();
 
-const rim = new Tone.MetalSynth({
-    envelope: {
-        attack: 0.001,
-        decay: 0.08,
-        release: 0.01,
-    },
-});
-rim.frequency.value = 800;
-rim.toDestination();
+    const connectableInstruments = [
+        kick, snare, clap, openhat, tom, rim, cowbell
+    ];
 
-const cowbell = new Tone.AmplitudeEnvelope({
-    attack: 0.001,
-    decay: 0.18,
-    sustain: 0,
-    release: 0.03,
-}).toDestination();
+    return {
+        kick, snare, hihat, clap, openhat, tom, rim, cowbell,
+        connect(output: Tone.ToneAudioNode) {
+            hihatGain.connect(output);
+            for (const instrument of connectableInstruments) {
+                instrument.connect(output);
+            }
+        },
 
-const cowbellA = new Tone.Oscillator(540, "square").connect(cowbell);
-const cowbellB = new Tone.Oscillator(800, "square").connect(cowbell);
+        dispose() {
+            hihat.dispose();
+            hihatGain.dispose();
+            for (const instrument of connectableInstruments) {
+                instrument.dispose();
+            }
+        },
 
-cowbellA.start();
-cowbellB.start();
-
-export { kick, snare, hihat, clap, openhat, tom, rim, cowbell };
+    };
+}
