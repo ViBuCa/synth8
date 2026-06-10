@@ -204,20 +204,20 @@ document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button)
     sourceInput.value = examples[name as keyof typeof examples];
     output.textContent = "";
   });
+});
 
-  document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", async () => {
-    const encoded = encodeSource(sourceInput.value);
-    const bpm = Number(bpmInput.value);
+document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", async () => {
+  const encoded = encodeSource(sourceInput.value);
+  const bpm = Number(bpmInput.value);
 
-    const url = new URL(window.location.href);
-    url.searchParams.set("code", encoded);
+  const url = new URL(window.location.href);
+  url.searchParams.set("code", encoded);
 
-    if (Number.isFinite(bpm)) {
-      url.searchParams.set("bpm", String(bpm));
-    }
+  if (Number.isFinite(bpm)) {
+    url.searchParams.set("bpm", String(bpm));
+  }
 
-    await navigator.clipboard.writeText(url.toString());
+  await navigator.clipboard.writeText(url.toString());
 
-    output.textContent = "Share link copied to clipboard.";
-  });
+  output.textContent = "Share link copied to clipboard.";
 });
