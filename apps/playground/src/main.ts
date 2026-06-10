@@ -142,8 +142,12 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         type="file"
         accept=".mid,.midi,audio/midi"
       />
-    </div>
+    <label class="option-row">
+      <input id="split-piano" type="checkbox" checked />
+      Split piano roll into lead/bass
+    </label>
 
+    </div>
     <label for="source">Pattern</label>
 
     <textarea id="source" rows="6">${startupSource}</textarea>
@@ -238,6 +242,9 @@ document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", a
 const midiInput =
   document.querySelector<HTMLInputElement>("#midi")!;
 
+const splitPianoInput =
+  document.querySelector<HTMLInputElement>("#split-piano")!;
+
 midiInput.addEventListener("change", async () => {
   const file = midiInput.files?.[0];
 
@@ -250,9 +257,11 @@ midiInput.addEventListener("change", async () => {
 
     const imported = parseMidi(buffer);
 
+    const splitPiano = splitPianoInput.checked;
+
     sourceInput.value = midiToSynth8Source(imported, {
       step: 0.25,
-      mode: "split-piano",
+      mode: splitPiano ? "split-piano" : "literal",
       splitPiano: {
         sourceTracks: ["track1", "piano"],
       },
@@ -266,7 +275,9 @@ midiInput.addEventListener("change", async () => {
 
     setOutput(
       "success",
-      `Imported ${file.name}`
+      splitPiano
+        ? `Imported ${file.name} with piano split.`
+        : `Imported ${file.name} without piano split.`
     );
   } catch (error) {
     setOutput(
