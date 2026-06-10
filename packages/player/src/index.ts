@@ -9,7 +9,7 @@ export type PlayOptions = {
 const DEFAULT_SOUND: Waveform = "sine";
 
 let activeNodes: Tone.ToneAudioNode[] = [];
-let activeDisposables: { dispose: () => void}[] = []
+let activeDisposables: { dispose: () => void }[] = []
 
 const createSynth = (sound: Waveform): Tone.PolySynth<Tone.Synth> => {
     return new Tone.PolySynth(Tone.Synth, {
@@ -56,7 +56,16 @@ const playDrum = (drums: DrumKit, value: string, time: number, velocity = 1) => 
             break;
 
         case "tom":
-            drums.tom.triggerAttackRelease("G1", "8n", time, velocity);
+        case "midtom":
+            drums.midtom.triggerAttackRelease("G1", "8n", time, velocity);
+            break;
+
+        case "lowtom":
+            drums.lowtom.triggerAttackRelease("C1", "8n", time, velocity);
+            break;
+
+        case "hitom":
+            drums.hitom.triggerAttackRelease("C2", "8n", time, velocity);
             break;
 
         case "rim":
@@ -65,6 +74,22 @@ const playDrum = (drums: DrumKit, value: string, time: number, velocity = 1) => 
 
         case "cowbell":
             drums.cowbell.triggerAttackRelease("16n", time, velocity);
+            break;
+
+        case "crash":
+            drums.crash.triggerAttackRelease("2n", time, velocity);
+            break;
+
+        case "ride":
+            drums.ride.triggerAttackRelease("16n", time, velocity);
+            break;
+
+        case "tambourine":
+            drums.tambourine.triggerAttackRelease("16n", time, velocity);
+            break;
+
+        case "shaker":
+            drums.shaker.triggerAttackRelease("32n", time, velocity);
             break;
 
         default:

@@ -278,9 +278,15 @@ snare
 clap
 hihat
 openhat
-tom
+lowtom
+midtom
+hitom
 rim
 cowbell
+crash
+ride
+tambourine
+shaker
 ```
 
 Use `_` for rests.

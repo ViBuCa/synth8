@@ -50,7 +50,9 @@ export const createDrums = () => {
         },
     });
 
-    const tom = new Tone.MembraneSynth();
+    const lowtom = new Tone.MembraneSynth();
+    const midtom = new Tone.MembraneSynth();
+    const hitom = new Tone.MembraneSynth();
 
     const rim = new Tone.MembraneSynth({
         pitchDecay: 0.005,
@@ -79,12 +81,56 @@ export const createDrums = () => {
     cowbellA.start();
     cowbellB.start();
 
+    const crash = new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: {
+            attack: 0.001,
+            decay: 0.9,
+            sustain: 0,
+            release: 0.25,
+        },
+    });
+
+    const ride = new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: {
+            attack: 0.001,
+            decay: 0.45,
+            sustain: 0,
+            release: 0.12,
+        },
+    });
+
+    const tambourine = new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: {
+            attack: 0.001,
+            decay: 0.12,
+            sustain: 0,
+            release: 0.03,
+        },
+    });
+
+    const shaker = new Tone.NoiseSynth({
+        noise: { type: "white" },
+        envelope: {
+            attack: 0.001,
+            decay: 0.05,
+            sustain: 0,
+            release: 0.01,
+        },
+    });
+
     const connectableInstruments = [
-        kick, snare, clap, openhat, tom, rim, cowbell
+        kick, snare, clap, openhat, rim, cowbell,
+        crash, ride, tambourine, shaker,
+        lowtom, midtom, hitom
     ];
 
     return {
-        kick, snare, hihat, clap, openhat, tom, rim, cowbell,
+        kick, snare, hihat, clap, openhat, rim, cowbell,
+        crash, ride, tambourine, shaker,
+        lowtom, midtom, hitom,
         connect(output: Tone.ToneAudioNode) {
             hihatGain.connect(output);
             for (const instrument of connectableInstruments) {

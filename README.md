@@ -85,11 +85,12 @@ await play(pattern, { bpm: 120 });
 
 ## Packages
 
-| Package               | Description                           |
-| --------------------- | ------------------------------------- |
-| @vibuca/synth8-core   | Parser, AST and compiler              |
-| @vibuca/synth8-player | Tone.js playback engine               |
-| Playground            | Browser-based development environment |
+| Package                    | Description                           |
+| -------------------------- | ------------------------------------- |
+| @vibuca/synth8-core        | Parser, AST and compiler              |
+| @vibuca/synth8-player      | Tone.js playback engine               |
+| @vibuca/synth8-import-midi | Midi importer for synth8              |
+| Playground                 | Browser-based development environment |
 
 ## Current Status
 

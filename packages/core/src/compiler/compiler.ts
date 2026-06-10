@@ -12,8 +12,15 @@ const VALID_DRUMS = new Set([
   "hihat",
   "openhat",
   "tom",
+  "lowtom",
+  "midtom",
+  "hitom",
   "rim",
   "cowbell",
+  "crash",
+  "ride",
+  "tambourine",
+  "shaker",
 ]);
 
 const validateSound = (sound: string): void => {
