@@ -1,6 +1,10 @@
 import './style.css';
 import { compile } from "@vibuca/synth8-core";
 import { play, stop } from "@vibuca/synth8-player";
+import {
+  parseMidi,
+  midiToSynth8Source,
+} from "@vibuca/synth8-import-midi";
 
 type OutputKind = "info" | "success" | "error" | "json";
 
@@ -131,6 +135,15 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     .join("")}
     </div>
 
+    <div class="examples">
+      <label for="midi">Import MIDI</label>
+      <input
+        id="midi"
+        type="file"
+        accept=".mid,.midi,audio/midi"
+      />
+    </div>
+
     <label for="source">Pattern</label>
 
     <textarea id="source" rows="6">${startupSource}</textarea>
@@ -220,4 +233,47 @@ document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", a
   await navigator.clipboard.writeText(url.toString());
 
   output.textContent = "Share link copied to clipboard.";
+});
+
+const midiInput =
+  document.querySelector<HTMLInputElement>("#midi")!;
+
+midiInput.addEventListener("change", async () => {
+  const file = midiInput.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  try {
+    const buffer = await file.arrayBuffer();
+
+    const imported = parseMidi(buffer);
+
+    sourceInput.value = midiToSynth8Source(imported, {
+      step: 0.25,
+      mode: "split-piano",
+      splitPiano: {
+        sourceTracks: ["track1", "piano"],
+      },
+      mapDrums: true,
+      drums: {
+        sourceTracks: ["drums"],
+      },
+      trackOrder: ["lead", "bass", "drums"],
+      compressSustains: true,
+    });
+
+    setOutput(
+      "success",
+      `Imported ${file.name}`
+    );
+  } catch (error) {
+    setOutput(
+      "error",
+      error instanceof Error
+        ? error.message
+        : String(error)
+    );
+  }
 });

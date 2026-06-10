@@ -1,5 +1,6 @@
 import { ImportedMidiSong, MidiToSynth8Options, SlotNote } from "../model";
 import { noteToToken, quantize } from "../utils";
+import { compressSustainRests } from "./sustain-helper";
 
 export const midiToPatternSource = (
     song: ImportedMidiSong,
@@ -47,6 +48,8 @@ export const midiToPatternSource = (
             );
         }
     }
+    const finalParts =
+        options.compressSustains === false ? parts : compressSustainRests(parts);
 
-    return `${wrapper}("${parts.join(" ")}")`;
+    return `${wrapper}("${finalParts.join(" ")}")`;
 }

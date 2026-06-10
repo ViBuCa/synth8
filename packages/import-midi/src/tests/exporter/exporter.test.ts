@@ -81,7 +81,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4/2 _ d4")`
+            `melody("c4/2 d4")`
         );
     });
 
@@ -123,6 +123,23 @@ describe("midiToMelodySource", () => {
         expect(midiToMelodySource(song, { step: 0.25, includeVelocity: true })).toBe(
             `melody("c4/2:0.6")`
         );
+    });
+
+    it("can keep explicit rests under sustained notes", () => {
+        const song: ImportedMidiSong = {
+            length: 1,
+            notes: [
+                { track: "lead", time: 0, dur: 0.5, midi: 60, name: "c4", velocity: 1 },
+                { track: "lead", time: 0.5, dur: 0.25, midi: 62, name: "d4", velocity: 1 },
+            ],
+        };
+
+        expect(
+            midiToMelodySource(song, {
+                step: 0.25,
+                compressSustains: false,
+            })
+        ).toBe(`melody("c4/2 _ d4")`);
     });
 });
 

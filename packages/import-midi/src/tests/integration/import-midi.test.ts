@@ -84,7 +84,7 @@ describe("MIDI import integration", () => {
         const song = parseMidi(buffer);
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4/2 _ d4")`
+            `melody("c4/2 d4")`
         );
     });
 
@@ -121,6 +121,31 @@ describe("MIDI import integration", () => {
       song(
         melody("c5"),
         melody("c3")
+      )
+    `)
+        );
+    });
+
+    it("parses, maps drums, and exports beat", () => {
+        const buffer = createMidiBuffer([
+            { track: "drums", midi: 36, time: 0, duration: 0.25 },
+            { track: "drums", midi: 38, time: 0.5, duration: 0.25 },
+        ]);
+
+        const song = parseMidi(buffer);
+
+        expect(
+            normalizeSource(
+                midiToSynth8Source(song, {
+                    step: 0.25,
+                    mapDrums: true,
+                    trackOrder: ["drums"],
+                })
+            )
+        ).toBe(
+            normalizeSource(`
+      song(
+        beat("kick _ snare")
       )
     `)
         );

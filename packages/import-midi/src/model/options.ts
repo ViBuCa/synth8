@@ -3,6 +3,7 @@ export type MidiToSynth8Options = {
     track?: string;
     includeVelocity?: boolean;
     trackOrder?: string[];
+    compressSustains?: boolean;
 };
 
 export type SlotNote = {
@@ -13,6 +14,7 @@ export type SplitPianoOptions = {
     splitMidi?: number;
     leadTrack?: string;
     bassTrack?: string;
+    sourceTracks?: string[];
 };
 
 export type MidiImportMode = "literal" | "split-piano";
@@ -25,6 +27,7 @@ export type MidiToSynth8SourceOptions = MidiToSynth8Options & {
 };
 
 export type MapDrumsOptions = {
-  drumTrack?: string;
-  drumMap?: Record<number, string>;
+    drumTrack?: string;
+    sourceTracks?: string[];
+    drumMap?: Record<number, string>;
 };

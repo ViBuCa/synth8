@@ -68,11 +68,16 @@ export const mapDrumsSong = (
     options: MapDrumsOptions = {}
 ): ImportedMidiSong => {
     const drumTrack = options.drumTrack ?? "drums";
+    const sourceTracks = options.sourceTracks;
     const drumMap = options.drumMap ?? DEFAULT_DRUM_MAP;
 
     return {
         length: song.length,
         notes: song.notes.map((note) => {
+            if (sourceTracks && !sourceTracks.includes(note.track)) {
+                return note;
+            }
+
             const drum = drumMap[note.midi];
 
             if (!drum) {
