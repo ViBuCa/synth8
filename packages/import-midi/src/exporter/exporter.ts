@@ -8,12 +8,21 @@ export const midiToSynth8Source = (
     song: ImportedMidiSong,
     options: MidiToSynth8SourceOptions = {}
 ): string => {
-    const mode = options.mode ?? "literal";
+    let transformedSong = song;
 
-    const transformedSong =
-        mode === "split-piano"
-            ? splitPianoSong(song, options.splitPiano)
-            : song;
+    if (options.mapDrums) {
+        transformedSong = mapDrumsSong(
+            transformedSong,
+            options.drums
+        );
+    }
+
+    if ((options.mode ?? "literal") === "split-piano") {
+        transformedSong = splitPianoSong(
+            transformedSong,
+            options.splitPiano
+        );
+    }
 
     return midiToSongSource(transformedSong, options);
 }

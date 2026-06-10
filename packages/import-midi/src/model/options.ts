@@ -1,5 +1,14 @@
-import { MidiToSynth8Options } from "./mapping";
+export type MidiToSynth8Options = {
+    step?: number;
+    track?: string;
+    includeVelocity?: boolean;
+    trackOrder?: string[];
+};
 
+export type SlotNote = {
+    midi: number;
+    token: string;
+}
 export type SplitPianoOptions = {
     splitMidi?: number;
     leadTrack?: string;
@@ -11,6 +20,8 @@ export type MidiImportMode = "literal" | "split-piano";
 export type MidiToSynth8SourceOptions = MidiToSynth8Options & {
     mode?: MidiImportMode;
     splitPiano?: SplitPianoOptions;
+    mapDrums?: boolean;
+    drums?: MapDrumsOptions;
 };
 
 export type MapDrumsOptions = {
