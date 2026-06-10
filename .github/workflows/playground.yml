@@ -30,6 +30,7 @@ jobs:
       - run: pnpm install
       - run: pnpm --filter @vibuca/synth8-core build
       - run: pnpm --filter @vibuca/synth8-player build
+      - run: pnpm --filter @vibuca/synth8-import-midi build
       - run: pnpm --filter @vibuca/playground build
 
       - uses: actions/upload-pages-artifact@v3
