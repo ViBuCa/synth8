@@ -142,10 +142,10 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         type="file"
         accept=".mid,.midi,audio/midi"
       />
-    <label class="option-row">
-      <input id="split-piano" type="checkbox" checked />
-      Split piano roll into lead/bass
-    </label>
+    <div class="option-row">
+      <span><input id="split-piano" type="checkbox" checked /></span>
+      <span>Split piano roll into lead/bass</span>
+    </div>
 
     </div>
     <label for="source">Pattern</label>
