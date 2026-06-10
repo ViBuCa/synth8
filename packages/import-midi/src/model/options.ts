@@ -1,0 +1,19 @@
+import { MidiToSynth8Options } from "./mapping";
+
+export type SplitPianoOptions = {
+    splitMidi?: number;
+    leadTrack?: string;
+    bassTrack?: string;
+};
+
+export type MidiImportMode = "literal" | "split-piano";
+
+export type MidiToSynth8SourceOptions = MidiToSynth8Options & {
+    mode?: MidiImportMode;
+    splitPiano?: SplitPianoOptions;
+};
+
+export type MapDrumsOptions = {
+  drumTrack?: string;
+  drumMap?: Record<number, string>;
+};

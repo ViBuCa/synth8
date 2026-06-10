@@ -5,6 +5,8 @@ export type ImportedMidiNote = {
     midi: number;
     name: string;
     velocity: number;
+    kind?: 'note' | 'drum';
+    drum?: string;
 };
 
 export type ImportedMidiSong = {

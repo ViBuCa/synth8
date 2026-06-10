@@ -1,7 +1,7 @@
 import { Midi } from "@tonejs/midi";
 import { describe, expect, it } from "vitest";
 import { parseMidi } from "../../parser";
-import { midiToMelodySource } from "../../exporter/simple-exporter";
+import { midiToMelodySource } from "../../exporter/exporter";
 
 function createTestMidiBuffer(): ArrayBuffer {
     const midi = new Midi();

@@ -1,0 +1,15 @@
+export const DEFAULT_DRUM_MAP: Record<number, string> = {
+    36: "kick",
+    38: "snare",
+    40: "snare",
+    42: "hihat",
+    44: "hihat",
+    46: "openhat",
+    45: "tom",
+    47: "tom",
+    48: "tom",
+    50: "tom",
+    37: "rim",
+    39: "clap",
+    56: "cowbell",
+};
