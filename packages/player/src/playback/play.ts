@@ -36,7 +36,12 @@ export const play = async (
         const sound = layer.playback?.sound ?? DEFAULT_SOUND;
         const gain = layer.playback?.gain ?? 1;
 
-        const gainNode = new Tone.Gain(gain).toDestination();
+        const gainNode = new Tone.Gain(gain);
+        const panner = new Tone.Panner(layer.playback?.pan ?? 0);
+
+        gainNode.connect(panner);
+        panner.toDestination();
+
         const synth = createSynth(sound).connect(gainNode);
         const drums = createDrums();
         drums.connect(gainNode);

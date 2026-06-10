@@ -216,6 +216,7 @@ const compileMelodySteps = (
 const compilePlayback = (ast: {
   sound?: Waveform;
   gain?: number;
+  pan?: number;
 }): PlaybackConfig | undefined => {
   const playback: PlaybackConfig = {};
 
@@ -227,9 +228,25 @@ const compilePlayback = (ast: {
     playback.gain = ast.gain;
   }
 
+  if (ast.pan !== undefined) {
+    playback.pan = ast.pan;
+  }
+
   return Object.keys(playback).length > 0
     ? playback
     : undefined;
+};
+
+const mergePlayback = (
+  parent?: PlaybackConfig,
+  child?: PlaybackConfig
+): PlaybackConfig | undefined => {
+  if (!parent && !child) return undefined;
+
+  return {
+    ...parent,
+    ...child,
+  };
 };
 
 const compileAst = (ast: AstNode): Pattern => {
@@ -309,12 +326,14 @@ const compileAst = (ast: AstNode): Pattern => {
       let sequenceLength = 0;
       const sequenceLayers: Pattern["layers"] = [];
 
+      const sequencePlayback = compilePlayback(ast);
       for (const patternAst of ast.patterns) {
         const pattern = compileAst(patternAst);
 
         sequenceLayers.push(
           ...pattern.layers.map((layer) => ({
             ...layer,
+            playback: mergePlayback(sequencePlayback, layer.playback),
             events: layer.events.map((event) => ({
               ...event,
               time: event.time + sequenceLength,

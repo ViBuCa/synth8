@@ -10,21 +10,20 @@ type Modifiers = {
   repeat: number;
   offset: number;
   loop: boolean;
+  sound?: Waveform;
+  gain?: number;
+  pan?: number;
 }
 
 export type SequenceExpression = {
   kind: "SequenceExpression";
   patterns: AstNode[];
-  sound?: Waveform;
-  gain?: number;
 } & Modifiers;
 
 export type BeatExpression = {
   kind: "BeatExpression";
   steps: BeatStep[];
   rate: number;
-  sound?: Waveform;
-  gain?: number;
 } & Modifiers;
 
 export type SongExpression = {
@@ -37,8 +36,6 @@ export type MelodyExpression = {
   notes: MelodyStep[];
   rate: number;
   transpose: number;
-  sound?: Waveform;
-  gain?: number;
 } & Modifiers;
 
 export type MelodyStep =

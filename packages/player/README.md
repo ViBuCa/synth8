@@ -170,6 +170,19 @@ song(
 
 The player applies gain per layer, so different melodies, bass lines and drum tracks can be mixed independently.
 
+### Stereo pan
+
+The player supports layer-level stereo panning via `playback.pan`.
+
+```ts
+melody("c4 e4 g4")
+  .sound("square")
+  .gain(0.4)
+  .pan(-0.5)
+```
+
+Internally, each layer is routed through its own gain and pan nodes before reaching the audio destination.
+
 ## Example
 
 ```ts

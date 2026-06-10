@@ -51,7 +51,8 @@ Unlike many live-coding environments, Synth8 is designed from the ground up for 
 
 * Multiple independent layers
 * Per-layer waveform selection
-* Future support for gain, panning, effects and instrument banks
+* Support for gain, panning
+* Future support for effects and instrument banks
 
 ### Audio Playback
 
@@ -67,17 +68,21 @@ import { compile } from "@vibuca/synth8-core";
 import { play } from "@vibuca/synth8-player";
 
 const pattern = compile(`
-  song(
-    melody("d5/2 f#5 a5 d6")
-      .sound("square"),
+song(
+  melody("c5 e5 g5 c6")
+    .sound("square")
+    .gain(0.4)
+    .pan(-0.6),
 
-    melody("d3 _ a2 _")
-      .sound("triangle")
-      .loop(),
+  melody("c3 g3 c3 g3")
+    .sound("triangle")
+    .gain(0.6)
+    .pan(0.6),
 
-    beat("kick _ snare _")
-      .loop()
-  )
+  beat("kick hihat snare hihat")
+    .gain(0.5)
+    .loop()
+)
 `);
 
 await play(pattern, { bpm: 120 });
@@ -112,10 +117,10 @@ Implemented:
 * Tone.js player
 * Drum synthesizers
 * Test suite
+* Panning
 
 Planned:
 
-* Panning
 * Instrument banks
 * Effects
 * MIDI export

@@ -409,4 +409,59 @@ describe("compile", () => {
       },
     ]);
   });
+
+  it("stores pan on melody layer playback config", () => {
+    expect(compile('melody("c4 e4").pan(-0.5)').layers).toEqual([
+      {
+        playback: { pan: -0.5 },
+        events: [
+          { time: 0, dur: 1, type: "note", value: "c4" },
+          { time: 1, dur: 1, type: "note", value: "e4" },
+        ],
+      },
+    ]);
+  });
+
+  it("stores pan on beat layer playback config", () => {
+    expect(compile('beat("kick snare").pan(0.75)').layers).toEqual([
+      {
+        playback: { pan: 0.75 },
+        events: [
+          { time: 0, dur: 1, type: "drum", value: "kick" },
+          { time: 1, dur: 1, type: "drum", value: "snare" },
+        ],
+      },
+    ]);
+  });
+
+  it("keeps pan out of events", () => {
+    const pattern = compile('melody("c4 e4").pan(0.25)');
+
+    expect(pattern.events).toEqual([
+      { time: 0, dur: 1, type: "note", value: "c4" },
+      { time: 1, dur: 1, type: "note", value: "e4" },
+    ]);
+  });
+
+  it("combines sound gain and pan on playback config", () => {
+    expect(
+      compile('melody("c4").sound("square").gain(0.4).pan(-1)').layers[0]
+        .playback
+    ).toEqual({
+      sound: "square",
+      gain: 0.4,
+      pan: -1,
+    });
+  });
+
+  it("applies sequence pan as layer playback default", () => {
+    const pattern = compile(`
+    sequence(
+      melody("c4"),
+      melody("e4")
+    ).pan(0.5)
+  `);
+
+    expect(pattern.layers[0].playback).toEqual({ pan: 0.5 });
+  });
 });

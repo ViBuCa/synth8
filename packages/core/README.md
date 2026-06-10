@@ -102,6 +102,23 @@ Gain is layer-level playback information. It does not modify events.
 
 Velocity controls individual notes or hits. Gain controls the whole layer.
 
+## Pan
+
+Use `.pan(value)` to place a layer in the stereo field.
+
+```ts
+melody("c4 e4 g4").pan(-0.5) // left
+melody("c3 g3 c4").pan(0.5)  // right
+```
+
+Pan values use the range:
+
+-1 full left
+0 center
+1 full right
+
+Pan is stored on the layer playback config. It is not stored on individual events.
+
 ### Duration
 
 ```ts

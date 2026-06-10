@@ -1,4 +1,5 @@
 import * as Tone from "tone";
+import { disposeActiveNodes } from "./lifecycle";
 
 
 export const stop = (): void => {
