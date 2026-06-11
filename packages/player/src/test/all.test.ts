@@ -6,6 +6,7 @@ const scheduledCallbacks: Array<{ callback: (time: number) => void; time: number
 const transport = {
     stop: vi.fn(),
     cancel: vi.fn(),
+    pause: vi.fn(),
     start: vi.fn(),
     schedule: vi.fn((callback: (time: number) => void, time: number) => {
         scheduledCallbacks.push({ callback, time });
@@ -15,15 +16,46 @@ const transport = {
     loopStart: 0,
     loopEnd: 0,
 };
+const context = {
+    lookAhead: 0.1,
+    updateInterval: 0.05,
+};
 
 const triggerAttackRelease = vi.fn();
 const connect = vi.fn(function (this: unknown) {
     return this;
 });
 const dispose = vi.fn();
+const playerStart = vi.fn();
+const playerStop = vi.fn();
+const playerToDestination = vi.fn(function (this: unknown) {
+    return this;
+});
+const playerInstances: Array<{
+    buffer: unknown;
+    loop: boolean;
+    loopStart: number;
+    loopEnd: number;
+}> = [];
+const offline = vi.fn(async (callback: (context: { transport: typeof transport }) => void) => {
+    callback({ transport });
+    return "rendered-buffer";
+});
 
 vi.mock("tone", () => {
     class Gain {
+        value: number;
+
+        constructor(value: number) {
+            this.value = value;
+        }
+
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
+    class Panner {
         value: number;
 
         constructor(value: number) {
@@ -49,10 +81,32 @@ vi.mock("tone", () => {
 
     class Synth { }
 
+    class Player {
+        buffer: unknown;
+        loop = false;
+        loopStart = 0;
+        loopEnd = 0;
+
+        constructor(buffer: unknown) {
+            this.buffer = buffer;
+            playerInstances.push(this);
+        }
+
+        toDestination = playerToDestination;
+        start = playerStart;
+        stop = playerStop;
+        dispose = dispose;
+    }
+
     return {
         start: vi.fn(() => Promise.resolve()),
+        immediate: vi.fn(() => 0),
         getTransport: vi.fn(() => transport),
+        getContext: vi.fn(() => context),
+        Offline: offline,
         Gain,
+        Panner,
+        Player,
         PolySynth,
         Synth,
     };
@@ -61,38 +115,327 @@ vi.mock("tone", () => {
 const drumTriggerAttackRelease = vi.fn();
 const drumConnect = vi.fn();
 const drumDispose = vi.fn();
+const createDrums = vi.fn(() => ({
+    kick: { triggerAttackRelease: drumTriggerAttackRelease },
+    snare: { triggerAttackRelease: drumTriggerAttackRelease },
+    clap: { triggerAttackRelease: drumTriggerAttackRelease },
+    hihat: { triggerAttackRelease: drumTriggerAttackRelease },
+    openhat: { triggerAttackRelease: drumTriggerAttackRelease },
+    midtom: { triggerAttackRelease: drumTriggerAttackRelease },
+    lowtom: { triggerAttackRelease: drumTriggerAttackRelease },
+    hitom: { triggerAttackRelease: drumTriggerAttackRelease },
+    rim: { triggerAttackRelease: drumTriggerAttackRelease },
+    cowbell: { triggerAttackRelease: drumTriggerAttackRelease },
+    crash: { triggerAttackRelease: drumTriggerAttackRelease },
+    ride: { triggerAttackRelease: drumTriggerAttackRelease },
+    tambourine: { triggerAttackRelease: drumTriggerAttackRelease },
+    shaker: { triggerAttackRelease: drumTriggerAttackRelease },
+    connect: drumConnect,
+    dispose: drumDispose,
+}));
 
-vi.mock("./drum/drum-synths", () => ({
-    createDrums: vi.fn(() => ({
-        kick: { triggerAttackRelease: drumTriggerAttackRelease },
-        snare: { triggerAttackRelease: drumTriggerAttackRelease },
-        clap: { triggerAttackRelease: drumTriggerAttackRelease },
-        hihat: { triggerAttackRelease: drumTriggerAttackRelease },
-        openhat: { triggerAttackRelease: drumTriggerAttackRelease },
-        midtom: { triggerAttackRelease: drumTriggerAttackRelease },
-        lowtom: { triggerAttackRelease: drumTriggerAttackRelease },
-        hitom: { triggerAttackRelease: drumTriggerAttackRelease },
-        rim: { triggerAttackRelease: drumTriggerAttackRelease },
-        cowbell: { triggerAttackRelease: drumTriggerAttackRelease },
-        crash: { triggerAttackRelease: drumTriggerAttackRelease },
-        ride: { triggerAttackRelease: drumTriggerAttackRelease },
-        tambourine: { triggerAttackRelease: drumTriggerAttackRelease },
-        shaker: { triggerAttackRelease: drumTriggerAttackRelease },
-        connect: drumConnect,
-        dispose: drumDispose,
-    })),
+vi.mock("../drum", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("../drum")>()),
+    createDrums,
 }));
 
 describe("player", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        const { clearPlaybackSession } = await import("../playback/session");
+
+        clearPlaybackSession();
         vi.clearAllMocks();
 
         scheduledCallbacks.length = 0;
+        playerInstances.length = 0;
 
         transport.bpm.value = 120;
         transport.loop = false;
         transport.loopStart = 0;
         transport.loopEnd = 0;
+        context.lookAhead = 0.1;
+        context.updateInterval = 0.05;
+    });
+
+    it("renders playback to a looping buffer by default", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 4,
+            loopLength: 4,
+            loop: false,
+            events: [
+                {
+                    type: "note",
+                    value: "c4",
+                    time: 0,
+                    dur: 1,
+                },
+            ],
+            layers: [],
+        };
+
+        await play(pattern, { bpm: 60 });
+
+        expect(offline).toHaveBeenCalledWith(expect.any(Function), 4);
+        expect(playerInstances[0]).toMatchObject({
+            buffer: "rendered-buffer",
+            loop: true,
+            loopStart: 0,
+            loopEnd: 4,
+        });
+        expect(playerToDestination).toHaveBeenCalled();
+        expect(playerStart).toHaveBeenCalled();
+        expect(transport.loop).toBe(false);
+    });
+
+    it("prepares rendered playback without starting it", async () => {
+        const { prepare } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const playback = await prepare(pattern, { playbackMode: "rendered" });
+
+        expect(playback.playbackMode).toBe("rendered");
+        expect(playerStart).not.toHaveBeenCalled();
+
+        playback.start();
+
+        expect(playerStart).toHaveBeenCalled();
+    });
+
+    it("calls onReady before starting playback", async () => {
+        const { play } = await import("../index");
+        const calls: string[] = [];
+
+        playerStart.mockImplementationOnce(() => {
+            calls.push("start");
+        });
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern, {
+            playbackMode: "rendered",
+            onReady: () => {
+                calls.push("ready");
+            },
+        });
+
+        expect(calls).toEqual(["ready", "start"]);
+    });
+
+    it("uses live playback for dense patterns in auto mode", async () => {
+        const { play } = await import("../index");
+
+        const events = Array.from({ length: 513 }, (_, index) => ({
+            type: "note" as const,
+            value: "c4",
+            time: index / 16,
+            dur: 0.25,
+        }));
+
+        const pattern: Pattern = {
+            length: 64,
+            loopLength: 64,
+            loop: false,
+            events,
+            layers: [],
+        };
+
+        await play(pattern);
+
+        expect(offline).not.toHaveBeenCalled();
+        expect(transport.loop).toBe(true);
+        expect(transport.start).toHaveBeenCalled();
+    });
+
+    it("schedules rendered note and drum events during offline rendering", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 2,
+            loopLength: 2,
+            loop: false,
+            events: [
+                {
+                    type: "note",
+                    value: "c4",
+                    time: 0.5,
+                    dur: 0.5,
+                    velocity: 0.6,
+                },
+                {
+                    type: "drum",
+                    value: "snare",
+                    time: 1,
+                    dur: 1,
+                    velocity: 0.7,
+                },
+            ],
+            layers: [],
+        };
+
+        await play(pattern, { bpm: 120 });
+
+        expect(scheduledCallbacks).toHaveLength(2);
+        expect(scheduledCallbacks[0].time).toBe(0.25);
+        expect(scheduledCallbacks[1].time).toBe(0.5);
+        expect(createDrums).toHaveBeenCalledWith(["snare"]);
+
+        scheduledCallbacks[0].callback(10);
+        scheduledCallbacks[1].callback(11);
+
+        expect(triggerAttackRelease).toHaveBeenCalledWith("c4", 0.25, 10, 0.6);
+        expect(drumTriggerAttackRelease).toHaveBeenCalledWith("16n", 11, 0.7);
+    });
+
+    it("pauses and resumes rendered playback from the current loop offset", async () => {
+        const Tone = await import("tone");
+        const { pause, play, resume } = await import("../index");
+
+        vi.mocked(Tone.immediate).mockReturnValueOnce(0).mockReturnValueOnce(1.25).mockReturnValueOnce(1.25);
+
+        const pattern: Pattern = {
+            length: 4,
+            loopLength: 4,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern, { bpm: 60 });
+        pause();
+        resume();
+
+        expect(playerStop).toHaveBeenCalled();
+        expect(playerStart).toHaveBeenLastCalledWith(undefined, 1.25);
+    });
+
+    it("does not stop rendered playback twice when pause is repeated", async () => {
+        const Tone = await import("tone");
+        const { pause, play } = await import("../index");
+
+        vi.mocked(Tone.immediate).mockReturnValueOnce(0).mockReturnValueOnce(0.75);
+
+        const pattern: Pattern = {
+            length: 2,
+            loopLength: 2,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern, { bpm: 60 });
+        pause();
+        pause();
+
+        expect(playerStop).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not restart rendered playback when resume is repeated", async () => {
+        const Tone = await import("tone");
+        const { pause, play, resume } = await import("../index");
+
+        vi.mocked(Tone.immediate).mockReturnValueOnce(0).mockReturnValueOnce(0.5).mockReturnValueOnce(0.5);
+
+        const pattern: Pattern = {
+            length: 2,
+            loopLength: 2,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern, { bpm: 60 });
+        pause();
+        resume();
+        resume();
+
+        expect(playerStart).toHaveBeenCalledTimes(2);
+        expect(playerStart).toHaveBeenLastCalledWith(undefined, 0.5);
+    });
+
+    it("pauses and resumes live playback through the transport", async () => {
+        const { pause, play, resume } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern, { playbackMode: "live" });
+        pause();
+        resume();
+
+        expect(transport.pause).toHaveBeenCalled();
+        expect(transport.start).toHaveBeenCalledTimes(2);
+    });
+
+    it("does nothing when pause and resume are called without playback", async () => {
+        const { pause, resume } = await import("../index");
+
+        pause();
+        resume();
+
+        expect(playerStop).not.toHaveBeenCalled();
+        expect(playerStart).not.toHaveBeenCalled();
+        expect(transport.pause).not.toHaveBeenCalled();
+        expect(transport.start).not.toHaveBeenCalled();
+    });
+
+    it("clears rendered pause state when stopped", async () => {
+        const Tone = await import("tone");
+        const { pause, play, resume, stop } = await import("../index");
+
+        vi.mocked(Tone.immediate).mockReturnValueOnce(0).mockReturnValueOnce(0.5);
+
+        const pattern: Pattern = {
+            length: 2,
+            loopLength: 2,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern, { bpm: 60 });
+        pause();
+        stop();
+        resume();
+
+        expect(playerStop).toHaveBeenCalledTimes(1);
+        expect(playerStart).toHaveBeenCalledTimes(1);
+    });
+
+    it("disposes previous playback when play is called again", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern);
+        await play(pattern);
+
+        expect(dispose).toHaveBeenCalled();
     });
 
     it("configures the transport from pattern length and bpm", async () => {
@@ -106,7 +449,7 @@ describe("player", () => {
             layers: [],
         };
 
-        await play(pattern, { bpm: 60 });
+        await play(pattern, { bpm: 60, playbackMode: "live" });
 
         expect(transport.stop).toHaveBeenCalled();
         expect(transport.cancel).toHaveBeenCalled();
@@ -114,7 +457,25 @@ describe("player", () => {
         expect(transport.loop).toBe(true);
         expect(transport.loopStart).toBe(0);
         expect(transport.loopEnd).toBe(4);
+        expect(context.lookAhead).toBe(0.25);
         expect(transport.start).toHaveBeenCalled();
+    });
+
+    it("allows playback scheduling options to be tuned", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await play(pattern, { lookAhead: 0.4, updateInterval: 0.2, playbackMode: "live" });
+
+        expect(context.lookAhead).toBe(0.4);
+        expect(context.updateInterval).toBe(0.2);
     });
 
     it("schedules note events in seconds", async () => {
@@ -136,7 +497,7 @@ describe("player", () => {
             layers: [],
         };
 
-        await play(pattern, { bpm: 120 });
+        await play(pattern, { bpm: 120, playbackMode: "live" });
 
         expect(transport.schedule).toHaveBeenCalledTimes(1);
         expect(scheduledCallbacks[0].time).toBe(0.5);
@@ -164,7 +525,7 @@ describe("player", () => {
             layers: [],
         };
 
-        await play(pattern);
+        await play(pattern, { playbackMode: "live" });
 
         scheduledCallbacks[0].callback(10);
 
@@ -190,9 +551,10 @@ describe("player", () => {
             layers: [],
         };
 
-        await play(pattern, { bpm: 120 });
+        await play(pattern, { bpm: 120, playbackMode: "live" });
 
         expect(scheduledCallbacks[0].time).toBe(0.5);
+        expect(createDrums).toHaveBeenCalledWith(["kick"]);
 
         scheduledCallbacks[0].callback(42);
 
@@ -217,7 +579,7 @@ describe("player", () => {
             layers: [],
         };
 
-        await play(pattern);
+        await play(pattern, { playbackMode: "live" });
 
         scheduledCallbacks[0].callback(5);
 
@@ -250,14 +612,15 @@ describe("player", () => {
             ],
         };
 
-        await play(pattern);
+        await play(pattern, { playbackMode: "live" });
 
         expect(transport.schedule).toHaveBeenCalledTimes(1);
 
         scheduledCallbacks[0].callback(1);
 
         expect(triggerAttackRelease).toHaveBeenCalledWith("e4", 0.5, 1, 0.8);
-        expect(drumConnect).toHaveBeenCalled();
+        expect(createDrums).not.toHaveBeenCalled();
+        expect(drumConnect).not.toHaveBeenCalled();
     });
 
     it("falls back to top-level events when no layers exist", async () => {
@@ -278,7 +641,7 @@ describe("player", () => {
             layers: [],
         };
 
-        await play(pattern);
+        await play(pattern, { playbackMode: "live" });
 
         expect(transport.schedule).toHaveBeenCalledTimes(1);
     });
@@ -297,11 +660,17 @@ describe("player", () => {
                     time: 0,
                     dur: 1,
                 },
+                {
+                    type: "drum",
+                    value: "kick",
+                    time: 0,
+                    dur: 1,
+                },
             ],
             layers: [],
         };
 
-        await play(pattern);
+        await play(pattern, { playbackMode: "live" });
         stop();
 
         expect(transport.stop).toHaveBeenCalled();

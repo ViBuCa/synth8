@@ -85,6 +85,16 @@ button {
     color: white;
 }
 
+#pause {
+    background: #ffb86c;
+    color: #101018;
+}
+
+#resume {
+    background: #f1fa8c;
+    color: #101018;
+}
+
 .site-footer {
     max-width: 1100px;
     margin: 64px auto 0;
@@ -193,4 +203,30 @@ button {
     justify-content: left;
     margin: 0.5rem 0 1rem;
     width: 100%;
+}
+
+.playback-mode {
+    border: 1px solid #44475a;
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 20px 0;
+    padding: 12px 16px 16px;
+}
+
+.playback-mode legend {
+    font-weight: 700;
+    padding: 0 6px;
+}
+
+.radio-option {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+    margin: 0;
+}
+
+.radio-option input {
+    width: auto;
 }

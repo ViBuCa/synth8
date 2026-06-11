@@ -59,13 +59,17 @@ Unlike many live-coding environments, Synth8 is designed from the ground up for 
 * Tone.js based playback engine
 * Drum synthesizers
 * Polyphonic note playback
-* Loop scheduling
+* Auto playback mode that avoids expensive pre-renders for dense songs
+* Rendered loop playback for stable small/medium loops
+* Optional live scheduling mode for interactive playback
+* Prepare/start flow for game loading screens
+* Pause, resume and stop controls
 
 ## Example
 
 ```ts
 import { compile } from "@vibuca/synth8-core";
-import { play } from "@vibuca/synth8-player";
+import { pause, play, prepare, resume, stop } from "@vibuca/synth8-player";
 
 const pattern = compile(`
 song(
@@ -86,7 +90,32 @@ song(
 `);
 
 await play(pattern, { bpm: 120 });
+
+pause();
+resume();
+stop();
 ```
+
+By default, playback uses `playbackMode: "auto"`. Small and medium patterns are pre-rendered into a looping audio buffer. Dense patterns use live playback to avoid long loading pauses.
+
+For game loading screens, prepare music first and start it when the level begins:
+
+```ts
+const music = await prepare(pattern, { bpm: 120 });
+
+await loadLevelAssets();
+
+music.start();
+startLevel();
+```
+
+For more immediate live synthesis, pass `playbackMode: "live"`:
+
+```ts
+await play(pattern, { bpm: 120, playbackMode: "live" });
+```
+
+The playground includes a playback mode switch so auto, rendered and live playback can be compared in the browser.
 
 ## Packages
 

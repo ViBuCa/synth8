@@ -18,7 +18,7 @@ npm install @vibuca/synth8-core @vibuca/synth8-player
 
 ```ts
 import { compile } from "@vibuca/synth8-core";
-import { play, stop } from "@vibuca/synth8-player";
+import { pause, play, prepare, resume, stop } from "@vibuca/synth8-player";
 
 const pattern = compile(`
   song(
@@ -35,6 +35,8 @@ const pattern = compile(`
 await play(pattern, { bpm: 120 });
 
 // later
+pause();
+resume();
 stop();
 ```
 
@@ -52,9 +54,63 @@ Options:
 
 ```ts
 type PlayOptions = {
-  bpm: number;
+  bpm?: number;
+  playbackMode?: "auto" | "rendered" | "live";
+  lookAhead?: number;
+  updateInterval?: number;
+  onReady?: (playback: PreparedPlayback) => void | Promise<void>;
+};
+
+type PreparedPlayback = {
+  playbackMode: "rendered" | "live";
+  start(): void;
+  pause(): void;
+  resume(): void;
+  stop(): void;
+  dispose(): void;
 };
 ```
+
+Defaults:
+
+```ts
+{
+  bpm: 120,
+  playbackMode: "auto",
+  lookAhead: 0.25
+}
+```
+
+### `prepare(pattern, options)`
+
+Prepares playback without starting it.
+
+```ts
+const music = await prepare(pattern, { bpm: 120 });
+
+await loadLevelAssets();
+
+music.start();
+```
+
+This is the recommended flow when music must start in sync with gameplay. For example, a Phaser loading scene can compile and prepare music while images, tilemaps and other audio assets load, then call `music.start()` at the same moment the level begins.
+
+When `playbackMode` resolves to `"rendered"`, `prepare()` completes after the audio buffer has been rendered. When it resolves to `"live"`, `prepare()` completes after the Tone.js graph and Transport scheduling are ready.
+
+### `onReady`
+
+`play()` also supports an `onReady` hook that runs after preparation and before playback starts.
+
+```ts
+await play(pattern, {
+  bpm: 120,
+  onReady: async () => {
+    await loadLevelAssets();
+  }
+});
+```
+
+For games, `prepare()` is usually easier to coordinate than `onReady`, but `onReady` keeps the one-call `play()` workflow available.
 
 ### `stop()`
 
@@ -63,6 +119,26 @@ Stops playback.
 ```ts
 stop();
 ```
+
+### `pause()`
+
+Pauses the current playback session.
+
+```ts
+pause();
+```
+
+In rendered mode, the current loop offset is stored before the buffer player is stopped.
+
+### `resume()`
+
+Resumes the current playback session.
+
+```ts
+resume();
+```
+
+In rendered mode, playback restarts from the offset captured by `pause()`. In live mode, pause and resume are forwarded to Tone.js Transport.
 
 ## Timing
 
@@ -77,6 +153,62 @@ play(pattern, { bpm: 120 });
 play(pattern, { bpm: 160 });
 ```
 
+## Playback modes
+
+The player supports three playback mode choices.
+
+### Auto playback
+
+Auto playback is the default:
+
+```ts
+await play(pattern, { bpm: 120 });
+await play(pattern, { bpm: 120, playbackMode: "auto" });
+```
+
+Auto mode renders small and medium patterns, then falls back to live playback for dense patterns. This avoids situations where a very dense song spends a long time in `Tone.Offline` before any sound can start.
+
+If you need deterministic behavior, choose `"rendered"` or `"live"` explicitly.
+
+### Rendered playback
+
+Rendered playback can be selected explicitly:
+
+```ts
+await play(pattern, { bpm: 120, playbackMode: "rendered" });
+```
+
+In rendered mode, the pattern is first rendered with `Tone.Offline` into an audio buffer. The buffer is then played as a looping `Tone.Player`.
+
+This is the recommended mode for games, mobile WebViews, and high-load browser environments because playback is no longer dependent on continuous JavaScript event scheduling while the music is running. It is more resilient when the main thread is busy with rendering, scrolling, tab changes, or game logic.
+
+The tradeoff is that starting playback has a pre-render step. For very dense songs this can be too slow for a game loading screen, so use `"auto"` or `"live"` for those cases.
+
+### Live playback
+
+Live playback schedules note and drum events directly on Tone.js Transport:
+
+```ts
+await play(pattern, { bpm: 120, playbackMode: "live" });
+```
+
+Live mode is useful when you need immediate synthesis behavior or want to inspect timing while developing. It can be more sensitive to browser and main-thread load, especially when tabs are backgrounded or the page is doing heavy work.
+
+### Scheduling options
+
+`lookAhead` and `updateInterval` tune Tone.js scheduling for live playback and any transport scheduling that still relies on JavaScript timers.
+
+```ts
+await play(pattern, {
+  bpm: 120,
+  playbackMode: "live",
+  lookAhead: 0.4,
+  updateInterval: 0.2
+});
+```
+
+Increasing `lookAhead` can make playback more tolerant of timer jitter, at the cost of slightly more latency before scheduled changes are heard.
+
 ## Supported event types
 
 ```ts
@@ -89,7 +221,7 @@ Velocity is supported when present:
 ```ts
 { type: "note", value: "c4", velocity: 0.5 }
 ```
-The player automatically creates separate Tone.js synthesizers for each layer.
+In live playback, the player creates Tone.js synthesizers only for layers that contain note events and drum voices only for the drum sounds used by the pattern.
 
 ## Supported waveforms
 ```ts
@@ -207,11 +339,11 @@ await play(pattern, { bpm: 110 });
 ```
 
 ## Note
-The player currently provides a built-in Tone.js playback engine.
+The player currently provides a built-in Tone.js playback engine with rendered and live playback modes.
 
-Playback configuration currently supports waveform selection.
+Playback configuration currently supports waveform selection, gain, and panning.
 
-Future releases may add gain, panning, effects and instrument banks without changing the compiled event format.
+Future releases may add effects and instrument banks without changing the compiled event format.
 
 ## License
 

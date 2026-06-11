@@ -1,63 +1,69 @@
 import { DrumKit } from "../model/drum";
 
+const triggerDrum = (
+    instrument: DrumKit[keyof Omit<DrumKit, "connect" | "dispose">],
+    ...args: Parameters<NonNullable<typeof instrument>["triggerAttackRelease"]>
+) => {
+    instrument?.triggerAttackRelease(...args);
+};
 
 export const playDrum = (drums: DrumKit, value: string, time: number, velocity = 1) => {
     switch (value) {
         case "kick":
-            drums.kick.triggerAttackRelease("C1", "8n", time, velocity);
+            triggerDrum(drums.kick, "C1", "8n", time, velocity);
             break;
 
         case "snare":
-            drums.snare.triggerAttackRelease("16n", time, velocity);
+            triggerDrum(drums.snare, "16n", time, velocity);
             break;
 
         case "clap":
-            drums.clap.triggerAttackRelease("16n", time, velocity);
+            triggerDrum(drums.clap, "16n", time, velocity);
             break;
 
         case "hihat":
-            drums.hihat.triggerAttackRelease("16n", time, velocity);
+            triggerDrum(drums.hihat, "16n", time, velocity);
             break;
 
         case "openhat":
-            drums.openhat.triggerAttackRelease("8n", time, velocity);
+            triggerDrum(drums.openhat, "8n", time, velocity);
             break;
 
         case "tom":
         case "midtom":
-            drums.midtom.triggerAttackRelease("G1", "8n", time, velocity);
+            triggerDrum(drums.midtom, "G1", "8n", time, velocity);
             break;
 
         case "lowtom":
-            drums.lowtom.triggerAttackRelease("C1", "8n", time, velocity);
+            triggerDrum(drums.lowtom, "C1", "8n", time, velocity);
             break;
 
         case "hitom":
-            drums.hitom.triggerAttackRelease("C2", "8n", time, velocity);
+            triggerDrum(drums.hitom, "C2", "8n", time, velocity);
             break;
 
         case "rim":
-            drums.rim.triggerAttackRelease("C5", "32n", time, velocity);
+            triggerDrum(drums.rim, "C5", "32n", time, velocity);
             break;
 
         case "cowbell":
-            drums.cowbell.triggerAttackRelease("16n", time, velocity);
+            triggerDrum(drums.cowbell, "16n", time, velocity);
             break;
 
         case "crash":
-            drums.crash.triggerAttackRelease("2n", time, velocity);
+            triggerDrum(drums.crash, "2n", time, velocity);
             break;
 
         case "ride":
-            drums.ride.triggerAttackRelease("16n", time, velocity);
+            triggerDrum(drums.ride, "16n", time, velocity);
             break;
 
         case "tambourine":
-            drums.tambourine.triggerAttackRelease("16n", time, velocity);
+            triggerDrum(drums.tambourine, "16n", time, velocity);
             break;
 
         case "shaker":
-            drums.shaker.triggerAttackRelease("32n", time, velocity);
+            triggerDrum(drums.shaker, "32n", time, velocity);
             break;
 
         default:

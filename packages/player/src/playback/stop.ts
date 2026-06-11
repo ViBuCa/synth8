@@ -1,5 +1,6 @@
 import * as Tone from "tone";
 import { disposeActiveNodes } from "./lifecycle";
+import { clearPlaybackSession } from "./session";
 
 
 export const stop = (): void => {
@@ -10,4 +11,5 @@ export const stop = (): void => {
     transport.loop = false;
 
     disposeActiveNodes();
+    clearPlaybackSession();
 };

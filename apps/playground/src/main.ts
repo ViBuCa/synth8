@@ -1,6 +1,7 @@
 import './style.css';
 import { compile } from "@vibuca/synth8-core";
-import { play, stop } from "@vibuca/synth8-player";
+import { pause, play, resume, stop } from "@vibuca/synth8-player";
+import type { PlayOptions } from "@vibuca/synth8-player";
 import {
   parseMidi,
   midiToSynth8Source,
@@ -109,6 +110,7 @@ const params = new URLSearchParams(window.location.search);
 
 let startupSource = initialSource;
 let startupBpm = 120;
+let startupPlaybackMode: NonNullable<PlayOptions["playbackMode"]> = "auto";
 
 try {
   const code = params.get("code");
@@ -120,6 +122,11 @@ try {
   const bpm = Number(params.get('bpm'));
   if (Number.isFinite(bpm) && bpm >= 40 && bpm <= 240) {
     startupBpm = bpm;
+  }
+
+  const playbackMode = params.get("playback");
+  if (playbackMode === "auto" || playbackMode === "rendered" || playbackMode === "live") {
+    startupPlaybackMode = playbackMode;
   }
 } catch {
   console.warn("Invalid shared URL");
@@ -155,8 +162,41 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     <label for="bpm">BPM</label>
     <input id="bpm" type="number" value="${startupBpm}" min="40" max="240" />
 
+    <fieldset class="playback-mode">
+      <legend>Playback</legend>
+      <label class="radio-option">
+        <input
+          type="radio"
+          name="playback-mode"
+          value="auto"
+          ${startupPlaybackMode === "auto" ? "checked" : ""}
+        />
+        Auto
+      </label>
+      <label class="radio-option">
+        <input
+          type="radio"
+          name="playback-mode"
+          value="rendered"
+          ${startupPlaybackMode === "rendered" ? "checked" : ""}
+        />
+        Rendered
+      </label>
+      <label class="radio-option">
+        <input
+          type="radio"
+          name="playback-mode"
+          value="live"
+          ${startupPlaybackMode === "live" ? "checked" : ""}
+        />
+        Live
+      </label>
+    </fieldset>
+
     <div>
       <button id="play">Play</button>
+      <button id="pause">Pause</button>
+      <button id="resume">Resume</button>
       <button id="stop">Stop</button>
       <button id="share">Copy Share Link</button>
     </div>
@@ -190,14 +230,27 @@ const sourceInput = document.querySelector<HTMLTextAreaElement>("#source")!;
 const bpmInput = document.querySelector<HTMLInputElement>("#bpm")!;
 const output = document.querySelector<HTMLPreElement>("#output")!;
 
+function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> {
+  const selected = document.querySelector<HTMLInputElement>(
+    'input[name="playback-mode"]:checked'
+  )?.value;
+
+  if (selected === "rendered" || selected === "live") {
+    return selected;
+  }
+
+  return "auto";
+}
+
 document.querySelector<HTMLButtonElement>("#play")!.addEventListener("click", async () => {
   try {
     const pattern = compile(sourceInput.value);
     const bpm = Number(bpmInput.value);
+    const playbackMode = getPlaybackMode();
 
     setOutput("json", JSON.stringify(pattern, null, 2));
 
-    await play(pattern, { bpm });
+    await play(pattern, { bpm, playbackMode });
 
     output.className = "output output-success";
   } catch (error) {
@@ -208,6 +261,16 @@ document.querySelector<HTMLButtonElement>("#play")!.addEventListener("click", as
 document.querySelector<HTMLButtonElement>("#stop")!.addEventListener("click", () => {
   stop();
   setOutput("info", "Stopped.");
+});
+
+document.querySelector<HTMLButtonElement>("#pause")!.addEventListener("click", () => {
+  pause();
+  setOutput("info", "Paused.");
+});
+
+document.querySelector<HTMLButtonElement>("#resume")!.addEventListener("click", () => {
+  resume();
+  setOutput("info", "Resumed.");
 });
 
 document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button) => {
@@ -233,6 +296,8 @@ document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", a
   if (Number.isFinite(bpm)) {
     url.searchParams.set("bpm", String(bpm));
   }
+
+  url.searchParams.set("playback", getPlaybackMode());
 
   await navigator.clipboard.writeText(url.toString());
 

@@ -21,4 +21,5 @@ export const disposeActiveNodes = (): void => {
     }
 
     activeNodes = [];
+    activeDisposables = [];
 };
