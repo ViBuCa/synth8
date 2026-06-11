@@ -76,6 +76,11 @@ button {
     cursor: pointer;
 }
 
+button:disabled {
+    cursor: wait;
+    opacity: 0.68;
+}
+
 #play {
     background: #50fa7b;
 }
@@ -145,6 +150,24 @@ button {
 #share {
     background: #8be9fd;
     color: #101018;
+}
+
+.playback-status {
+    align-items: center;
+    background: #1b1b2b;
+    border: 1px solid #44475a;
+    border-radius: 12px;
+    color: #f8f8f2;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 700;
+    min-height: 20px;
+    padding: 10px 14px;
+}
+
+.playback-status.is-busy {
+    border-color: #ffb86c;
+    color: #ffdab2;
 }
 
 .output {

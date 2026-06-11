@@ -201,6 +201,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       <button id="share">Copy Share Link</button>
     </div>
 
+    <div id="playback-status" class="playback-status" role="status" aria-live="polite">Idle.</div>
     <pre id="output"></pre>
   </main>
   <section class="guide">
@@ -229,6 +230,14 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 const sourceInput = document.querySelector<HTMLTextAreaElement>("#source")!;
 const bpmInput = document.querySelector<HTMLInputElement>("#bpm")!;
 const output = document.querySelector<HTMLPreElement>("#output")!;
+const playbackStatus = document.querySelector<HTMLDivElement>("#playback-status")!;
+const playButton = document.querySelector<HTMLButtonElement>("#play")!;
+
+function setPlaybackStatus(message: string, busy = false) {
+  playbackStatus.textContent = message;
+  playbackStatus.classList.toggle("is-busy", busy);
+  playbackStatus.setAttribute("aria-busy", String(busy));
+}
 
 function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> {
   const selected = document.querySelector<HTMLInputElement>(
@@ -242,8 +251,14 @@ function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> {
   return "auto";
 }
 
-document.querySelector<HTMLButtonElement>("#play")!.addEventListener("click", async () => {
+playButton.addEventListener("click", async () => {
+  const previousPlayText = playButton.textContent ?? "Play";
+
   try {
+    playButton.disabled = true;
+    playButton.textContent = "Preparing...";
+    setPlaybackStatus("Preparing playback...", true);
+
     const pattern = compile(sourceInput.value);
     const bpm = Number(bpmInput.value);
     const playbackMode = getPlaybackMode();
@@ -252,24 +267,32 @@ document.querySelector<HTMLButtonElement>("#play")!.addEventListener("click", as
 
     await play(pattern, { bpm, playbackMode });
 
+    setPlaybackStatus(`Playing (${playbackMode}).`);
     output.className = "output output-success";
   } catch (error) {
+    setPlaybackStatus("Playback failed.");
     setOutput("error", error instanceof Error ? error.message : String(error));
+  } finally {
+    playButton.disabled = false;
+    playButton.textContent = previousPlayText;
   }
 });
 
 document.querySelector<HTMLButtonElement>("#stop")!.addEventListener("click", () => {
   stop();
+  setPlaybackStatus("Stopped.");
   setOutput("info", "Stopped.");
 });
 
 document.querySelector<HTMLButtonElement>("#pause")!.addEventListener("click", () => {
   pause();
+  setPlaybackStatus("Paused.");
   setOutput("info", "Paused.");
 });
 
 document.querySelector<HTMLButtonElement>("#resume")!.addEventListener("click", () => {
   resume();
+  setPlaybackStatus("Playing.");
   setOutput("info", "Resumed.");
 });
 
