@@ -348,7 +348,7 @@ midiInput.addEventListener("change", async () => {
     const splitPiano = splitPianoInput.checked;
 
     sourceInput.value = midiToSynth8Source(imported, {
-      step: 0.25,
+      step: "auto",
       mode: splitPiano ? "split-piano" : "literal",
       splitPiano: {
         sourceTracks: ["track1", "piano"],

@@ -29,9 +29,9 @@ it("supports split piano, drum mapping, durations, and track order together", ()
     ).toBe(
         normalizeSource(`
       song(
-        melody("c5/2"),
-        melody("c3"),
-        beat("kick _ snare")
+        melody("c5/2").fast(4),
+        melody("c3").fast(4),
+        beat("kick _ snare").fast(4)
       )
     `)
     );

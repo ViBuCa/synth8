@@ -1,5 +1,5 @@
 export type MidiToSynth8Options = {
-    step?: number;
+    step?: number | "auto";
     track?: string;
     includeVelocity?: boolean;
     trackOrder?: string[];

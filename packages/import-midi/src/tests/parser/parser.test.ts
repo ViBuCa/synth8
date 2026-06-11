@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { parseMidi } from "../../parser";
 import { midiToMelodySource } from "../../exporter/exporter";
 
+const SECONDS_PER_BEAT = 0.5;
+
 function createTestMidiBuffer(): ArrayBuffer {
     const midi = new Midi();
 
@@ -12,14 +14,14 @@ function createTestMidiBuffer(): ArrayBuffer {
     track.addNote({
         midi: 60,
         time: 0,
-        duration: 0.25,
+        duration: 0.25 * SECONDS_PER_BEAT,
         velocity: 0.8,
     });
 
     track.addNote({
         midi: 64,
-        time: 0.5,
-        duration: 0.25,
+        time: 0.5 * SECONDS_PER_BEAT,
+        duration: 0.25 * SECONDS_PER_BEAT,
         velocity: 0.6,
     });
 
@@ -60,7 +62,7 @@ describe("parseMidi", () => {
         const song = parseMidi(createTestMidiBuffer());
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4 _ e4")`
+            `melody("c4 _ e4").fast(4)`
         );
     });
 });

@@ -9,6 +9,20 @@ import { normalizeSource } from "../exporter/test-helper";
 import { parseMidi } from "../../parser";
 
 describe("MIDI import integration", () => {
+    it("parses note timing in beats", () => {
+        const buffer = createMidiBuffer([
+            { track: "lead", midi: 60, time: 0.5, duration: 0.25 },
+        ]);
+
+        const song = parseMidi(buffer);
+
+        expect(song.length).toBe(0.75);
+        expect(song.notes[0]).toMatchObject({
+            time: 0.5,
+            dur: 0.25,
+        });
+    });
+
     it("parses and exports a simple melody", () => {
         const buffer = createMidiBuffer([
             { track: "lead", midi: 60, time: 0, duration: 0.25 },
@@ -19,7 +33,7 @@ describe("MIDI import integration", () => {
         const song = parseMidi(buffer);
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4 d4 e4")`
+            `melody("c4 d4 e4").fast(4)`
         );
     });
 
@@ -32,7 +46,7 @@ describe("MIDI import integration", () => {
         const song = parseMidi(buffer);
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4 _ e4")`
+            `melody("c4 _ e4").fast(4)`
         );
     });
 
@@ -46,7 +60,7 @@ describe("MIDI import integration", () => {
         const song = parseMidi(buffer);
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4+e4+g4")`
+            `melody("c4+e4+g4").fast(4)`
         );
     });
 
@@ -68,8 +82,8 @@ describe("MIDI import integration", () => {
         ).toBe(
             normalizeSource(`
         song(
-          melody("c5"),
-          melody("c3")
+          melody("c5").fast(4),
+          melody("c3").fast(4)
         )
       `)
         );
@@ -84,7 +98,7 @@ describe("MIDI import integration", () => {
         const song = parseMidi(buffer);
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4/2 d4")`
+            `melody("c4/2 d4").fast(4)`
         );
     });
 
@@ -96,7 +110,7 @@ describe("MIDI import integration", () => {
         const song = parseMidi(buffer);
 
         expect(midiToMelodySource(song, { step: 0.25, includeVelocity: true })).toBe(
-            `melody("c4:0.8")`
+            `melody("c4:0.8").fast(4)`
         );
     });
 
@@ -119,8 +133,8 @@ describe("MIDI import integration", () => {
         ).toBe(
             normalizeSource(`
       song(
-        melody("c5"),
-        melody("c3")
+        melody("c5").fast(4),
+        melody("c3").fast(4)
       )
     `)
         );
@@ -145,7 +159,7 @@ describe("MIDI import integration", () => {
         ).toBe(
             normalizeSource(`
       song(
-        beat("kick _ snare")
+        beat("kick _ snare").fast(4)
       )
     `)
         );

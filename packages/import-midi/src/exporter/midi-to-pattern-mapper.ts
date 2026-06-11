@@ -1,14 +1,30 @@
 import { ImportedMidiSong, MidiToSynth8Options, SlotNote } from "../model";
-import { noteToToken, quantize } from "../utils";
+import { noteToToken, quantize, resolveQuantizationStep } from "../utils";
 import { compressSustainRests } from "./sustain-helper";
+
+const formatRate = (rate: number): string => {
+    return Number.isInteger(rate)
+        ? String(rate)
+        : Number(rate.toFixed(6)).toString();
+};
+
+const rateSuffix = (step: number): string => {
+    if (step === 1) {
+        return "";
+    }
+
+    if (step < 1) {
+        return `.fast(${formatRate(1 / step)})`;
+    }
+
+    return `.slow(${formatRate(step)})`;
+};
 
 export const midiToPatternSource = (
     song: ImportedMidiSong,
     options: MidiToSynth8Options = {},
     wrapper: "melody" | "beat"
 ): string => {
-    const step = options.step ?? 0.25;
-
     const notes = options.track
         ? song.notes.filter((note) => note.track === options.track)
         : song.notes;
@@ -17,6 +33,7 @@ export const midiToPatternSource = (
         return `${wrapper}("")`;
     }
 
+    const step = resolveQuantizationStep(notes, options.step);
     const slots = new Map<number, SlotNote[]>();
 
     for (const note of notes) {
@@ -51,5 +68,5 @@ export const midiToPatternSource = (
     const finalParts =
         options.compressSustains === false ? parts : compressSustainRests(parts);
 
-    return `${wrapper}("${finalParts.join(" ")}")`;
+    return `${wrapper}("${finalParts.join(" ")}")${rateSuffix(step)}`;
 }

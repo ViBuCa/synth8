@@ -1,6 +1,8 @@
 // src/tests/helpers/create-test-midi.ts
 import { Midi } from "@tonejs/midi";
 
+const SECONDS_PER_BEAT = 0.5;
+
 export const createMidiBuffer = (
     notes: Array<{
         track?: string;
@@ -26,8 +28,8 @@ export const createMidiBuffer = (
 
         track.addNote({
             midi: note.midi,
-            time: note.time,
-            duration: note.duration,
+            time: note.time * SECONDS_PER_BEAT,
+            duration: note.duration * SECONDS_PER_BEAT,
             velocity: note.velocity ?? 1,
         });
     }

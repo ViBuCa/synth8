@@ -37,8 +37,8 @@ describe("splitPianoSong", () => {
     expect(normalizeSource(midiToSongSource(split, { step: 0.25 }))).toBe(
       normalizeSource(`
         song(
-          melody("c3"),
-          melody("c5")
+          melody("c3").fast(4),
+          melody("c5").fast(4)
         )
       `)
     );

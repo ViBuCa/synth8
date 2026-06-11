@@ -15,7 +15,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4 d4 e4")`
+            `melody("c4 d4 e4").fast(4)`
         );
     });
 
@@ -29,7 +29,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4 _ e4")`
+            `melody("c4 _ e4").fast(4)`
         );
     });
 
@@ -44,7 +44,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4+e4+g4")`
+            `melody("c4+e4+g4").fast(4)`
         );
     });
 
@@ -58,7 +58,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25, track: "bass" })).toBe(
-            `melody("c2")`
+            `melody("c2").fast(4)`
         );
     });
 
@@ -81,7 +81,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4/2 d4")`
+            `melody("c4/2 d4").fast(4)`
         );
     });
 
@@ -95,7 +95,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25 })).toBe(
-            `melody("c4/2+e4")`
+            `melody("c4/2+e4").fast(4)`
         );
     });
 
@@ -108,7 +108,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25, includeVelocity: true })).toBe(
-            `melody("c4:0.8")`
+            `melody("c4:0.8").fast(4)`
         );
     });
 
@@ -121,7 +121,7 @@ describe("midiToMelodySource", () => {
         };
 
         expect(midiToMelodySource(song, { step: 0.25, includeVelocity: true })).toBe(
-            `melody("c4/2:0.6")`
+            `melody("c4/2:0.6").fast(4)`
         );
     });
 
@@ -139,7 +139,22 @@ describe("midiToMelodySource", () => {
                 step: 0.25,
                 compressSustains: false,
             })
-        ).toBe(`melody("c4/2 _ d4")`);
+        ).toBe(`melody("c4/2 _ d4").fast(4)`);
+    });
+
+    it("can infer a finer quantization step for fast notes", () => {
+        const song: ImportedMidiSong = {
+            length: 0.5,
+            notes: [
+                { track: "lead", time: 0, dur: 0.125, midi: 60, name: "c4", velocity: 1 },
+                { track: "lead", time: 0.125, dur: 0.125, midi: 62, name: "d4", velocity: 1 },
+                { track: "lead", time: 0.25, dur: 0.125, midi: 64, name: "e4", velocity: 1 },
+            ],
+        };
+
+        expect(midiToMelodySource(song, { step: "auto" })).toBe(
+            `melody("c4 d4 e4").fast(8)`
+        );
     });
 });
 
@@ -154,8 +169,8 @@ describe("midiToSongSource", () => {
         };
 
         expect(normalizeSource(midiToSongSource(song, { step: 0.25 }))).toBe(normalizeSource(`song(
-            melody("c2"),
-            melody("c4")
+            melody("c2").fast(4),
+            melody("c4").fast(4)
         )`));
     });
 
@@ -179,8 +194,8 @@ describe("midiToSongSource", () => {
         };
 
         expect(normalizeSource(midiToSongSource(song, { step: 0.25 }))).toBe(normalizeSource(`song(
-            melody("_ c2"),
-            melody("c4 _ e4")
+            melody("_ c2").fast(4),
+            melody("c4 _ e4").fast(4)
         )`));
     });
 });
@@ -198,7 +213,7 @@ describe("midiToSynth8Source", () => {
         expect(normalizeSource(midiToSynth8Source(song, { step: 0.25 }))).toBe(
             normalizeSource(`
         song(
-          melody("c3+c5")
+          melody("c3+c5").fast(4)
         )
       `)
         );
@@ -223,8 +238,8 @@ describe("midiToSynth8Source", () => {
         ).toBe(
             normalizeSource(`
         song(
-          melody("c3"),
-          melody("c5")
+          melody("c3").fast(4),
+          melody("c5").fast(4)
         )
       `)
         );
@@ -252,8 +267,8 @@ describe("midiToSynth8Source", () => {
         ).toBe(
             normalizeSource(`
       song(
-        melody("b3"),
-        melody("d4")
+        melody("b3").fast(4),
+        melody("d4").fast(4)
       )
     `)
         );
@@ -278,8 +293,8 @@ describe("midiToSynth8Source", () => {
         ).toBe(
             normalizeSource(`
       song(
-        melody("c5"),
-        melody("c2")
+        melody("c5").fast(4),
+        melody("c2").fast(4)
       )
     `)
         );
@@ -335,7 +350,7 @@ describe("mapDrumsSong", () => {
         expect(normalizeSource(midiToSongSource(song, { step: 0.25 }))).toBe(
             normalizeSource(`
       song(
-        beat("kick _ snare")
+        beat("kick _ snare").fast(4)
       )
     `)
         );
