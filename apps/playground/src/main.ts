@@ -1,6 +1,6 @@
 import './style.css';
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, pause, play, resume, stop } from "@vibuca/synth8-player";
+import { createGameAudio, pause, play, renderWav, resume, stop } from "@vibuca/synth8-player";
 import type { GameAudio, PlayOptions, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player";
 import {
   parseMidi,
@@ -242,6 +242,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <button id="pause">Pause</button>
         <button id="resume">Resume</button>
         <button id="stop">Stop</button>
+        <button id="export-wav">Export WAV</button>
         <button id="share">Copy Share Link</button>
       </div>
 
@@ -318,6 +319,7 @@ const bpmInput = document.querySelector<HTMLInputElement>("#bpm")!;
 const output = document.querySelector<HTMLPreElement>("#output")!;
 const playbackStatus = document.querySelector<HTMLDivElement>("#playback-status")!;
 const playButton = document.querySelector<HTMLButtonElement>("#play")!;
+const exportWavButton = document.querySelector<HTMLButtonElement>("#export-wav")!;
 const gameMusicButton = document.querySelector<HTMLButtonElement>("#game-music")!;
 const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-music-stop")!;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
@@ -462,6 +464,36 @@ document.querySelector<HTMLButtonElement>("#resume")!.addEventListener("click", 
   resume();
   setPlaybackStatus("Playing.");
   setOutput("info", "Resumed.");
+});
+
+exportWavButton.addEventListener("click", async () => {
+  const previousText = exportWavButton.textContent ?? "Export WAV";
+
+  try {
+    exportWavButton.disabled = true;
+    exportWavButton.textContent = "Rendering...";
+    setPlaybackStatus("Rendering WAV...", true);
+
+    const pattern = compile(sourceInput.value);
+    const bpm = Number(bpmInput.value);
+    const blob = await renderWav(pattern, { bpm });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "synth8-export.wav";
+    link.click();
+    URL.revokeObjectURL(url);
+
+    setPlaybackStatus("WAV exported.");
+    setOutput("success", "WAV export rendered from the current pattern.");
+  } catch (error) {
+    setPlaybackStatus("WAV export failed.");
+    setOutput("error", error instanceof Error ? error.message : String(error));
+  } finally {
+    exportWavButton.disabled = false;
+    exportWavButton.textContent = previousText;
+  }
 });
 
 gameMusicButton.addEventListener("click", async () => {

@@ -141,6 +141,19 @@ audio.playSfx(jump, { playbackRate: 1.2, volume: 0.8 });
 
 Use `setMasterVolume()`, `setMusicVolume()` and `setSfxVolume()` for runtime mixing. Call `dispose()` when leaving the game or tearing down the audio engine.
 
+### `renderWav(pattern, options)`
+
+Renders a compiled pattern offline and returns a WAV `Blob`.
+
+```ts
+import { renderWav } from "@vibuca/synth8-player";
+
+const blob = await renderWav(pattern, { bpm: 120 });
+const url = URL.createObjectURL(blob);
+```
+
+Tone.js provides offline rendering, but it does not provide built-in MP3 or OGG encoders for deterministic exports. WAV is encoded directly from the rendered audio buffer.
+
 ### `stop()`
 
 Stops playback.

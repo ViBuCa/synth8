@@ -5,3 +5,4 @@ export * from './play';
 export * from './resume';
 export * from './stop';
 export * from './synth'
+export * from './render';

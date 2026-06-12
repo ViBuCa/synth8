@@ -9,14 +9,13 @@ import type {
     PreparedPlayback,
     PreparedSfx,
 } from "./model";
-import { getLayers } from "./playback/layers";
-import { scheduleLayers } from "./playback/scheduler";
+import { renderToAudioBuffer } from "./playback/render";
 
 const DEFAULT_BPM = 120;
 const DEFAULT_SFX_VOICES = 8;
 
 type InternalPreparedSfx = PreparedSfx & {
-    buffer: Tone.ToneAudioBuffer;
+    buffer: AudioBuffer;
     players: Tone.Player[];
     nextVoice: number;
 };
@@ -41,26 +40,6 @@ const setVolume = (gainNode: Tone.Gain, volume: number): void => {
 
 const setPlayerVolume = (player: Tone.Player, volume: number): void => {
     player.volume.value = toDecibels(volume);
-};
-
-const renderPattern = async (
-    pattern: Pattern,
-    bpm: number
-): Promise<{ buffer: Tone.ToneAudioBuffer; duration: number }> => {
-    const secondsPerBeat = 60 / bpm;
-    const duration = pattern.length * secondsPerBeat;
-    const layers = getLayers(pattern);
-
-    const buffer = await Tone.Offline(({ transport }) => {
-        const output = new Tone.Gain(1);
-
-        output.toDestination();
-        transport.bpm.value = bpm;
-        scheduleLayers(layers, secondsPerBeat, () => undefined, transport, output);
-        transport.start(0);
-    }, duration);
-
-    return { buffer, duration };
 };
 
 const loopOffset = (startedAt: number, loopDuration: number): number => {
@@ -112,7 +91,8 @@ export const createGameAudio = async (
         musicOptions: GameMusicOptions = {}
     ): Promise<PreparedPlayback> => {
         const bpm = musicOptions.bpm ?? DEFAULT_BPM;
-        const { buffer, duration } = await renderPattern(pattern, bpm);
+        const buffer = await renderToAudioBuffer(pattern, { bpm });
+        const duration = pattern.length * (60 / bpm);
         const player = new Tone.Player(buffer);
         let startedAt = 0;
         let offset = 0;
@@ -195,7 +175,8 @@ export const createGameAudio = async (
     ): Promise<PreparedSfx> => {
         const bpm = sfxOptions.bpm ?? DEFAULT_BPM;
         const voices = Math.max(1, Math.floor(sfxOptions.voices ?? DEFAULT_SFX_VOICES));
-        const { buffer, duration } = await renderPattern(pattern, bpm);
+        const buffer = await renderToAudioBuffer(pattern, { bpm });
+        const duration = pattern.length * (60 / bpm);
         const players = Array.from({ length: voices }, () => {
             const player = new Tone.Player(buffer);
 

@@ -273,6 +273,11 @@ button:disabled {
     color: #101018;
 }
 
+#export-wav {
+    background: #bd93f9;
+    color: #101018;
+}
+
 .playback-status {
     align-items: center;
     background: #1b1b2b;

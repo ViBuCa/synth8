@@ -16,7 +16,8 @@
     "tone": "^15.1.22"
   },
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "test": "vitest run"
   },
   "files": [
     "dist",

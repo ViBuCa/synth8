@@ -41,6 +41,19 @@ const playerInstances: Array<{
     loopEnd: number;
     playbackRate: number;
 }> = [];
+const renderedAudioBuffer = {
+    numberOfChannels: 2,
+    sampleRate: 44100,
+    length: 2,
+    getChannelData: vi.fn((channel: number) =>
+        channel === 0
+            ? new Float32Array([-1, 0.5])
+            : new Float32Array([1, 0])
+    ),
+};
+const renderedToneBuffer = {
+    get: vi.fn(() => renderedAudioBuffer),
+};
 const gainParamSetValueAtTime = vi.fn(function (
     this: { value: number },
     value: number
@@ -50,7 +63,7 @@ const gainParamSetValueAtTime = vi.fn(function (
 const gainInstances: Array<{ gain: { value: number } }> = [];
 const offline = vi.fn(async (callback: (context: { transport: typeof transport }) => void) => {
     callback({ transport });
-    return "rendered-buffer";
+    return renderedToneBuffer;
 });
 
 vi.mock("tone", () => {
@@ -189,6 +202,8 @@ describe("player", () => {
         scheduledCallbacks.length = 0;
         playerInstances.length = 0;
         gainInstances.length = 0;
+        renderedToneBuffer.get.mockClear();
+        renderedAudioBuffer.getChannelData.mockClear();
 
         transport.bpm.value = 120;
         transport.loop = false;
@@ -220,7 +235,7 @@ describe("player", () => {
 
         expect(offline).toHaveBeenCalledWith(expect.any(Function), 4);
         expect(playerInstances[0]).toMatchObject({
-            buffer: "rendered-buffer",
+            buffer: renderedToneBuffer,
             loop: true,
             loopStart: 0,
             loopEnd: 4,
@@ -749,7 +764,7 @@ describe("player", () => {
 
         expect(playerInstances).toHaveLength(3);
         expect(playerInstances[0]).toMatchObject({
-            buffer: "rendered-buffer",
+            buffer: renderedAudioBuffer,
             loop: true,
             loopStart: 0,
             loopEnd: 1,
@@ -823,5 +838,34 @@ describe("player", () => {
         expect(gainInstances[1].gain.value).toBe(0.25);
         expect(gainInstances[2].gain.value).toBe(1.2);
         expect(gainParamSetValueAtTime).toHaveBeenCalledTimes(3);
+    });
+
+    it("renders patterns to audio buffers", async () => {
+        const { renderToAudioBuffer } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 2,
+            loopLength: 2,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const buffer = await renderToAudioBuffer(pattern, { bpm: 60 });
+
+        expect(offline).toHaveBeenCalledWith(expect.any(Function), 2);
+        expect(buffer).toBe(renderedAudioBuffer);
+    });
+
+    it("encodes audio buffers as wav blobs", async () => {
+        const { encodeWav } = await import("../index");
+
+        const blob = encodeWav(renderedAudioBuffer as unknown as AudioBuffer);
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+
+        expect(blob.type).toBe("audio/wav");
+        expect(blob.size).toBe(44 + renderedAudioBuffer.length * renderedAudioBuffer.numberOfChannels * 2);
+        expect(new TextDecoder().decode(bytes.slice(0, 4))).toBe("RIFF");
+        expect(new TextDecoder().decode(bytes.slice(8, 12))).toBe("WAVE");
     });
 });
