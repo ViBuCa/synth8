@@ -1,5 +1,5 @@
 export type PreparedPlayback = {
-    playbackMode: "rendered" | "live";
+    playbackMode: "rendered" | "live" | "streamed";
     start(): void;
     pause(): void;
     resume(): void;
@@ -11,6 +11,8 @@ export type PlayOptions = {
     bpm?: number;
     lookAhead?: number;
     updateInterval?: number;
-    playbackMode?: "auto" | "rendered" | "live";
+    playbackMode?: "auto" | "rendered" | "live" | "streamed";
+    streamChunkDuration?: number;
+    streamTailDuration?: number;
     onReady?: (playback: PreparedPlayback) => void | Promise<void>;
 };

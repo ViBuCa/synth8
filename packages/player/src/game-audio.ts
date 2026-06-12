@@ -9,10 +9,12 @@ import type {
     PreparedPlayback,
     PreparedSfx,
 } from "./model";
-import { renderToAudioBuffer } from "./playback/render";
+import { renderChunkToAudioBuffer, renderToAudioBuffer } from "./playback/render";
 
 const DEFAULT_BPM = 120;
 const DEFAULT_SFX_VOICES = 8;
+const DEFAULT_STREAM_CHUNK_DURATION = 5;
+const DEFAULT_STREAM_TAIL_DURATION = 0.25;
 
 type InternalPreparedSfx = PreparedSfx & {
     buffer: AudioBuffer;
@@ -21,7 +23,7 @@ type InternalPreparedSfx = PreparedSfx & {
 };
 
 type InternalPreparedMusic = PreparedPlayback & {
-    player: Tone.Player;
+    applyVolume(volume: number): void;
 };
 
 const normalizeVolume = (volume: number): number => Math.max(0, volume);
@@ -77,7 +79,7 @@ export const createGameAudio = async (
     masterGain.toDestination();
 
     const applyMusicPlayerVolume = (music: InternalPreparedMusic): void => {
-        setPlayerVolume(music.player, masterVolume * musicVolume);
+        music.applyVolume(masterVolume * musicVolume);
     };
 
     const applyAllMusicPlayerVolumes = (): void => {
@@ -86,10 +88,10 @@ export const createGameAudio = async (
         }
     };
 
-    const prepareMusic = async (
+    const prepareRenderedMusic = async (
         pattern: Pattern,
         musicOptions: GameMusicOptions = {}
-    ): Promise<PreparedPlayback> => {
+    ): Promise<InternalPreparedMusic> => {
         const bpm = musicOptions.bpm ?? DEFAULT_BPM;
         const buffer = await renderToAudioBuffer(pattern, { bpm });
         const duration = pattern.length * (60 / bpm);
@@ -105,7 +107,9 @@ export const createGameAudio = async (
         player.toDestination();
 
         const playback: InternalPreparedMusic = {
-            player,
+            applyVolume(volume: number) {
+                setPlayerVolume(player, volume);
+            },
             playbackMode: "rendered",
             start() {
                 if (currentMusic && currentMusic !== playback) {
@@ -167,6 +171,194 @@ export const createGameAudio = async (
         musicSet.add(playback);
 
         return playback;
+    };
+
+    const prepareStreamedMusic = async (
+        pattern: Pattern,
+        musicOptions: GameMusicOptions = {}
+    ): Promise<InternalPreparedMusic> => {
+        const bpm = musicOptions.bpm ?? DEFAULT_BPM;
+        const chunkDuration = Math.max(
+            0.5,
+            musicOptions.streamChunkDuration ?? DEFAULT_STREAM_CHUNK_DURATION
+        );
+        const tailDuration = Math.max(0, musicOptions.streamTailDuration ?? DEFAULT_STREAM_TAIL_DURATION);
+        const duration = pattern.length * (60 / bpm);
+        const activePlayers = new Set<Tone.Player>();
+        const renderTimers: ReturnType<typeof setTimeout>[] = [];
+        let firstBuffer = await renderChunkToAudioBuffer(pattern, {
+            bpm,
+            start: 0,
+            duration: Math.min(chunkDuration, duration),
+            tail: tailDuration,
+            cache: false,
+        });
+        let startedAt = 0;
+        let offset = 0;
+        let started = false;
+        let paused = false;
+        let generation = 0;
+
+        const clearTimers = (): void => {
+            for (const timer of renderTimers.splice(0)) {
+                clearTimeout(timer);
+            }
+        };
+
+        const disposePlayers = (): void => {
+            clearTimers();
+
+            for (const player of activePlayers) {
+                player.stop();
+                player.dispose();
+            }
+
+            activePlayers.clear();
+        };
+
+        const renderChunk = async (start: number) => {
+            const playDuration = Math.min(chunkDuration, duration - start);
+            const buffer = start === 0 && firstBuffer
+                ? firstBuffer
+                : await renderChunkToAudioBuffer(pattern, {
+                    bpm,
+                    start,
+                    duration: playDuration,
+                    tail: tailDuration,
+                    cache: false,
+                });
+
+            return { buffer, playDuration, start };
+        };
+
+        const nextOffset = (start: number, playDuration: number): number => {
+            const next = start + playDuration;
+
+            return next >= duration ? 0 : next;
+        };
+
+        const scheduleNext = async (
+            start: number,
+            startTime: number,
+            activeGeneration: number
+        ): Promise<void> => {
+            const chunk = await renderChunk(start);
+
+            if (!started || paused || generation !== activeGeneration) {
+                return;
+            }
+
+            const player = new Tone.Player(chunk.buffer);
+
+            activePlayers.add(player);
+            setPlayerVolume(player, masterVolume * musicVolume);
+            player.toDestination();
+
+            if (chunk.playDuration >= duration) {
+                player.loop = true;
+                player.loopStart = 0;
+                player.loopEnd = duration;
+            }
+
+            player.start(startTime);
+
+            if (chunk.playDuration >= duration) {
+                return;
+            }
+
+            const nextStartTime = startTime + chunk.playDuration;
+            const delay = Math.max(0, (nextStartTime - Tone.now() - chunkDuration) * 1000);
+            const timer = setTimeout(() => {
+                void scheduleNext(nextOffset(chunk.start, chunk.playDuration), nextStartTime, activeGeneration);
+            }, delay);
+
+            renderTimers.push(timer);
+        };
+
+        const currentOffset = (): number => {
+            const elapsed = Tone.immediate() - startedAt;
+
+            return ((elapsed % duration) + duration) % duration;
+        };
+
+        const startFrom = (start: number): void => {
+            generation += 1;
+            startedAt = Tone.immediate() - start;
+            started = true;
+            paused = false;
+            currentMusic = playback;
+
+            void scheduleNext(start, Tone.now(), generation);
+        };
+
+        const playback: InternalPreparedMusic = {
+            playbackMode: "streamed",
+            applyVolume(volume: number) {
+                for (const player of activePlayers) {
+                    setPlayerVolume(player, volume);
+                }
+            },
+            start() {
+                if (currentMusic && currentMusic !== playback) {
+                    currentMusic.dispose();
+                }
+
+                disposePlayers();
+                startFrom(0);
+            },
+            pause() {
+                if (!started || paused) {
+                    return;
+                }
+
+                offset = currentOffset();
+                paused = true;
+                generation += 1;
+                disposePlayers();
+            },
+            resume() {
+                if (!started || !paused) {
+                    return;
+                }
+
+                startFrom(offset);
+            },
+            stop() {
+                if (!started && !paused) {
+                    return;
+                }
+
+                started = false;
+                paused = false;
+                offset = 0;
+                generation += 1;
+                disposePlayers();
+            },
+            dispose() {
+                playback.stop();
+
+                if (currentMusic === playback) {
+                    currentMusic = undefined;
+                }
+
+                musicSet.delete(playback);
+            },
+        };
+
+        musicSet.add(playback);
+
+        return playback;
+    };
+
+    const prepareMusic = (
+        pattern: Pattern,
+        musicOptions: GameMusicOptions = {}
+    ): Promise<PreparedPlayback> => {
+        if (musicOptions.playbackMode === "rendered") {
+            return prepareRenderedMusic(pattern, musicOptions);
+        }
+
+        return prepareStreamedMusic(pattern, musicOptions);
     };
 
     const prepareSfx = async (

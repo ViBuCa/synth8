@@ -9,6 +9,9 @@ export type GameAudioOptions = {
 
 export type GameMusicOptions = {
     bpm?: number;
+    playbackMode?: "rendered" | "streamed";
+    streamChunkDuration?: number;
+    streamTailDuration?: number;
 };
 
 export type GameSfxOptions = {
@@ -36,4 +39,3 @@ export type GameAudio = {
     setSfxVolume(volume: number): void;
     dispose(): void;
 };
-

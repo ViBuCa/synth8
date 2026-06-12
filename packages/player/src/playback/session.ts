@@ -13,7 +13,14 @@ type LiveSession = {
     mode: "live";
 };
 
-type PlaybackSession = RenderedSession | LiveSession;
+type StreamedSession = {
+    mode: "streamed";
+    pause(): void;
+    resume(): void;
+    stop(): void;
+};
+
+type PlaybackSession = RenderedSession | LiveSession | StreamedSession;
 
 let currentSession: PlaybackSession | undefined;
 
@@ -43,6 +50,15 @@ export const setRenderedSession = (
     };
 };
 
+export const setStreamedSession = (
+    session: Pick<StreamedSession, "pause" | "resume" | "stop">
+): void => {
+    currentSession = {
+        mode: "streamed",
+        ...session,
+    };
+};
+
 export const clearPlaybackSession = (): void => {
     currentSession = undefined;
 };
@@ -54,6 +70,11 @@ export const pauseSession = (): void => {
 
     if (currentSession.mode === "live") {
         Tone.getTransport().pause();
+        return;
+    }
+
+    if (currentSession.mode === "streamed") {
+        currentSession.pause();
         return;
     }
 
@@ -76,6 +97,11 @@ export const resumeSession = (): void => {
         return;
     }
 
+    if (currentSession.mode === "streamed") {
+        currentSession.resume();
+        return;
+    }
+
     if (!currentSession.paused) {
         return;
     }
@@ -83,4 +109,24 @@ export const resumeSession = (): void => {
     currentSession.player.start(undefined, currentSession.offset);
     currentSession.startedAt = now() - currentSession.offset;
     currentSession.paused = false;
+};
+
+export const stopSession = (): void => {
+    if (!currentSession) {
+        return;
+    }
+
+    if (currentSession.mode === "streamed") {
+        const session = currentSession;
+
+        currentSession = undefined;
+        session.stop();
+        return;
+    }
+
+    if (currentSession.mode === "rendered" && !currentSession.paused) {
+        currentSession.player.stop();
+    }
+
+    currentSession = undefined;
 };

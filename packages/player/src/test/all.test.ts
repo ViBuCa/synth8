@@ -19,6 +19,7 @@ const transport = {
 const context = {
     lookAhead: 0.1,
     updateInterval: 0.05,
+    sampleRate: 100,
 };
 
 const triggerAttackRelease = vi.fn();
@@ -195,8 +196,10 @@ vi.mock("../drum", async (importOriginal) => ({
 describe("player", () => {
     beforeEach(async () => {
         const { clearPlaybackSession } = await import("../playback/session");
+        const { clearRenderCache } = await import("../index");
 
         clearPlaybackSession();
+        clearRenderCache();
         vi.clearAllMocks();
 
         scheduledCallbacks.length = 0;
@@ -211,6 +214,7 @@ describe("player", () => {
         transport.loopEnd = 0;
         context.lookAhead = 0.1;
         context.updateInterval = 0.05;
+        context.sampleRate = 100;
     });
 
     it("renders playback to a looping buffer by default", async () => {
@@ -233,9 +237,9 @@ describe("player", () => {
 
         await play(pattern, { bpm: 60 });
 
-        expect(offline).toHaveBeenCalledWith(expect.any(Function), 4);
-        expect(playerInstances[0]).toMatchObject({
-            buffer: renderedToneBuffer,
+        expect(offline).toHaveBeenCalledWith(expect.any(Function), 4, 2, 100);
+        expect(playerInstances.find((player) => player.loop)).toMatchObject({
+            buffer: renderedAudioBuffer,
             loop: true,
             loopStart: 0,
             loopEnd: 4,
@@ -315,6 +319,45 @@ describe("player", () => {
         expect(offline).not.toHaveBeenCalled();
         expect(transport.loop).toBe(true);
         expect(transport.start).toHaveBeenCalled();
+    });
+
+    it("prepares streamed playback from an initial audio chunk", async () => {
+        const { prepare } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [
+                {
+                    type: "note",
+                    value: "c4",
+                    time: 0,
+                    dur: 1,
+                },
+            ],
+            layers: [],
+        };
+
+        const playback = await prepare(pattern, {
+            bpm: 60,
+            playbackMode: "streamed",
+            streamChunkDuration: 5,
+        });
+
+        expect(playback.playbackMode).toBe("streamed");
+        expect(offline).toHaveBeenCalledWith(expect.any(Function), 1.25, 2, 100);
+        expect(playerStart).not.toHaveBeenCalled();
+
+        playback.start();
+
+        expect(playerInstances.find((player) => player.loop)).toMatchObject({
+            buffer: renderedAudioBuffer,
+            loop: true,
+            loopStart: 0,
+            loopEnd: 1,
+        });
+        expect(playerStart).toHaveBeenCalledWith(0);
     });
 
     it("schedules rendered note and drum events during offline rendering", async () => {
@@ -736,7 +779,7 @@ describe("player", () => {
         expect(drumDispose).toHaveBeenCalled();
     });
 
-    it("plays rendered game music and overlapping sfx without replacing music", async () => {
+    it("plays streamed game music and overlapping sfx without replacing music", async () => {
         const { createGameAudio } = await import("../index");
 
         const pattern: Pattern = {
@@ -759,11 +802,12 @@ describe("player", () => {
         const sfx = await audio.prepareSfx(pattern, { bpm: 120, voices: 2 });
 
         music.start();
+        await Promise.resolve();
         audio.playSfx(sfx);
         audio.playSfx(sfx);
 
         expect(playerInstances).toHaveLength(3);
-        expect(playerInstances[0]).toMatchObject({
+        expect(playerInstances.find((player) => player.loop)).toMatchObject({
             buffer: renderedAudioBuffer,
             loop: true,
             loopStart: 0,
@@ -773,6 +817,23 @@ describe("player", () => {
         expect(playerConnect).toHaveBeenCalled();
         expect(transport.cancel).not.toHaveBeenCalled();
         expect(dispose).not.toHaveBeenCalled();
+    });
+
+    it("can prepare rendered game music explicitly", async () => {
+        const { createGameAudio } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const audio = await createGameAudio();
+        const music = await audio.prepareMusic(pattern, { playbackMode: "rendered" });
+
+        expect(music.playbackMode).toBe("rendered");
     });
 
     it("prepares replacement game music without stopping the current music", async () => {
@@ -853,8 +914,26 @@ describe("player", () => {
 
         const buffer = await renderToAudioBuffer(pattern, { bpm: 60 });
 
-        expect(offline).toHaveBeenCalledWith(expect.any(Function), 2);
+        expect(offline).toHaveBeenCalledWith(expect.any(Function), 2, 2, 100);
         expect(buffer).toBe(renderedAudioBuffer);
+    });
+
+    it("reuses cached rendered audio buffers for matching patterns and bpm", async () => {
+        const { renderToAudioBuffer } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 2,
+            loopLength: 2,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const first = await renderToAudioBuffer(pattern, { bpm: 60 });
+        const second = await renderToAudioBuffer(pattern, { bpm: 60 });
+
+        expect(first).toBe(second);
+        expect(offline).toHaveBeenCalledTimes(1);
     });
 
     it("encodes audio buffers as wav blobs", async () => {

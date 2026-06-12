@@ -55,14 +55,16 @@ Options:
 ```ts
 type PlayOptions = {
   bpm?: number;
-  playbackMode?: "auto" | "rendered" | "live";
+  playbackMode?: "auto" | "rendered" | "live" | "streamed";
   lookAhead?: number;
   updateInterval?: number;
+  streamChunkDuration?: number;
+  streamTailDuration?: number;
   onReady?: (playback: PreparedPlayback) => void | Promise<void>;
 };
 
 type PreparedPlayback = {
-  playbackMode: "rendered" | "live";
+  playbackMode: "rendered" | "live" | "streamed";
   start(): void;
   pause(): void;
   resume(): void;
@@ -137,7 +139,7 @@ audio.playSfx(jump);
 audio.playSfx(jump, { playbackRate: 1.2, volume: 0.8 });
 ```
 
-`prepareMusic()` renders the music to a looping buffer, so ongoing playback does not depend on continuous JavaScript scheduling. `prepareSfx()` renders a one-shot buffer and creates a small voice pool, allowing repeated calls to `playSfx()` to overlap without replacing the music.
+`prepareMusic()` uses streamed playback by default, so long game tracks can start after the first chunk is ready while later chunks render in the background. Pass `{ playbackMode: "rendered" }` when you explicitly want to render the full loop before starting. `prepareSfx()` renders a one-shot buffer and creates a small voice pool, allowing repeated calls to `playSfx()` to overlap without replacing the music.
 
 Use `setMasterVolume()`, `setMusicVolume()` and `setSfxVolume()` for runtime mixing. Call `dispose()` when leaving the game or tearing down the audio engine.
 
@@ -235,6 +237,21 @@ await play(pattern, { bpm: 120, playbackMode: "live" });
 ```
 
 Live mode is useful when you need immediate synthesis behavior or want to inspect timing while developing. It can be more sensitive to browser and main-thread load, especially when tabs are backgrounded or the page is doing heavy work.
+
+### Streamed playback
+
+Streamed playback renders a short chunk first, starts it, and then keeps rendering later chunks in the background:
+
+```ts
+await play(pattern, {
+  bpm: 120,
+  playbackMode: "streamed",
+  streamChunkDuration: 5,
+  streamTailDuration: 0.25
+});
+```
+
+This is useful for long songs where rendering the full loop upfront would take too long, but you still want Tone.js-rendered audio instead of live Transport scheduling for the whole piece. If rendering falls behind, a chunk may start late, so tune `streamChunkDuration` upward for heavier songs.
 
 ### Scheduling options
 

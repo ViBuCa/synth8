@@ -141,7 +141,12 @@ try {
   }
 
   const playbackMode = params.get("playback");
-  if (playbackMode === "auto" || playbackMode === "rendered" || playbackMode === "live") {
+  if (
+    playbackMode === "auto" ||
+    playbackMode === "rendered" ||
+    playbackMode === "live" ||
+    playbackMode === "streamed"
+  ) {
     startupPlaybackMode = playbackMode;
   }
 } catch {
@@ -234,6 +239,15 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
             ${startupPlaybackMode === "live" ? "checked" : ""}
           />
           Live
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="playback-mode"
+            value="streamed"
+            ${startupPlaybackMode === "streamed" ? "checked" : ""}
+          />
+          Streamed
         </label>
       </fieldset>
 
@@ -414,7 +428,7 @@ function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> {
     'input[name="playback-mode"]:checked'
   )?.value;
 
-  if (selected === "rendered" || selected === "live") {
+  if (selected === "rendered" || selected === "live" || selected === "streamed") {
     return selected;
   }
 
@@ -502,7 +516,7 @@ gameMusicButton.addEventListener("click", async () => {
   try {
     gameMusicButton.disabled = true;
     gameMusicButton.textContent = "Preparing...";
-    setGameAudioStatus("Preparing rendered game music...", true);
+    setGameAudioStatus("Preparing streamed game music...", true);
 
     const audio = await getGameAudio();
     const pattern = compile(sourceInput.value);
