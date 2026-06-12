@@ -18,6 +18,78 @@ main>*+* {
     margin-top: 20px;
 }
 
+.app-header {
+    align-items: center;
+    border-bottom: 1px solid #44475a;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 18px;
+}
+
+.brand-button {
+    background: transparent;
+    color: #f8f8f2;
+    font-size: 20px;
+    padding: 8px 0;
+}
+
+.main-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.nav-button {
+    background: #282a36;
+    border: 1px solid #44475a;
+    border-radius: 8px;
+    color: #f8f8f2;
+}
+
+.nav-button:hover,
+.nav-button.is-active {
+    background: #8be9fd;
+    color: #101018;
+}
+
+.landing {
+    display: grid;
+    gap: 28px;
+    min-height: 48vh;
+    place-content: center;
+}
+
+.landing-copy {
+    max-width: 760px;
+}
+
+.lead {
+    color: #c7c7d8;
+    font-size: 20px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.landing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.landing-action {
+    background: #8be9fd;
+    color: #101018;
+    border-radius: 8px;
+    font-size: 16px;
+    padding: 14px 18px;
+}
+
+.landing-action.primary {
+    background: #50fa7b;
+}
+
 .hero {
     margin-bottom: 24px;
 }
@@ -346,6 +418,82 @@ button:disabled {
     line-height: 1.5;
 }
 
+.tutorial-hero {
+    margin-bottom: 28px;
+}
+
+.tutorial-list {
+    display: grid;
+    gap: 18px;
+}
+
+.tutorial-card {
+    border: 1px solid #44475a;
+    border-radius: 8px;
+    padding: 18px;
+}
+
+.tutorial-copy {
+    margin-bottom: 14px;
+}
+
+.tutorial-copy h2 {
+    margin-bottom: 6px;
+}
+
+.tutorial-copy p {
+    color: #c7c7d8;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.tutorial-copy .tutorial-details {
+    color: #8f8fa3;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.tutorial-editor {
+    min-height: 132px;
+}
+
+.tutorial-controls {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.tutorial-bpm {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    max-width: 120px;
+}
+
+.tutorial-play {
+    background: #50fa7b;
+    color: #101018;
+}
+
+.tutorial-stop {
+    background: #ff5555;
+    color: white;
+}
+
+.tutorial-status {
+    color: #8f8fa3;
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 12px;
+    min-height: 20px;
+}
+
+.tutorial-status.is-busy {
+    color: #ffdab2;
+}
+
 .option-row {
     display: flex;
     gap: 1rem;
@@ -383,6 +531,11 @@ button:disabled {
 @media (max-width: 640px) {
     main {
         padding: 28px 18px;
+    }
+
+    .app-header {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     h1 {
