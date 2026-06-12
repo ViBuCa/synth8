@@ -189,4 +189,32 @@ describe("parse", () => {
             gain: 0.5,
         });
     });
+
+    it("parses envelope modifiers", () => {
+        expect(
+            parse(`melody("c4").attack(0.01).decay(0.2).sustain(0.6).release(0.4)`)
+        ).toMatchObject({
+            envelope: {
+                attack: 0.01,
+                decay: 0.2,
+                sustain: 0.6,
+                release: 0.4,
+            },
+        });
+    });
+
+    it("rejects invalid envelope values", () => {
+        expect(() => parse(`melody("c4").attack(-0.1)`)).toThrow(
+            "attack() must be between 0 and 30 seconds."
+        );
+        expect(() => parse(`melody("c4").sustain(1.1)`)).toThrow(
+            "sustain() must be between 0 and 1."
+        );
+    });
+
+    it("rejects unknown sound values", () => {
+        expect(() => parse(`melody("c4").sound("noise")`)).toThrow(
+            "Illegal sound value: noise"
+        );
+    });
 });

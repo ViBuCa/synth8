@@ -163,6 +163,25 @@ square
 sawtooth
 ```
 
+### Envelope
+
+Use envelope modifiers to shape melodic synth notes:
+
+```ts
+melody("c4 e4 g4")
+  .sound("triangle")
+  .attack(0.02)
+  .decay(0.15)
+  .sustain(0.5)
+  .release(0.4)
+```
+
+`attack()`, `decay()`, and `release()` use seconds from `0` to `30`.
+
+`sustain()` uses a level from `0` to `1`.
+
+Envelope values are stored on the compiled layer playback config. They do not modify individual events.
+
 ### Transpose
 
 ```ts

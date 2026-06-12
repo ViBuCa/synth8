@@ -1,4 +1,4 @@
-import { Waveform } from "../model";
+import type { EnvelopeConfig, Waveform } from "../model";
 import type { AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
@@ -18,7 +18,10 @@ type Modifiers = {
   sound?: Waveform;
   gain?: number;
   pan?: number;
+  envelope?: EnvelopeConfig;
 };
+
+const WAVEFORMS: Waveform[] = ["sine", "triangle", "square", "sawtooth"];
 
 const createState = (tokens: Token[]): ParserState => ({
   tokens,
@@ -115,6 +118,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let gain: number | undefined = undefined;
   let sound: Waveform | undefined = undefined;
   let pan: number | undefined = undefined;
+  const envelope: EnvelopeConfig = {};
 
   while (matchSymbol(state, ".")) {
     const modifier = expectAnyIdentifier(state);
@@ -133,6 +137,10 @@ const parseModifiers = (state: ParserState): Modifiers => {
       case "offset":
       case "gain":
       case "pan":
+      case "attack":
+      case "decay":
+      case "sustain":
+      case "release":
         value = expectNumber(state);
         break;
       case "sound":
@@ -198,19 +206,45 @@ const parseModifiers = (state: ParserState): Modifiers => {
         break;
 
       case "sound":
-        if ((str as Waveform) != null) {
-          sound = str as Waveform;
-        } else {
+        if (!WAVEFORMS.includes(str as Waveform)) {
           throw new Error(`Illegal sound value: ${str}`);
         }
-        break
+        sound = str as Waveform;
+        break;
+
+      case "attack":
+      case "decay":
+      case "release":
+        if (value < 0 || value > 30) {
+          throw new Error(`${modifier}() must be between 0 and 30 seconds.`);
+        }
+        envelope[modifier] = value;
+        break;
+
+      case "sustain":
+        if (value < 0 || value > 1) {
+          throw new Error("sustain() must be between 0 and 1.");
+        }
+        envelope.sustain = value;
+        break;
+
       case "loop":
         loop = true;
         break;
     }
   }
 
-  return { rate, transpose, repeat, loop, offset, sound, gain, pan };
+  return {
+    rate,
+    transpose,
+    repeat,
+    loop,
+    offset,
+    sound,
+    gain,
+    pan,
+    envelope: Object.keys(envelope).length > 0 ? envelope : undefined,
+  };
 };
 
 const parseBeatExpression = (state: ParserState): AstNode => {
@@ -221,7 +255,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
-  const { rate, repeat, loop, offset, sound, gain, pan } = parseModifiers(state);
+  const { rate, repeat, loop, offset, sound, gain, pan, envelope } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -232,7 +266,8 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     offset,
     sound,
     gain,
-    pan
+    pan,
+    envelope,
   };
 };
 
@@ -244,7 +279,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
-  const { rate, transpose, repeat, loop, offset, sound, gain, pan } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, sound, gain, pan, envelope } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -256,7 +291,8 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     offset,
     sound,
     gain,
-    pan
+    pan,
+    envelope,
   };
 };
 
@@ -278,7 +314,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, sound, gain, pan } = parseModifiers(state);
+  const { repeat, loop, offset, sound, gain, pan, envelope } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -288,7 +324,8 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     offset,
     sound,
     gain,
-    pan
+    pan,
+    envelope,
   };
 };
 

@@ -62,6 +62,7 @@ const gainParamSetValueAtTime = vi.fn(function (
     this.value = value;
 });
 const gainInstances: Array<{ gain: { value: number } }> = [];
+const polySynthInstances: Array<{ options: unknown }> = [];
 const offline = vi.fn(async (callback: (context: { transport: typeof transport }) => void) => {
     callback({ transport });
     return renderedToneBuffer;
@@ -120,6 +121,7 @@ vi.mock("tone", () => {
 
         constructor(_synth: unknown, options: unknown) {
             this.options = options;
+            polySynthInstances.push(this);
         }
 
         connect = connect;
@@ -205,6 +207,7 @@ describe("player", () => {
         scheduledCallbacks.length = 0;
         playerInstances.length = 0;
         gainInstances.length = 0;
+        polySynthInstances.length = 0;
         renderedToneBuffer.get.mockClear();
         renderedAudioBuffer.getChannelData.mockClear();
 
@@ -720,6 +723,52 @@ describe("player", () => {
         expect(triggerAttackRelease).toHaveBeenCalledWith("e4", 0.5, 1, 0.8);
         expect(createDrums).not.toHaveBeenCalled();
         expect(drumConnect).not.toHaveBeenCalled();
+    });
+
+    it("passes layer envelope config to note synths", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [
+                {
+                    playback: {
+                        sound: "square",
+                        envelope: {
+                            attack: 0.01,
+                            decay: 0.2,
+                            sustain: 0.6,
+                            release: 0.4,
+                        },
+                    },
+                    events: [
+                        {
+                            type: "note",
+                            value: "c4",
+                            time: 0,
+                            dur: 1,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        await play(pattern, { playbackMode: "live" });
+
+        expect(polySynthInstances[0].options).toEqual({
+            oscillator: {
+                type: "square",
+            },
+            envelope: {
+                attack: 0.01,
+                decay: 0.2,
+                sustain: 0.6,
+                release: 0.4,
+            },
+        });
     });
 
     it("falls back to top-level events when no layers exist", async () => {

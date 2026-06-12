@@ -300,6 +300,19 @@ melody("c3 g3").sound("sawtooth")
 melody("c5 d5 e5").sound("square")
 ```
 
+Melody layers can also define synth envelope values:
+
+```ts
+melody("c4 e4 g4")
+  .sound("triangle")
+  .attack(0.02)
+  .decay(0.15)
+  .sustain(0.5)
+  .release(0.4)
+```
+
+The player passes these values to Tone.js synth envelopes. `attack()`, `decay()`, and `release()` are seconds. `sustain()` is a level from 0 to 1.
+
 ## Event Structure
 The player consumes compiled events:
 ```ts

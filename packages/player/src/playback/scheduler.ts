@@ -45,7 +45,7 @@ export const scheduleLayers = (
         }
 
         const synth = noteEvents.length > 0
-            ? createSynth(sound).connect(gainNode)
+            ? createSynth(sound, layer.playback?.envelope).connect(gainNode)
             : undefined;
         const drums = drumEvents.length > 0
             ? createDrums(drumEvents.map((event) => event.value))
@@ -76,4 +76,3 @@ export const scheduleLayers = (
         }
     }
 };
-

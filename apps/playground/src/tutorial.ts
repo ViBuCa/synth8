@@ -60,6 +60,17 @@ const tutorialExamples: TutorialExample[] = [
   .sound("square")`,
   },
   {
+    title: "Envelope",
+    body: "Use envelope modifiers to shape how notes fade in, settle, and release.",
+    details: "attack, decay, and release are seconds from 0 to 30. sustain is a level from 0 to 1.",
+    source: `melody("c4 e4 g4 c5")
+  .sound("triangle")
+  .attack(0.02)
+  .decay(0.18)
+  .sustain(0.45)
+  .release(0.35)`,
+  },
+  {
     title: "Sequences",
     body: "sequence() plays patterns one after another.",
     details: "Pass one or more patterns separated by commas.",

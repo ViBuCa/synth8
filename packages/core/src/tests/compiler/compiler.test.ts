@@ -454,6 +454,43 @@ describe("compile", () => {
     });
   });
 
+  it("stores envelope on melody layer playback config", () => {
+    expect(
+      compile(
+        'melody("c4").attack(0.01).decay(0.15).sustain(0.5).release(0.35)'
+      ).layers[0].playback
+    ).toEqual({
+      envelope: {
+        attack: 0.01,
+        decay: 0.15,
+        sustain: 0.5,
+        release: 0.35,
+      },
+    });
+  });
+
+  it("applies sequence envelope as layer playback default", () => {
+    const pattern = compile(`
+    sequence(
+      melody("c4"),
+      melody("e4").release(0.6)
+    ).attack(0.02).release(0.2)
+  `);
+
+    expect(pattern.layers[0].playback).toEqual({
+      envelope: {
+        attack: 0.02,
+        release: 0.2,
+      },
+    });
+    expect(pattern.layers[1].playback).toEqual({
+      envelope: {
+        attack: 0.02,
+        release: 0.6,
+      },
+    });
+  });
+
   it("applies sequence pan as layer playback default", () => {
     const pattern = compile(`
     sequence(

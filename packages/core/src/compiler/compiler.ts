@@ -217,6 +217,7 @@ const compilePlayback = (ast: {
   sound?: Waveform;
   gain?: number;
   pan?: number;
+  envelope?: PlaybackConfig["envelope"];
 }): PlaybackConfig | undefined => {
   const playback: PlaybackConfig = {};
 
@@ -232,6 +233,10 @@ const compilePlayback = (ast: {
     playback.pan = ast.pan;
   }
 
+  if (ast.envelope !== undefined) {
+    playback.envelope = ast.envelope;
+  }
+
   return Object.keys(playback).length > 0
     ? playback
     : undefined;
@@ -243,10 +248,19 @@ const mergePlayback = (
 ): PlaybackConfig | undefined => {
   if (!parent && !child) return undefined;
 
-  return {
+  const playback: PlaybackConfig = {
     ...parent,
     ...child,
   };
+
+  if (parent?.envelope || child?.envelope) {
+    playback.envelope = {
+      ...parent?.envelope,
+      ...child?.envelope,
+    };
+  }
+
+  return playback;
 };
 
 const compileAst = (ast: AstNode): Pattern => {
