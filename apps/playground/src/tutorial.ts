@@ -71,6 +71,19 @@ const tutorialExamples: TutorialExample[] = [
   .release(0.35)`,
   },
   {
+    title: "Presets",
+    body: "Use preset() for quick layer defaults that can still be overridden.",
+    details: "Presets: chip-lead, chip-bass, soft-pad, metal-rhythm, arcade-pluck.",
+    source: `song(
+  melody("c5 e5 g5 c6")
+    .preset("chip-lead"),
+  melody("c2 _ g1 _")
+    .preset("chip-bass"),
+  melody("c4+g4 _ eb4+bb4 _")
+    .preset("metal-rhythm")
+)`,
+  },
+  {
     title: "Sequences",
     body: "sequence() plays patterns one after another.",
     details: "Pass one or more patterns separated by commas.",

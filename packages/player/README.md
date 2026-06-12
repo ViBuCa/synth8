@@ -313,6 +313,28 @@ melody("c4 e4 g4")
 
 The player passes these values to Tone.js synth envelopes. `attack()`, `decay()`, and `release()` are seconds. `sustain()` is a level from 0 to 1.
 
+Layer presets provide quick playback defaults:
+
+```ts
+melody("c5 e5 g5 c6").preset("chip-lead")
+melody("c2 _ g1 _").preset("chip-bass")
+melody("c4 e4 g4 c5").preset("soft-pad")
+melody("c4+g4 _ eb4+bb4 _").preset("metal-rhythm")
+melody("c6 g5 e5 c5").preset("arcade-pluck")
+```
+
+Supported presets:
+
+```ts
+chip-lead
+chip-bass
+soft-pad
+metal-rhythm
+arcade-pluck
+```
+
+Explicit layer modifiers override preset defaults. For example, `.preset("chip-lead").release(0.2)` keeps the chip lead sound while changing the release time.
+
 ## Event Structure
 The player consumes compiled events:
 ```ts

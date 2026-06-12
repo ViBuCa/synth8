@@ -469,6 +469,13 @@ describe("compile", () => {
     });
   });
 
+  it("stores preset on layer playback config", () => {
+    expect(compile('melody("c4").preset("metal-rhythm")').layers[0].playback)
+      .toEqual({
+        preset: "metal-rhythm",
+      });
+  });
+
   it("applies sequence envelope as layer playback default", () => {
     const pattern = compile(`
     sequence(

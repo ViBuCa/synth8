@@ -143,6 +143,7 @@ Implemented:
 * Layered playback model
 * Waveform selection
 * Synth envelope shaping
+* Playback presets
 * Gain
 * Tone.js player
 * Drum synthesizers

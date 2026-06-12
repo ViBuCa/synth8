@@ -1,4 +1,4 @@
-import type { EnvelopeConfig, Waveform } from "../model";
+import type { EnvelopeConfig, PlaybackPreset, Waveform } from "../model";
 import type { AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
@@ -15,6 +15,7 @@ type Modifiers = {
   repeat: number;
   loop: boolean;
   offset: number;
+  preset?: PlaybackPreset;
   sound?: Waveform;
   gain?: number;
   pan?: number;
@@ -22,6 +23,13 @@ type Modifiers = {
 };
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "square", "sawtooth"];
+const PLAYBACK_PRESETS: PlaybackPreset[] = [
+  "chip-lead",
+  "chip-bass",
+  "soft-pad",
+  "metal-rhythm",
+  "arcade-pluck",
+];
 
 const createState = (tokens: Token[]): ParserState => ({
   tokens,
@@ -116,6 +124,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let loop = false;
   let offset = 0;
   let gain: number | undefined = undefined;
+  let preset: PlaybackPreset | undefined = undefined;
   let sound: Waveform | undefined = undefined;
   let pan: number | undefined = undefined;
   const envelope: EnvelopeConfig = {};
@@ -144,7 +153,9 @@ const parseModifiers = (state: ParserState): Modifiers => {
         value = expectNumber(state);
         break;
       case "sound":
+      case "preset":
         str = expectString(state);
+        break;
       case "loop":
         break;
       default:
@@ -212,6 +223,13 @@ const parseModifiers = (state: ParserState): Modifiers => {
         sound = str as Waveform;
         break;
 
+      case "preset":
+        if (!PLAYBACK_PRESETS.includes(str as PlaybackPreset)) {
+          throw new Error(`Illegal preset value: ${str}`);
+        }
+        preset = str as PlaybackPreset;
+        break;
+
       case "attack":
       case "decay":
       case "release":
@@ -240,6 +258,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
     repeat,
     loop,
     offset,
+    preset,
     sound,
     gain,
     pan,
@@ -255,7 +274,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
-  const { rate, repeat, loop, offset, sound, gain, pan, envelope } = parseModifiers(state);
+  const { rate, repeat, loop, offset, preset, sound, gain, pan, envelope } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -264,6 +283,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     repeat,
     loop,
     offset,
+    preset,
     sound,
     gain,
     pan,
@@ -279,7 +299,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
-  const { rate, transpose, repeat, loop, offset, sound, gain, pan, envelope } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, preset, sound, gain, pan, envelope } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -289,6 +309,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     repeat,
     loop,
     offset,
+    preset,
     sound,
     gain,
     pan,
@@ -314,7 +335,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, sound, gain, pan, envelope } = parseModifiers(state);
+  const { repeat, loop, offset, preset, sound, gain, pan, envelope } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -322,6 +343,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     repeat,
     loop,
     offset,
+    preset,
     sound,
     gain,
     pan,

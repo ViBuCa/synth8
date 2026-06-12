@@ -38,7 +38,9 @@ const DRUM_SOUNDS: DrumSound[] = [
 
 const hasSound = (sounds: Set<string>, sound: DrumSound): boolean => sounds.has(sound);
 
-export const createDrums = (sounds: Iterable<string> = DRUM_SOUNDS): DrumKit => {
+export const createDrums = (
+    sounds: Iterable<string> = DRUM_SOUNDS
+): DrumKit => {
     const requestedSounds = new Set(sounds);
     const connectableInstruments: DrumInstrument[] = [];
     const disposables: { dispose: () => void }[] = [];

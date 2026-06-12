@@ -203,6 +203,24 @@ describe("parse", () => {
         });
     });
 
+    it("parses preset modifiers", () => {
+        expect(parse(`melody("c4").preset("chip-lead")`)).toMatchObject({
+            preset: "chip-lead",
+        });
+        expect(parse(`melody("c2").preset("chip-bass")`)).toMatchObject({
+            preset: "chip-bass",
+        });
+        expect(parse(`melody("c4").preset("soft-pad")`)).toMatchObject({
+            preset: "soft-pad",
+        });
+        expect(parse(`melody("c4").preset("metal-rhythm")`)).toMatchObject({
+            preset: "metal-rhythm",
+        });
+        expect(parse(`melody("c6").preset("arcade-pluck")`)).toMatchObject({
+            preset: "arcade-pluck",
+        });
+    });
+
     it("rejects invalid envelope values", () => {
         expect(() => parse(`melody("c4").attack(-0.1)`)).toThrow(
             "attack() must be between 0 and 30 seconds."
@@ -215,6 +233,12 @@ describe("parse", () => {
     it("rejects unknown sound values", () => {
         expect(() => parse(`melody("c4").sound("noise")`)).toThrow(
             "Illegal sound value: noise"
+        );
+    });
+
+    it("rejects unknown preset values", () => {
+        expect(() => parse(`melody("c4").preset("space-pad")`)).toThrow(
+            "Illegal preset value: space-pad"
         );
     });
 });

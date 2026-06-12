@@ -771,6 +771,90 @@ describe("player", () => {
         });
     });
 
+    it("resolves melody preset defaults and explicit envelope overrides", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [
+                {
+                    playback: {
+                        preset: "chip-lead",
+                        envelope: {
+                            release: 0.2,
+                        },
+                    },
+                    events: [
+                        {
+                            type: "note",
+                            value: "c4",
+                            time: 0,
+                            dur: 1,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        await play(pattern, { playbackMode: "live" });
+
+        expect(polySynthInstances[0].options).toEqual({
+            oscillator: {
+                type: "square",
+            },
+            envelope: {
+                attack: 0.005,
+                decay: 0.08,
+                sustain: 0.65,
+                release: 0.2,
+            },
+        });
+    });
+
+    it("resolves soft pad preset defaults", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [
+                {
+                    playback: {
+                        preset: "soft-pad",
+                    },
+                    events: [
+                        {
+                            type: "note",
+                            value: "c4",
+                            time: 0,
+                            dur: 1,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        await play(pattern, { playbackMode: "live" });
+
+        expect(polySynthInstances[0].options).toEqual({
+            oscillator: {
+                type: "triangle",
+            },
+            envelope: {
+                attack: 0.35,
+                decay: 0.25,
+                sustain: 0.75,
+                release: 0.9,
+            },
+        });
+        expect(gainInstances[0].gain.value).toBe(0.7);
+    });
+
     it("falls back to top-level events when no layers exist", async () => {
         const { play } = await import("../index");
 

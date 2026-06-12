@@ -3,6 +3,7 @@ import type { Pattern, Waveform } from "@vibuca/synth8-core";
 import { createDrums, playDrum } from "../drum";
 import { createSynth } from "./synth";
 import { getLayers } from "./layers";
+import { resolvePlaybackPreset } from "./presets";
 
 const DEFAULT_SOUND: Waveform = "sine";
 
@@ -28,13 +29,14 @@ export const scheduleLayers = (
     output?: Tone.ToneAudioNode
 ): void => {
     for (const layer of layers) {
+        const playback = resolvePlaybackPreset(layer.playback);
         const noteEvents = layer.events.filter((event) => event.type === "note");
         const drumEvents = layer.events.filter((event) => event.type === "drum");
-        const sound = layer.playback?.sound ?? DEFAULT_SOUND;
-        const gain = layer.playback?.gain ?? 1;
+        const sound = playback?.sound ?? DEFAULT_SOUND;
+        const gain = playback?.gain ?? 1;
 
         const gainNode = new Tone.Gain(gain);
-        const panner = new Tone.Panner(layer.playback?.pan ?? 0);
+        const panner = new Tone.Panner(playback?.pan ?? 0);
 
         gainNode.connect(panner);
 
@@ -45,7 +47,7 @@ export const scheduleLayers = (
         }
 
         const synth = noteEvents.length > 0
-            ? createSynth(sound, layer.playback?.envelope).connect(gainNode)
+            ? createSynth(sound, playback?.envelope).connect(gainNode)
             : undefined;
         const drums = drumEvents.length > 0
             ? createDrums(drumEvents.map((event) => event.value))

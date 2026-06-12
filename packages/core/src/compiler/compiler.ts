@@ -214,12 +214,17 @@ const compileMelodySteps = (
 };
 
 const compilePlayback = (ast: {
+  preset?: PlaybackConfig["preset"];
   sound?: Waveform;
   gain?: number;
   pan?: number;
   envelope?: PlaybackConfig["envelope"];
 }): PlaybackConfig | undefined => {
   const playback: PlaybackConfig = {};
+
+  if (ast.preset !== undefined) {
+    playback.preset = ast.preset;
+  }
 
   if (ast.sound !== undefined) {
     playback.sound = ast.sound;

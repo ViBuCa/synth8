@@ -182,6 +182,30 @@ melody("c4 e4 g4")
 
 Envelope values are stored on the compiled layer playback config. They do not modify individual events.
 
+### Presets
+
+Use `.preset(name)` to apply a named playback preset to a layer:
+
+```ts
+melody("c5 e5 g5 c6").preset("chip-lead")
+melody("c2 _ g1 _").preset("chip-bass")
+melody("c4 e4 g4 c5").preset("soft-pad")
+melody("c4+g4 _ eb4+bb4 _").preset("metal-rhythm")
+melody("c6 g5 e5 c5").preset("arcade-pluck")
+```
+
+Supported presets:
+
+```ts
+chip-lead
+chip-bass
+soft-pad
+metal-rhythm
+arcade-pluck
+```
+
+Presets are stored on the compiled layer playback config. Explicit modifiers such as `.sound()` or `.release()` can override preset defaults during playback.
+
 ### Transpose
 
 ```ts
