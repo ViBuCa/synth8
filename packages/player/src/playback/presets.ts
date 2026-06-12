@@ -11,13 +11,13 @@ const PRESET_PLAYBACK: Record<PlaybackPreset, PlaybackConfig> = {
         },
     },
     "chip-bass": {
-        sound: "square",
-        gain: 0.85,
+        sound: "triangle",
+        gain: 0.9,
         envelope: {
-            attack: 0.002,
-            decay: 0.06,
-            sustain: 0.55,
-            release: 0.06,
+            attack: 0.001,
+            decay: 0.05,
+            sustain: 0.75,
+            release: 0.04,
         },
     },
     "soft-pad": {

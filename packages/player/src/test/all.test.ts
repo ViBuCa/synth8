@@ -855,6 +855,47 @@ describe("player", () => {
         expect(gainInstances[0].gain.value).toBe(0.7);
     });
 
+    it("resolves chip bass as a round triangle bass preset", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [
+                {
+                    playback: {
+                        preset: "chip-bass",
+                    },
+                    events: [
+                        {
+                            type: "note",
+                            value: "c2",
+                            time: 0,
+                            dur: 1,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        await play(pattern, { playbackMode: "live" });
+
+        expect(polySynthInstances[0].options).toEqual({
+            oscillator: {
+                type: "triangle",
+            },
+            envelope: {
+                attack: 0.001,
+                decay: 0.05,
+                sustain: 0.75,
+                release: 0.04,
+            },
+        });
+        expect(gainInstances[0].gain.value).toBe(0.9);
+    });
+
     it("falls back to top-level events when no layers exist", async () => {
         const { play } = await import("../index");
 
