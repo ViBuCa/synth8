@@ -8,6 +8,7 @@ import {
 } from "@vibuca/synth8-import-midi";
 
 type OutputKind = "info" | "success" | "error" | "json";
+type DemoTab = "player" | "game";
 
 function setOutput(kind: OutputKind, message: string) {
   output.className = `output output-${kind}`;
@@ -177,52 +178,86 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     <label for="bpm">BPM</label>
     <input id="bpm" type="number" value="${startupBpm}" min="40" max="240" />
 
-    <fieldset class="playback-mode">
-      <legend>Playback</legend>
-      <label class="radio-option">
-        <input
-          type="radio"
-          name="playback-mode"
-          value="auto"
-          ${startupPlaybackMode === "auto" ? "checked" : ""}
-        />
-        Auto
-      </label>
-      <label class="radio-option">
-        <input
-          type="radio"
-          name="playback-mode"
-          value="rendered"
-          ${startupPlaybackMode === "rendered" ? "checked" : ""}
-        />
-        Rendered
-      </label>
-      <label class="radio-option">
-        <input
-          type="radio"
-          name="playback-mode"
-          value="live"
-          ${startupPlaybackMode === "live" ? "checked" : ""}
-        />
-        Live
-      </label>
-    </fieldset>
-
-    <div>
-      <button id="play">Play</button>
-      <button id="pause">Pause</button>
-      <button id="resume">Resume</button>
-      <button id="stop">Stop</button>
-      <button id="share">Copy Share Link</button>
+    <div class="demo-tabs" role="tablist" aria-label="Playback demos">
+      <button
+        id="player-tab"
+        class="demo-tab is-active"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        aria-controls="player-panel"
+        data-tab="player"
+      >Simple player</button>
+      <button
+        id="game-tab"
+        class="demo-tab"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="game-panel"
+        data-tab="game"
+      >Music + Sfx</button>
     </div>
 
-    <div id="playback-status" class="playback-status" role="status" aria-live="polite">Idle.</div>
+    <section
+      id="player-panel"
+      class="demo-panel"
+      role="tabpanel"
+      aria-labelledby="player-tab"
+      data-panel="player"
+    >
+      <fieldset class="playback-mode">
+        <legend>Playback</legend>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="playback-mode"
+            value="auto"
+            ${startupPlaybackMode === "auto" ? "checked" : ""}
+          />
+          Auto
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="playback-mode"
+            value="rendered"
+            ${startupPlaybackMode === "rendered" ? "checked" : ""}
+          />
+          Rendered
+        </label>
+        <label class="radio-option">
+          <input
+            type="radio"
+            name="playback-mode"
+            value="live"
+            ${startupPlaybackMode === "live" ? "checked" : ""}
+          />
+          Live
+        </label>
+      </fieldset>
 
-    <section class="game-audio-panel">
-      <h2>Game audio</h2>
+      <div class="control-row">
+        <button id="play">Play</button>
+        <button id="pause">Pause</button>
+        <button id="resume">Resume</button>
+        <button id="stop">Stop</button>
+        <button id="share">Copy Share Link</button>
+      </div>
 
+      <div id="playback-status" class="playback-status" role="status" aria-live="polite">Idle.</div>
+    </section>
+
+    <section
+      id="game-panel"
+      class="demo-panel"
+      role="tabpanel"
+      aria-labelledby="game-tab"
+      data-panel="game"
+      hidden
+    >
       <div class="game-audio-controls">
-        <button id="game-music">Start Game Music</button>
+        <button id="game-music">Start Music</button>
         <button id="game-music-stop">Stop Music</button>
       </div>
 
@@ -292,10 +327,25 @@ const sfxVolumeInput = document.querySelector<HTMLInputElement>("#sfx-volume")!;
 const masterVolumeValue = document.querySelector<HTMLOutputElement>("#master-volume-value")!;
 const musicVolumeValue = document.querySelector<HTMLOutputElement>("#music-volume-value")!;
 const sfxVolumeValue = document.querySelector<HTMLOutputElement>("#sfx-volume-value")!;
+const tabButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".demo-tab"));
+const tabPanels = Array.from(document.querySelectorAll<HTMLElement>(".demo-panel"));
 
 let gameAudio: GameAudio | undefined;
 let gameMusic: PreparedPlayback | undefined;
 const preparedSfx = new Map<GameSfxName, PreparedSfx>();
+
+function selectTab(tab: DemoTab) {
+  for (const button of tabButtons) {
+    const isSelected = button.dataset.tab === tab;
+
+    button.classList.toggle("is-active", isSelected);
+    button.setAttribute("aria-selected", String(isSelected));
+  }
+
+  for (const panel of tabPanels) {
+    panel.hidden = panel.dataset.panel !== tab;
+  }
+}
 
 function setPlaybackStatus(message: string, busy = false) {
   playbackStatus.textContent = message;
@@ -415,7 +465,7 @@ document.querySelector<HTMLButtonElement>("#resume")!.addEventListener("click", 
 });
 
 gameMusicButton.addEventListener("click", async () => {
-  const previousText = gameMusicButton.textContent ?? "Start Game Music";
+  const previousText = gameMusicButton.textContent ?? "Start Music";
 
   try {
     gameMusicButton.disabled = true;
@@ -484,6 +534,16 @@ sfxVolumeInput.addEventListener("input", async () => {
 });
 
 syncVolumeLabels();
+
+tabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const tab = button.dataset.tab;
+
+    if (tab === "player" || tab === "game") {
+      selectTab(tab);
+    }
+  });
+});
 
 document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button) => {
   button.addEventListener("click", () => {

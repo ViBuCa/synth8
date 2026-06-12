@@ -100,10 +100,45 @@ button:disabled {
     color: #101018;
 }
 
-.game-audio-panel {
-    border-top: 1px solid #44475a;
-    margin-top: 32px;
-    padding-top: 24px;
+.demo-tabs {
+    border-bottom: 1px solid #44475a;
+    display: flex;
+    gap: 8px;
+    margin-top: 28px;
+}
+
+.demo-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px 8px 0 0;
+    color: #f8f8f2;
+    margin-bottom: -1px;
+}
+
+.demo-tab:hover {
+    background: #1b1b2b;
+    border-color: #44475a;
+}
+
+.demo-tab.is-active {
+    background: #1b1b2b;
+    border-color: #44475a;
+    border-bottom-color: #1b1b2b;
+    color: #8be9fd;
+}
+
+.demo-panel {
+    padding-top: 20px;
+}
+
+.demo-panel[hidden] {
+    display: none;
+}
+
+.control-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .game-audio-controls,
