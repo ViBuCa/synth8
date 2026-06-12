@@ -112,6 +112,35 @@ await play(pattern, {
 
 For games, `prepare()` is usually easier to coordinate than `onReady`, but `onReady` keeps the one-call `play()` workflow available.
 
+### `createGameAudio(options)`
+
+Creates an isolated game audio engine with separate music, SFX and master volume buses.
+
+```ts
+import { compile } from "@vibuca/synth8-core";
+import { createGameAudio } from "@vibuca/synth8-player";
+
+const audio = await createGameAudio({
+  musicVolume: 0.7,
+  sfxVolume: 0.9
+});
+
+const music = await audio.prepareMusic(theme, { bpm: 120 });
+const jump = await audio.prepareSfx(compile('melody("c6/8").sound("square")'), {
+  voices: 8
+});
+
+music.start();
+
+// later, from gameplay code
+audio.playSfx(jump);
+audio.playSfx(jump, { playbackRate: 1.2, volume: 0.8 });
+```
+
+`prepareMusic()` renders the music to a looping buffer, so ongoing playback does not depend on continuous JavaScript scheduling. `prepareSfx()` renders a one-shot buffer and creates a small voice pool, allowing repeated calls to `playSfx()` to overlap without replacing the music.
+
+Use `setMasterVolume()`, `setMusicVolume()` and `setSfxVolume()` for runtime mixing. Call `dispose()` when leaving the game or tearing down the audio engine.
+
 ### `stop()`
 
 Stops playback.

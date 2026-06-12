@@ -28,6 +28,9 @@ const connect = vi.fn(function (this: unknown) {
 const dispose = vi.fn();
 const playerStart = vi.fn();
 const playerStop = vi.fn();
+const playerConnect = vi.fn(function (this: unknown) {
+    return this;
+});
 const playerToDestination = vi.fn(function (this: unknown) {
     return this;
 });
@@ -36,7 +39,15 @@ const playerInstances: Array<{
     loop: boolean;
     loopStart: number;
     loopEnd: number;
+    playbackRate: number;
 }> = [];
+const gainParamSetValueAtTime = vi.fn(function (
+    this: { value: number },
+    value: number
+) {
+    this.value = value;
+});
+const gainInstances: Array<{ gain: { value: number } }> = [];
 const offline = vi.fn(async (callback: (context: { transport: typeof transport }) => void) => {
     callback({ transport });
     return "rendered-buffer";
@@ -45,9 +56,20 @@ const offline = vi.fn(async (callback: (context: { transport: typeof transport }
 vi.mock("tone", () => {
     class Gain {
         value: number;
+        gain: {
+            value: number;
+            cancelScheduledValues: ReturnType<typeof vi.fn>;
+            setValueAtTime: typeof gainParamSetValueAtTime;
+        };
 
         constructor(value: number) {
             this.value = value;
+            this.gain = {
+                value,
+                cancelScheduledValues: vi.fn(),
+                setValueAtTime: gainParamSetValueAtTime,
+            };
+            gainInstances.push(this);
         }
 
         toDestination = vi.fn(() => this);
@@ -60,6 +82,18 @@ vi.mock("tone", () => {
 
         constructor(value: number) {
             this.value = value;
+        }
+
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
+    class Limiter {
+        threshold: number;
+
+        constructor(threshold: number) {
+            this.threshold = threshold;
         }
 
         toDestination = vi.fn(() => this);
@@ -86,6 +120,8 @@ vi.mock("tone", () => {
         loop = false;
         loopStart = 0;
         loopEnd = 0;
+        playbackRate = 1;
+        volume = { value: 0 };
 
         constructor(buffer: unknown) {
             this.buffer = buffer;
@@ -93,6 +129,7 @@ vi.mock("tone", () => {
         }
 
         toDestination = playerToDestination;
+        connect = playerConnect;
         start = playerStart;
         stop = playerStop;
         dispose = dispose;
@@ -103,12 +140,15 @@ vi.mock("tone", () => {
         immediate: vi.fn(() => 0),
         getTransport: vi.fn(() => transport),
         getContext: vi.fn(() => context),
+        now: vi.fn(() => 0),
         Offline: offline,
         Gain,
         Panner,
         Player,
+        Limiter,
         PolySynth,
         Synth,
+        gainToDb: vi.fn((value: number) => value),
     };
 });
 
@@ -148,6 +188,7 @@ describe("player", () => {
 
         scheduledCallbacks.length = 0;
         playerInstances.length = 0;
+        gainInstances.length = 0;
 
         transport.bpm.value = 120;
         transport.loop = false;
@@ -678,5 +719,109 @@ describe("player", () => {
         expect(transport.loop).toBe(false);
         expect(dispose).toHaveBeenCalled();
         expect(drumDispose).toHaveBeenCalled();
+    });
+
+    it("plays rendered game music and overlapping sfx without replacing music", async () => {
+        const { createGameAudio } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [
+                {
+                    type: "note",
+                    value: "c4",
+                    time: 0,
+                    dur: 1,
+                },
+            ],
+            layers: [],
+        };
+
+        const audio = await createGameAudio();
+        const music = await audio.prepareMusic(pattern, { bpm: 60 });
+        const sfx = await audio.prepareSfx(pattern, { bpm: 120, voices: 2 });
+
+        music.start();
+        audio.playSfx(sfx);
+        audio.playSfx(sfx);
+
+        expect(playerInstances).toHaveLength(3);
+        expect(playerInstances[0]).toMatchObject({
+            buffer: "rendered-buffer",
+            loop: true,
+            loopStart: 0,
+            loopEnd: 1,
+        });
+        expect(playerStart).toHaveBeenCalledTimes(3);
+        expect(playerConnect).toHaveBeenCalled();
+        expect(transport.cancel).not.toHaveBeenCalled();
+        expect(dispose).not.toHaveBeenCalled();
+    });
+
+    it("prepares replacement game music without stopping the current music", async () => {
+        const { createGameAudio } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const audio = await createGameAudio();
+        const firstMusic = await audio.prepareMusic(pattern);
+
+        firstMusic.start();
+        await audio.prepareMusic(pattern);
+
+        expect(playerStop).not.toHaveBeenCalled();
+        expect(dispose).not.toHaveBeenCalled();
+    });
+
+    it("cycles sfx voices and applies per-play options", async () => {
+        const { createGameAudio } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const audio = await createGameAudio();
+        const sfx = await audio.prepareSfx(pattern, { voices: 1 });
+
+        audio.playSfx(sfx, { playbackRate: 1.5, volume: 0.5 });
+        audio.playSfx(sfx);
+
+        expect(playerInstances[0]).toMatchObject({
+            playbackRate: 1,
+            volume: { value: 1 },
+        });
+        expect(playerStop).toHaveBeenCalled();
+        expect(playerStart).toHaveBeenCalled();
+    });
+
+    it("updates game audio volumes at runtime", async () => {
+        const { createGameAudio } = await import("../index");
+
+        const audio = await createGameAudio({
+            masterVolume: 1,
+            musicVolume: 0.75,
+            sfxVolume: 0.5,
+        });
+
+        audio.setMasterVolume(0);
+        audio.setMusicVolume(0.25);
+        audio.setSfxVolume(1.2);
+
+        expect(gainInstances[0].gain.value).toBe(0);
+        expect(gainInstances[1].gain.value).toBe(0.25);
+        expect(gainInstances[2].gain.value).toBe(1.2);
+        expect(gainParamSetValueAtTime).toHaveBeenCalledTimes(3);
     });
 });

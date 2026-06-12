@@ -1,7 +1,7 @@
 import './style.css';
 import { compile } from "@vibuca/synth8-core";
-import { pause, play, resume, stop } from "@vibuca/synth8-player";
-import type { PlayOptions } from "@vibuca/synth8-player";
+import { createGameAudio, pause, play, resume, stop } from "@vibuca/synth8-player";
+import type { GameAudio, PlayOptions, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player";
 import {
   parseMidi,
   midiToSynth8Source,
@@ -84,6 +84,21 @@ const examples = {
     .loop()
 )`
 };
+
+const gameSfxSources = {
+  explosion: `song(
+  beat("kick+crash").gain(0.9),
+  beat("_ lowtom+snare").fast(2).gain(0.45)
+)`,
+  laser: `melody("c7/16 g6/16 c6/16")
+  .sound("square")
+  .gain(0.45).fast(16)`,
+  coin: `melody("e6/16 c7/16")
+  .sound("triangle")
+  .gain(0.55).fast(16)`
+};
+
+type GameSfxName = keyof typeof gameSfxSources;
 
 function encodeSource(source: string): string {
   const bytes = new TextEncoder().encode(source);
@@ -202,6 +217,42 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     </div>
 
     <div id="playback-status" class="playback-status" role="status" aria-live="polite">Idle.</div>
+
+    <section class="game-audio-panel">
+      <h2>Game audio</h2>
+
+      <div class="game-audio-controls">
+        <button id="game-music">Start Game Music</button>
+        <button id="game-music-stop">Stop Music</button>
+      </div>
+
+      <div class="volume-grid">
+        <label class="volume-control" for="master-volume">
+          <span>Master</span>
+          <input id="master-volume" type="range" min="0" max="1.5" step="0.01" value="1" />
+          <output id="master-volume-value">100%</output>
+        </label>
+        <label class="volume-control" for="music-volume">
+          <span>Music</span>
+          <input id="music-volume" type="range" min="0" max="1.5" step="0.01" value="0.75" />
+          <output id="music-volume-value">75%</output>
+        </label>
+        <label class="volume-control" for="sfx-volume">
+          <span>SFX</span>
+          <input id="sfx-volume" type="range" min="0" max="1.5" step="0.01" value="1" />
+          <output id="sfx-volume-value">100%</output>
+        </label>
+      </div>
+
+      <div class="sfx-grid">
+        <button class="sfx-button" data-sfx="explosion">Explosion</button>
+        <button class="sfx-button" data-sfx="laser">Laser</button>
+        <button class="sfx-button" data-sfx="coin">Coin</button>
+      </div>
+
+      <div id="game-audio-status" class="game-audio-status" role="status" aria-live="polite">Game audio idle.</div>
+    </section>
+
     <pre id="output"></pre>
   </main>
   <section class="guide">
@@ -232,11 +283,78 @@ const bpmInput = document.querySelector<HTMLInputElement>("#bpm")!;
 const output = document.querySelector<HTMLPreElement>("#output")!;
 const playbackStatus = document.querySelector<HTMLDivElement>("#playback-status")!;
 const playButton = document.querySelector<HTMLButtonElement>("#play")!;
+const gameMusicButton = document.querySelector<HTMLButtonElement>("#game-music")!;
+const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-music-stop")!;
+const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
+const masterVolumeInput = document.querySelector<HTMLInputElement>("#master-volume")!;
+const musicVolumeInput = document.querySelector<HTMLInputElement>("#music-volume")!;
+const sfxVolumeInput = document.querySelector<HTMLInputElement>("#sfx-volume")!;
+const masterVolumeValue = document.querySelector<HTMLOutputElement>("#master-volume-value")!;
+const musicVolumeValue = document.querySelector<HTMLOutputElement>("#music-volume-value")!;
+const sfxVolumeValue = document.querySelector<HTMLOutputElement>("#sfx-volume-value")!;
+
+let gameAudio: GameAudio | undefined;
+let gameMusic: PreparedPlayback | undefined;
+const preparedSfx = new Map<GameSfxName, PreparedSfx>();
 
 function setPlaybackStatus(message: string, busy = false) {
   playbackStatus.textContent = message;
   playbackStatus.classList.toggle("is-busy", busy);
   playbackStatus.setAttribute("aria-busy", String(busy));
+}
+
+function setGameAudioStatus(message: string, busy = false) {
+  gameAudioStatus.textContent = message;
+  gameAudioStatus.classList.toggle("is-busy", busy);
+  gameAudioStatus.setAttribute("aria-busy", String(busy));
+}
+
+function volumeValue(input: HTMLInputElement): number {
+  return Number(input.value);
+}
+
+function formatVolume(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function syncVolumeLabels() {
+  masterVolumeValue.textContent = formatVolume(volumeValue(masterVolumeInput));
+  musicVolumeValue.textContent = formatVolume(volumeValue(musicVolumeInput));
+  sfxVolumeValue.textContent = formatVolume(volumeValue(sfxVolumeInput));
+}
+
+function volumeStatus(label: string, value: number): string {
+  return `${label} volume ${formatVolume(value)}.`;
+}
+
+async function getGameAudio(): Promise<GameAudio> {
+  if (!gameAudio) {
+    gameAudio = await createGameAudio({
+      masterVolume: volumeValue(masterVolumeInput),
+      musicVolume: volumeValue(musicVolumeInput),
+      sfxVolume: volumeValue(sfxVolumeInput),
+    });
+  }
+
+  return gameAudio;
+}
+
+async function getPreparedSfx(name: GameSfxName): Promise<PreparedSfx> {
+  const cached = preparedSfx.get(name);
+
+  if (cached) {
+    return cached;
+  }
+
+  const audio = await getGameAudio();
+  const sfx = await audio.prepareSfx(compile(gameSfxSources[name]), {
+    bpm: 180,
+    voices: 10,
+  });
+
+  preparedSfx.set(name, sfx);
+
+  return sfx;
 }
 
 function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> {
@@ -295,6 +413,77 @@ document.querySelector<HTMLButtonElement>("#resume")!.addEventListener("click", 
   setPlaybackStatus("Playing.");
   setOutput("info", "Resumed.");
 });
+
+gameMusicButton.addEventListener("click", async () => {
+  const previousText = gameMusicButton.textContent ?? "Start Game Music";
+
+  try {
+    gameMusicButton.disabled = true;
+    gameMusicButton.textContent = "Preparing...";
+    setGameAudioStatus("Preparing rendered game music...", true);
+
+    const audio = await getGameAudio();
+    const pattern = compile(sourceInput.value);
+    const bpm = Number(bpmInput.value);
+
+    gameMusic = await audio.prepareMusic(pattern, { bpm });
+    gameMusic.start();
+
+    setGameAudioStatus("Game music playing. SFX can overlap.");
+  } catch (error) {
+    setGameAudioStatus("Game music failed.");
+    setOutput("error", error instanceof Error ? error.message : String(error));
+  } finally {
+    gameMusicButton.disabled = false;
+    gameMusicButton.textContent = previousText;
+  }
+});
+
+gameMusicStopButton.addEventListener("click", () => {
+  gameMusic?.stop();
+  setGameAudioStatus("Game music stopped. Prepared SFX remain ready.");
+});
+
+document.querySelectorAll<HTMLButtonElement>(".sfx-button").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const name = button.dataset.sfx as GameSfxName | undefined;
+
+    if (!name) {
+      return;
+    }
+
+    try {
+      const sfx = await getPreparedSfx(name);
+      const audio = await getGameAudio();
+
+      audio.playSfx(sfx);
+      setGameAudioStatus(`${button.textContent} triggered.`);
+    } catch (error) {
+      setGameAudioStatus("SFX failed.");
+      setOutput("error", error instanceof Error ? error.message : String(error));
+    }
+  });
+});
+
+masterVolumeInput.addEventListener("input", async () => {
+  syncVolumeLabels();
+  (await getGameAudio()).setMasterVolume(volumeValue(masterVolumeInput));
+  setGameAudioStatus(volumeStatus("Master", volumeValue(masterVolumeInput)));
+});
+
+musicVolumeInput.addEventListener("input", async () => {
+  syncVolumeLabels();
+  (await getGameAudio()).setMusicVolume(volumeValue(musicVolumeInput));
+  setGameAudioStatus(volumeStatus("Music", volumeValue(musicVolumeInput)));
+});
+
+sfxVolumeInput.addEventListener("input", async () => {
+  syncVolumeLabels();
+  (await getGameAudio()).setSfxVolume(volumeValue(sfxVolumeInput));
+  setGameAudioStatus(volumeStatus("SFX", volumeValue(sfxVolumeInput)));
+});
+
+syncVolumeLabels();
 
 document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button) => {
   button.addEventListener("click", () => {

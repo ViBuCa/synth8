@@ -1,23 +1,13 @@
 import * as Tone from 'tone';
 import type { PlayOptions, PreparedPlayback } from '../model';
-import type { Pattern, Waveform } from '@vibuca/synth8-core';
+import type { Pattern } from '@vibuca/synth8-core';
 import { getLayers } from './layers';
-import { createDrums, playDrum } from '../drum';
-import { createSynth } from './synth';
 import { addActiveNode, addDisposable, disposeActiveNodes } from './lifecycle';
 import { clearPlaybackSession, pauseSession, resumeSession, setLiveSession, setRenderedSession } from './session';
+import { eventCount, scheduleLayers } from './scheduler';
 
-const DEFAULT_SOUND: Waveform = "sine";
 const DEFAULT_LOOK_AHEAD = 0.25;
 const RENDERED_EVENT_LIMIT = 512;
-type TransportLike = Pick<ReturnType<typeof Tone.getTransport>, "schedule">;
-type PlaybackLayer = ReturnType<typeof getLayers>[number];
-
-const eventCount = (pattern: Pattern): number => {
-    const layers = getLayers(pattern);
-
-    return layers.reduce((count, layer) => count + layer.events.length, 0);
-};
 
 const resolvePlaybackMode = (pattern: Pattern, options: PlayOptions): PreparedPlayback["playbackMode"] => {
     if (options.playbackMode === "rendered" || options.playbackMode === "live") {
@@ -39,62 +29,6 @@ const configureScheduling = (options: PlayOptions): void => {
 
     if (options.updateInterval !== undefined && "updateInterval" in context) {
         context.updateInterval = options.updateInterval;
-    }
-};
-
-const scheduleLayers = (
-    layers: PlaybackLayer[],
-    secondsPerBeat: number,
-    registerActiveLayer: (
-        gainNode: Tone.Gain,
-        panner: Tone.Panner,
-        synth: Tone.PolySynth<Tone.Synth> | undefined,
-        drums: ReturnType<typeof createDrums> | undefined
-    ) => void,
-    transport: TransportLike
-): void => {
-    for (const layer of layers) {
-        const noteEvents = layer.events.filter((event) => event.type === "note");
-        const drumEvents = layer.events.filter((event) => event.type === "drum");
-        const sound = layer.playback?.sound ?? DEFAULT_SOUND;
-        const gain = layer.playback?.gain ?? 1;
-
-        const gainNode = new Tone.Gain(gain);
-        const panner = new Tone.Panner(layer.playback?.pan ?? 0);
-
-        gainNode.connect(panner);
-        panner.toDestination();
-
-        const synth = noteEvents.length > 0
-            ? createSynth(sound).connect(gainNode)
-            : undefined;
-        const drums = drumEvents.length > 0
-            ? createDrums(drumEvents.map((event) => event.value))
-            : undefined;
-
-        drums?.connect(gainNode);
-
-        registerActiveLayer(gainNode, panner, synth, drums);
-
-        for (const event of layer.events) {
-            const eventTime = event.time * secondsPerBeat;
-            const eventDuration = event.dur * secondsPerBeat;
-
-            transport.schedule((time) => {
-                if (event.type === "drum" && drums) {
-                    playDrum(drums, event.value, time, event.velocity ?? 1);
-                }
-
-                if (event.type === "note" && synth) {
-                    synth.triggerAttackRelease(
-                        event.value,
-                        eventDuration,
-                        time,
-                        event.velocity ?? 0.8
-                    );
-                }
-            }, eventTime);
-        }
     }
 };
 
