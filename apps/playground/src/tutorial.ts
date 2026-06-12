@@ -84,6 +84,18 @@ const tutorialExamples: TutorialExample[] = [
 )`,
   },
   {
+    title: "Drum Banks",
+    body: "Use bank() to switch the overall drum-kit character.",
+    details: "Banks: default, 808, arcade. 808 is rounder and longer; arcade is shorter and clickier.",
+    source: `song(
+  beat("kick _ snare _")
+    .bank("808"),
+  beat("_ hihat _ hihat")
+    .fast(2)
+    .bank("808")
+)`,
+  },
+  {
     title: "Sequences",
     body: "sequence() plays patterns one after another.",
     details: "Pass one or more patterns separated by commas.",

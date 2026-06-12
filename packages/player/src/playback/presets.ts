@@ -68,6 +68,7 @@ export const resolvePlaybackPreset = (
     return {
         ...preset,
         ...playback,
+        bank: playback.bank ?? preset.bank,
         envelope: {
             ...preset.envelope,
             ...playback.envelope,

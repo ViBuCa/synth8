@@ -215,6 +215,7 @@ const compileMelodySteps = (
 
 const compilePlayback = (ast: {
   preset?: PlaybackConfig["preset"];
+  bank?: PlaybackConfig["bank"];
   sound?: Waveform;
   gain?: number;
   pan?: number;
@@ -224,6 +225,10 @@ const compilePlayback = (ast: {
 
   if (ast.preset !== undefined) {
     playback.preset = ast.preset;
+  }
+
+  if (ast.bank !== undefined) {
+    playback.bank = ast.bank;
   }
 
   if (ast.sound !== undefined) {

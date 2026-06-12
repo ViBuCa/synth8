@@ -221,6 +221,18 @@ describe("parse", () => {
         });
     });
 
+    it("parses bank modifiers", () => {
+        expect(parse(`beat("kick snare").bank("808")`)).toMatchObject({
+            bank: "808",
+        });
+        expect(parse(`beat("kick snare").bank("arcade")`)).toMatchObject({
+            bank: "arcade",
+        });
+        expect(parse(`beat("kick snare").bank("default")`)).toMatchObject({
+            bank: "default",
+        });
+    });
+
     it("rejects invalid envelope values", () => {
         expect(() => parse(`melody("c4").attack(-0.1)`)).toThrow(
             "attack() must be between 0 and 30 seconds."
@@ -239,6 +251,12 @@ describe("parse", () => {
     it("rejects unknown preset values", () => {
         expect(() => parse(`melody("c4").preset("space-pad")`)).toThrow(
             "Illegal preset value: space-pad"
+        );
+    });
+
+    it("rejects unknown bank values", () => {
+        expect(() => parse(`beat("kick").bank("909")`)).toThrow(
+            "Illegal bank value: 909"
         );
     });
 });

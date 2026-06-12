@@ -335,6 +335,23 @@ arcade-pluck
 
 Explicit layer modifiers override preset defaults. For example, `.preset("chip-lead").release(0.2)` keeps the chip lead sound while changing the release time.
 
+Drum banks change the overall drum-kit character:
+
+```ts
+beat("kick _ snare _").bank("808")
+beat("_ hihat _ hihat").fast(2).bank("arcade")
+```
+
+Supported banks:
+
+```ts
+default
+808
+arcade
+```
+
+`808` is a rounder, longer synthesized drum-machine style. `arcade` is shorter and clickier for retro game-style drums.
+
 ## Event Structure
 The player consumes compiled events:
 ```ts

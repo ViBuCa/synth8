@@ -50,7 +50,9 @@ export const scheduleLayers = (
             ? createSynth(sound, playback?.envelope).connect(gainNode)
             : undefined;
         const drums = drumEvents.length > 0
-            ? createDrums(drumEvents.map((event) => event.value))
+            ? playback?.bank
+                ? createDrums(drumEvents.map((event) => event.value), playback.bank)
+                : createDrums(drumEvents.map((event) => event.value))
             : undefined;
 
         drums?.connect(gainNode);

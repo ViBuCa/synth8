@@ -476,6 +476,13 @@ describe("compile", () => {
       });
   });
 
+  it("stores bank on layer playback config", () => {
+    expect(compile('beat("kick snare").bank("808")').layers[0].playback)
+      .toEqual({
+        bank: "808",
+      });
+  });
+
   it("applies sequence envelope as layer playback default", () => {
     const pattern = compile(`
     sequence(

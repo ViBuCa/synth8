@@ -144,6 +144,7 @@ Implemented:
 * Waveform selection
 * Synth envelope shaping
 * Playback presets
+* Drum banks
 * Gain
 * Tone.js player
 * Drum synthesizers

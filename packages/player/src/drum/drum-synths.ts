@@ -1,4 +1,5 @@
 import * as Tone from "tone";
+import type { PlaybackBank } from "@vibuca/synth8-core";
 import type { DrumInstrument, DrumKit } from "../model/drum";
 
 type DrumSound =
@@ -39,11 +40,14 @@ const DRUM_SOUNDS: DrumSound[] = [
 const hasSound = (sounds: Set<string>, sound: DrumSound): boolean => sounds.has(sound);
 
 export const createDrums = (
-    sounds: Iterable<string> = DRUM_SOUNDS
+    sounds: Iterable<string> = DRUM_SOUNDS,
+    bank: PlaybackBank = "default"
 ): DrumKit => {
     const requestedSounds = new Set(sounds);
     const connectableInstruments: DrumInstrument[] = [];
     const disposables: { dispose: () => void }[] = [];
+    const is808 = bank === "808";
+    const isArcade = bank === "arcade";
 
     const addInstrument = <T extends DrumInstrument>(instrument: T): T => {
         connectableInstruments.push(instrument);
@@ -56,15 +60,42 @@ export const createDrums = (
     };
 
     const kick = hasSound(requestedSounds, "kick")
-        ? addInstrument(new Tone.MembraneSynth())
+        ? addInstrument(new Tone.MembraneSynth(
+            isArcade
+                ? {
+                    pitchDecay: 0.015,
+                    octaves: 5,
+                    oscillator: { type: "square" },
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.16,
+                        sustain: 0,
+                        release: 0.02,
+                    },
+                }
+                : is808
+                    ? {
+                        pitchDecay: 0.035,
+                        octaves: 6,
+                        oscillator: { type: "sine" },
+                        envelope: {
+                            attack: 0.001,
+                            decay: 0.55,
+                            sustain: 0,
+                            release: 0.18,
+                        },
+                    }
+                    : undefined
+        ))
         : undefined;
 
     const snare = hasSound(requestedSounds, "snare") ? addInstrument(new Tone.NoiseSynth({
         noise: { type: "white" },
         envelope: {
             attack: 0.001,
-            decay: 0.15,
-            sustain: 0
+            decay: isArcade ? 0.08 : is808 ? 0.28 : 0.15,
+            sustain: 0,
+            release: is808 ? 0.04 : undefined,
         }
     })) : undefined;
 
@@ -74,9 +105,9 @@ export const createDrums = (
         },
         envelope: {
             attack: 0.001,
-            decay: 0.08,
+            decay: isArcade ? 0.035 : is808 ? 0.05 : 0.08,
             sustain: 0,
-            release: 0.02,
+            release: isArcade ? 0.005 : 0.02,
         },
     }) : undefined;
 
@@ -90,8 +121,9 @@ export const createDrums = (
         noise: { type: "white" },
         envelope: {
             attack: 0.001,
-            decay: 0.12,
+            decay: isArcade ? 0.07 : is808 ? 0.18 : 0.12,
             sustain: 0,
+            release: is808 ? 0.03 : undefined,
         },
     })) : undefined;
 
@@ -101,9 +133,9 @@ export const createDrums = (
         },
         envelope: {
             attack: 0.001,
-            decay: 0.35,
+            decay: isArcade ? 0.18 : is808 ? 0.55 : 0.35,
             sustain: 0,
-            release: 0.08,
+            release: isArcade ? 0.03 : 0.08,
         },
     })) : undefined;
 

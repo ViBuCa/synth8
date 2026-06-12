@@ -18,8 +18,14 @@ export type PlaybackPreset =
   | "metal-rhythm"
   | "arcade-pluck";
 
+export type PlaybackBank =
+  | "default"
+  | "808"
+  | "arcade";
+
 export type PlaybackConfig = {
   preset?: PlaybackPreset;
+  bank?: PlaybackBank;
   sound?: Waveform;
   gain?: number;
   pan?: number; // -1 left, 1 right

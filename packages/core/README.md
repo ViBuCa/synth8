@@ -206,6 +206,29 @@ arcade-pluck
 
 Presets are stored on the compiled layer playback config. Explicit modifiers such as `.sound()` or `.release()` can override preset defaults during playback.
 
+### Banks
+
+Use `.bank(name)` to choose a broader instrument family for a layer. Banks are especially useful for drums:
+
+```ts
+beat("kick _ snare _").bank("808")
+beat("_ hihat _ hihat").fast(2).bank("arcade")
+```
+
+Supported banks:
+
+```ts
+default
+808
+arcade
+```
+
+`808` is inspired by classic synthesized drum machines, with rounder, longer drum envelopes.
+
+`arcade` is short and clicky, closer to retro game sound effects.
+
+Banks are stored on the compiled layer playback config. They do not modify individual events.
+
 ### Transpose
 
 ```ts

@@ -663,6 +663,36 @@ describe("player", () => {
         expect(drumTriggerAttackRelease).toHaveBeenCalledWith("C1", "8n", 42, 0.6);
     });
 
+    it("passes layer bank to drum creation", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [
+                {
+                    playback: {
+                        bank: "arcade",
+                    },
+                    events: [
+                        {
+                            type: "drum",
+                            value: "kick",
+                            time: 0,
+                            dur: 1,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        await play(pattern, { playbackMode: "live" });
+
+        expect(createDrums).toHaveBeenCalledWith(["kick"], "arcade");
+    });
+
     it("uses default drum velocity when none is provided", async () => {
         const { play } = await import("../index");
 
