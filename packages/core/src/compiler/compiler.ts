@@ -220,6 +220,7 @@ const compilePlayback = (ast: {
   gain?: number;
   pan?: number;
   envelope?: PlaybackConfig["envelope"];
+  effects?: PlaybackConfig["effects"];
 }): PlaybackConfig | undefined => {
   const playback: PlaybackConfig = {};
 
@@ -247,6 +248,10 @@ const compilePlayback = (ast: {
     playback.envelope = ast.envelope;
   }
 
+  if (ast.effects !== undefined) {
+    playback.effects = ast.effects;
+  }
+
   return Object.keys(playback).length > 0
     ? playback
     : undefined;
@@ -267,6 +272,13 @@ const mergePlayback = (
     playback.envelope = {
       ...parent?.envelope,
       ...child?.envelope,
+    };
+  }
+
+  if (parent?.effects || child?.effects) {
+    playback.effects = {
+      ...parent?.effects,
+      ...child?.effects,
     };
   }
 

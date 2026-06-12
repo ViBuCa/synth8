@@ -233,6 +233,33 @@ describe("parse", () => {
         });
     });
 
+    it("parses effect modifiers", () => {
+        expect(
+            parse(
+                `melody("c4")
+                    .delay(0.2)
+                    .echo(0.35)
+                    .room(0.4)
+                    .reverb(0.5)
+                    .lowpass(1200)
+                    .highpass(120)
+                    .distortion(0.25)
+                    .chorus(0.6)`
+            )
+        ).toMatchObject({
+            effects: {
+                delay: 0.2,
+                echo: 0.35,
+                room: 0.4,
+                reverb: 0.5,
+                lowpass: 1200,
+                highpass: 120,
+                distortion: 0.25,
+                chorus: 0.6,
+            },
+        });
+    });
+
     it("rejects invalid envelope values", () => {
         expect(() => parse(`melody("c4").attack(-0.1)`)).toThrow(
             "attack() must be between 0 and 30 seconds."
@@ -257,6 +284,18 @@ describe("parse", () => {
     it("rejects unknown bank values", () => {
         expect(() => parse(`beat("kick").bank("909")`)).toThrow(
             "Illegal bank value: 909"
+        );
+    });
+
+    it("rejects invalid effect values", () => {
+        expect(() => parse(`melody("c4").delay(3)`)).toThrow(
+            "delay() must be between 0 and 2 seconds."
+        );
+        expect(() => parse(`melody("c4").chorus(1.5)`)).toThrow(
+            "chorus() must be between 0 and 1."
+        );
+        expect(() => parse(`melody("c4").lowpass(10)`)).toThrow(
+            "lowpass() must be between 20 and 20000 Hz."
         );
     });
 });

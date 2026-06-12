@@ -96,6 +96,22 @@ const tutorialExamples: TutorialExample[] = [
 )`,
   },
   {
+    title: "Effects",
+    body: "Use effects to shape the whole layer after its notes or drums are generated.",
+    details: "delay: 0 to 2 seconds. echo, room, reverb, distortion, chorus: 0 to 1. lowpass and highpass: 20 to 20000 Hz.",
+    source: `song(
+  melody("c4 e4 g4 c5")
+    .preset("soft-pad")
+    .room(0.4)
+    .reverb(0.35)
+    .lowpass(1800),
+  melody("c5 d5 e5 g5")
+    .preset("arcade-pluck")
+    .delay(0.18)
+    .echo(0.25)
+)`,
+  },
+  {
     title: "Sequences",
     body: "sequence() plays patterns one after another.",
     details: "Pass one or more patterns separated by commas.",

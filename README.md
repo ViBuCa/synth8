@@ -145,6 +145,7 @@ Implemented:
 * Synth envelope shaping
 * Playback presets
 * Drum banks
+* Layer effects
 * Gain
 * Tone.js player
 * Drum synthesizers

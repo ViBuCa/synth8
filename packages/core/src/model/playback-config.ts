@@ -23,6 +23,17 @@ export type PlaybackBank =
   | "808"
   | "arcade";
 
+export type EffectConfig = {
+  delay?: number;
+  echo?: number;
+  room?: number;
+  reverb?: number;
+  lowpass?: number;
+  highpass?: number;
+  distortion?: number;
+  chorus?: number;
+};
+
 export type PlaybackConfig = {
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
@@ -30,4 +41,5 @@ export type PlaybackConfig = {
   gain?: number;
   pan?: number; // -1 left, 1 right
   envelope?: EnvelopeConfig;
+  effects?: EffectConfig;
 };

@@ -352,6 +352,22 @@ arcade
 
 `808` is a rounder, longer synthesized drum-machine style. `arcade` is shorter and clickier for retro game-style drums.
 
+Layer effects are applied after layer gain and before pan/output:
+
+```ts
+melody("c4 e4 g4")
+  .delay(0.2)
+  .echo(0.35)
+  .room(0.4)
+  .reverb(0.5)
+  .lowpass(1200)
+  .highpass(120)
+  .distortion(0.25)
+  .chorus(0.6)
+```
+
+`delay()` uses seconds from 0 to 2. `lowpass()` and `highpass()` use Hz from 20 to 20000. The other effect modifiers use an amount from 0 to 1.
+
 ## Event Structure
 The player consumes compiled events:
 ```ts

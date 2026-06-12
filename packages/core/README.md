@@ -229,6 +229,37 @@ arcade
 
 Banks are stored on the compiled layer playback config. They do not modify individual events.
 
+### Effects
+
+Effects are layer-level playback modifiers:
+
+```ts
+melody("c4 e4 g4")
+  .delay(0.2)
+  .echo(0.35)
+  .room(0.4)
+  .reverb(0.5)
+  .lowpass(1200)
+  .highpass(120)
+  .distortion(0.25)
+  .chorus(0.6)
+```
+
+Supported effects and value ranges:
+
+```ts
+delay(seconds)       // 0 to 2
+echo(amount)         // 0 to 1
+room(amount)         // 0 to 1
+reverb(amount)       // 0 to 1
+lowpass(hz)          // 20 to 20000
+highpass(hz)         // 20 to 20000
+distortion(amount)   // 0 to 1
+chorus(amount)       // 0 to 1
+```
+
+Effects are stored on the compiled layer playback config. They do not modify individual events.
+
 ### Transpose
 
 ```ts

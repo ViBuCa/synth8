@@ -73,5 +73,9 @@ export const resolvePlaybackPreset = (
             ...preset.envelope,
             ...playback.envelope,
         },
+        effects: {
+            ...preset.effects,
+            ...playback.effects,
+        },
     };
 };

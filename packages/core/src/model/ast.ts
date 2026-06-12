@@ -1,4 +1,4 @@
-import { EnvelopeConfig, PlaybackBank, PlaybackPreset, Waveform } from "./playback-config";
+import { EffectConfig, EnvelopeConfig, PlaybackBank, PlaybackPreset, Waveform } from "./playback-config";
 
 export type AstNode =
   | BeatExpression
@@ -16,6 +16,7 @@ type Modifiers = {
   gain?: number;
   pan?: number;
   envelope?: EnvelopeConfig;
+  effects?: EffectConfig;
 }
 
 export type SequenceExpression = {

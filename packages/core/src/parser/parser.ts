@@ -1,4 +1,4 @@
-import type { EnvelopeConfig, PlaybackBank, PlaybackPreset, Waveform } from "../model";
+import type { EffectConfig, EnvelopeConfig, PlaybackBank, PlaybackPreset, Waveform } from "../model";
 import type { AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
@@ -21,6 +21,7 @@ type Modifiers = {
   gain?: number;
   pan?: number;
   envelope?: EnvelopeConfig;
+  effects?: EffectConfig;
 };
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "square", "sawtooth"];
@@ -131,6 +132,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let sound: Waveform | undefined = undefined;
   let pan: number | undefined = undefined;
   const envelope: EnvelopeConfig = {};
+  const effects: EffectConfig = {};
 
   while (matchSymbol(state, ".")) {
     const modifier = expectAnyIdentifier(state);
@@ -153,6 +155,14 @@ const parseModifiers = (state: ParserState): Modifiers => {
       case "decay":
       case "sustain":
       case "release":
+      case "delay":
+      case "echo":
+      case "room":
+      case "reverb":
+      case "lowpass":
+      case "highpass":
+      case "distortion":
+      case "chorus":
         value = expectNumber(state);
         break;
       case "sound":
@@ -257,6 +267,32 @@ const parseModifiers = (state: ParserState): Modifiers => {
         envelope.sustain = value;
         break;
 
+      case "delay":
+        if (value < 0 || value > 2) {
+          throw new Error("delay() must be between 0 and 2 seconds.");
+        }
+        effects.delay = value;
+        break;
+
+      case "echo":
+      case "room":
+      case "reverb":
+      case "distortion":
+      case "chorus":
+        if (value < 0 || value > 1) {
+          throw new Error(`${modifier}() must be between 0 and 1.`);
+        }
+        effects[modifier] = value;
+        break;
+
+      case "lowpass":
+      case "highpass":
+        if (value < 20 || value > 20000) {
+          throw new Error(`${modifier}() must be between 20 and 20000 Hz.`);
+        }
+        effects[modifier] = value;
+        break;
+
       case "loop":
         loop = true;
         break;
@@ -275,6 +311,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
     gain,
     pan,
     envelope: Object.keys(envelope).length > 0 ? envelope : undefined,
+    effects: Object.keys(effects).length > 0 ? effects : undefined,
   };
 };
 
@@ -286,7 +323,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
-  const { rate, repeat, loop, offset, preset, bank, sound, gain, pan, envelope } = parseModifiers(state);
+  const { rate, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -301,6 +338,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     gain,
     pan,
     envelope,
+    effects,
   };
 };
 
@@ -312,7 +350,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
-  const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -328,6 +366,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     gain,
     pan,
     envelope,
+    effects,
   };
 };
 
@@ -349,7 +388,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, preset, bank, sound, gain, pan, envelope } = parseModifiers(state);
+  const { repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -363,6 +402,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     gain,
     pan,
     envelope,
+    effects,
   };
 };
 

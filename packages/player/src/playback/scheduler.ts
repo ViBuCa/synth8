@@ -4,6 +4,7 @@ import { createDrums, playDrum } from "../drum";
 import { createSynth } from "./synth";
 import { getLayers } from "./layers";
 import { resolvePlaybackPreset } from "./presets";
+import { createEffectNodes } from "./effects";
 
 const DEFAULT_SOUND: Waveform = "sine";
 
@@ -23,7 +24,8 @@ export const scheduleLayers = (
         gainNode: Tone.Gain,
         panner: Tone.Panner,
         synth: Tone.PolySynth<Tone.Synth> | undefined,
-        drums: ReturnType<typeof createDrums> | undefined
+        drums: ReturnType<typeof createDrums> | undefined,
+        effectNodes: Tone.ToneAudioNode[]
     ) => void,
     transport: TransportLike,
     output?: Tone.ToneAudioNode
@@ -37,8 +39,16 @@ export const scheduleLayers = (
 
         const gainNode = new Tone.Gain(gain);
         const panner = new Tone.Panner(playback?.pan ?? 0);
+        const effectNodes = createEffectNodes(playback?.effects);
 
-        gainNode.connect(panner);
+        let chainEnd: Tone.ToneAudioNode = gainNode;
+
+        for (const effectNode of effectNodes) {
+            chainEnd.connect(effectNode);
+            chainEnd = effectNode;
+        }
+
+        chainEnd.connect(panner);
 
         if (output) {
             panner.connect(output);
@@ -57,7 +67,7 @@ export const scheduleLayers = (
 
         drums?.connect(gainNode);
 
-        registerActiveLayer(gainNode, panner, synth, drums);
+        registerActiveLayer(gainNode, panner, synth, drums, effectNodes);
 
         for (const event of layer.events) {
             const eventTime = event.time * secondsPerBeat;

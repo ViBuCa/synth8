@@ -63,6 +63,12 @@ const gainParamSetValueAtTime = vi.fn(function (
 });
 const gainInstances: Array<{ gain: { value: number } }> = [];
 const polySynthInstances: Array<{ options: unknown }> = [];
+const filterInstances: Array<{ frequency: unknown; type: unknown }> = [];
+const feedbackDelayInstances: Array<{ delayTime: unknown; feedback: unknown }> = [];
+const freeverbInstances: Array<{ roomSize: unknown; dampening: unknown }> = [];
+const reverbInstances: Array<{ options: unknown }> = [];
+const distortionInstances: Array<{ distortion: unknown }> = [];
+const chorusInstances: Array<{ frequency: unknown; delayTime: unknown; depth: unknown }> = [];
 const offline = vi.fn(async (callback: (context: { transport: typeof transport }) => void) => {
     callback({ transport });
     return renderedToneBuffer;
@@ -116,6 +122,95 @@ vi.mock("tone", () => {
         dispose = dispose;
     }
 
+    class Filter {
+        frequency: unknown;
+        type: unknown;
+
+        constructor(frequency: unknown, type: unknown) {
+            this.frequency = frequency;
+            this.type = type;
+            filterInstances.push(this);
+        }
+
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
+    class FeedbackDelay {
+        delayTime: unknown;
+        feedback: unknown;
+
+        constructor(delayTime: unknown, feedback: unknown) {
+            this.delayTime = delayTime;
+            this.feedback = feedback;
+            feedbackDelayInstances.push(this);
+        }
+
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
+    class Freeverb {
+        roomSize: unknown;
+        dampening: unknown;
+
+        constructor(roomSize: unknown, dampening: unknown) {
+            this.roomSize = roomSize;
+            this.dampening = dampening;
+            freeverbInstances.push(this);
+        }
+
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
+    class Reverb {
+        options: unknown;
+
+        constructor(options: unknown) {
+            this.options = options;
+            reverbInstances.push(this);
+        }
+
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
+    class Distortion {
+        distortion: unknown;
+
+        constructor(distortion: unknown) {
+            this.distortion = distortion;
+            distortionInstances.push(this);
+        }
+
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
+    class Chorus {
+        frequency: unknown;
+        delayTime: unknown;
+        depth: unknown;
+
+        constructor(frequency: unknown, delayTime: unknown, depth: unknown) {
+            this.frequency = frequency;
+            this.delayTime = delayTime;
+            this.depth = depth;
+            chorusInstances.push(this);
+        }
+
+        start = vi.fn(() => this);
+        toDestination = vi.fn(() => this);
+        connect = connect;
+        dispose = dispose;
+    }
+
     class PolySynth {
         options: unknown;
 
@@ -162,6 +257,12 @@ vi.mock("tone", () => {
         Panner,
         Player,
         Limiter,
+        Filter,
+        FeedbackDelay,
+        Freeverb,
+        Reverb,
+        Distortion,
+        Chorus,
         PolySynth,
         Synth,
         gainToDb: vi.fn((value: number) => value),
@@ -208,6 +309,12 @@ describe("player", () => {
         playerInstances.length = 0;
         gainInstances.length = 0;
         polySynthInstances.length = 0;
+        filterInstances.length = 0;
+        feedbackDelayInstances.length = 0;
+        freeverbInstances.length = 0;
+        reverbInstances.length = 0;
+        distortionInstances.length = 0;
+        chorusInstances.length = 0;
         renderedToneBuffer.get.mockClear();
         renderedAudioBuffer.getChannelData.mockClear();
 
@@ -924,6 +1031,67 @@ describe("player", () => {
             },
         });
         expect(gainInstances[0].gain.value).toBe(0.9);
+    });
+
+    it("creates effect nodes for layer effects", async () => {
+        const { play } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [
+                {
+                    playback: {
+                        effects: {
+                            lowpass: 1200,
+                            highpass: 120,
+                            distortion: 0.25,
+                            chorus: 0.6,
+                            delay: 0.2,
+                            echo: 0.35,
+                            room: 0.4,
+                            reverb: 0.5,
+                        },
+                    },
+                    events: [
+                        {
+                            type: "note",
+                            value: "c4",
+                            time: 0,
+                            dur: 1,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        await play(pattern, { playbackMode: "live" });
+
+        expect(filterInstances).toMatchObject([
+            { frequency: 1200, type: "lowpass" },
+            { frequency: 120, type: "highpass" },
+        ]);
+        expect(distortionInstances[0].distortion).toBe(0.25);
+        expect(chorusInstances[0]).toMatchObject({
+            frequency: 4,
+            delayTime: 2.5,
+            depth: 0.6,
+        });
+        expect(feedbackDelayInstances).toMatchObject([
+            { delayTime: 0.2, feedback: 0.15 },
+            { delayTime: 0.25, feedback: 0.35 },
+        ]);
+        expect(freeverbInstances[0]).toMatchObject({
+            roomSize: 0.4,
+            dampening: 2500,
+        });
+        expect(reverbInstances[0].options).toEqual({
+            decay: 2.2,
+            preDelay: 0.01,
+            wet: 0.5,
+        });
     });
 
     it("falls back to top-level events when no layers exist", async () => {

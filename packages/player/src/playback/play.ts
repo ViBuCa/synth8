@@ -77,11 +77,11 @@ const prepareLive = (
     scheduleLayers(
         getLayers(pattern),
         secondsPerBeat,
-        (gainNode, panner, synth, drums) => {
+        (gainNode, panner, synth, drums, effectNodes) => {
             if (synth) {
-                addActiveNode(gainNode, panner, synth);
+                addActiveNode(gainNode, panner, synth, ...effectNodes);
             } else {
-                addActiveNode(gainNode, panner);
+                addActiveNode(gainNode, panner, ...effectNodes);
             }
 
             if (drums) {

@@ -483,6 +483,25 @@ describe("compile", () => {
       });
   });
 
+  it("stores effects on layer playback config", () => {
+    expect(
+      compile(
+        'melody("c4").delay(0.2).echo(0.3).room(0.4).reverb(0.5).lowpass(1000).highpass(120).distortion(0.2).chorus(0.6)'
+      ).layers[0].playback
+    ).toEqual({
+      effects: {
+        delay: 0.2,
+        echo: 0.3,
+        room: 0.4,
+        reverb: 0.5,
+        lowpass: 1000,
+        highpass: 120,
+        distortion: 0.2,
+        chorus: 0.6,
+      },
+    });
+  });
+
   it("applies sequence envelope as layer playback default", () => {
     const pattern = compile(`
     sequence(
