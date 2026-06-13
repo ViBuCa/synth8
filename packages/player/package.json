@@ -1,14 +1,14 @@
 {
   "name": "@vibuca/synth8-player",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.ts",
+  "types": "./dist/index.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "types": "./dist/index.ts",
+      "import": "./dist/index.ts"
     }
   },
   "dependencies": {
