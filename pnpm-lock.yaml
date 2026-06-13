@@ -223,14 +223,14 @@ importers:
   apps/playground:
     dependencies:
       '@vibuca/synth8-core':
-        specifier: workspace:*
-        version: link:../../packages/core
+        specifier: ^1.0.0
+        version: 1.0.0
       '@vibuca/synth8-import-midi':
-        specifier: workspace:*
-        version: link:../../packages/import-midi
+        specifier: ^1.0.0
+        version: 1.0.0
       '@vibuca/synth8-player':
-        specifier: workspace:*
-        version: link:../../packages/player
+        specifier: ^1.0.2
+        version: 1.0.2
 
   packages/core: {}
 
@@ -249,6 +249,18 @@ importers:
       vitest:
         specifier: ^4.1.8
         version: 4.1.8(vite@8.0.16(esbuild@0.27.7))
+
+  packages/phaser:
+    dependencies:
+      '@vibuca/synth8-core':
+        specifier: ^1.0.0
+        version: 1.0.0
+      '@vibuca/synth8-player':
+        specifier: ^1.0.2
+        version: 1.0.2
+      phaser:
+        specifier: ^4.1.0
+        version: 4.1.0
 
   packages/player:
     dependencies:
@@ -718,6 +730,15 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
+  '@vibuca/synth8-core@1.0.0':
+    resolution: {integrity: sha512-Is1esaczZmTn0YgRZs76s0LcdJlmduEIU9SjnO7IZDAbDKXzlCalH2070U+vTTPJXDQGhGdBNEUY3jQ0meHrbw==}
+
+  '@vibuca/synth8-import-midi@1.0.0':
+    resolution: {integrity: sha512-UCH5BgdGan9qPlUbDAAMtSk8u5zT2Cz0smJJ/y/T8tBTRAD/kVKvPpvMVXIV4XZKG/DMeHgEtxSv6GRphi0z2A==}
+
+  '@vibuca/synth8-player@1.0.2':
+    resolution: {integrity: sha512-Dhs7PqahQ8ECU6fwvfAK0maPFlOByFzbStQdAgyyCT4gFM2X696cAOxmbDjJ5jzCSjl9vGom3vC3S/TwzCkd8Q==}
+
   '@vitest/expect@4.1.8':
     resolution: {integrity: sha512-h3nDO677RDLEGlBxyQ5CW8RlMThSKSRLUePLOx09gNIWRL40edgA1GCZSZgf1W55MFAG6/Sw14KeaAnqv0NKdQ==}
 
@@ -839,6 +860,9 @@ packages:
 
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
+
+  eventemitter3@5.0.4:
+    resolution: {integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==}
 
   expect-type@1.3.0:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
@@ -993,6 +1017,9 @@ packages:
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
+
+  phaser@4.1.0:
+    resolution: {integrity: sha512-ZXv5Bhyg2BqJGAAxNI2xvmzGXW9q+TwUG1RLri5ZDBYGGtcma6aWUO/eJ7EbozeqRd5fKdpo4ycNMQt+Bi5iYg==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -1554,6 +1581,17 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
+  '@vibuca/synth8-core@1.0.0': {}
+
+  '@vibuca/synth8-import-midi@1.0.0':
+    dependencies:
+      '@tonejs/midi': 2.0.28
+
+  '@vibuca/synth8-player@1.0.2':
+    dependencies:
+      '@vibuca/synth8-core': 1.0.0
+      tone: 15.1.22
+
   '@vitest/expect@4.1.8':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -1688,6 +1726,8 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.9
 
+  eventemitter3@5.0.4: {}
+
   expect-type@1.3.0: {}
 
   exsolve@1.0.8: {}
@@ -1800,6 +1840,10 @@ snapshots:
   path-browserify@1.0.1: {}
 
   pathe@2.0.3: {}
+
+  phaser@4.1.0:
+    dependencies:
+      eventemitter3: 5.0.4
 
   picocolors@1.1.1: {}
 

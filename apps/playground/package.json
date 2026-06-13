@@ -4,9 +4,9 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@vibuca/synth8-core": "workspace:*",
-    "@vibuca/synth8-player": "workspace:*",
-    "@vibuca/synth8-import-midi": "workspace:*"
+    "@vibuca/synth8-core": "^1.0.0",
+    "@vibuca/synth8-player": "^1.0.2",
+    "@vibuca/synth8-import-midi": "^1.0.0"
   },
   "scripts": {
     "dev": "vite",

@@ -1,0 +1,13 @@
+{
+  "name": "@vibuca/synth8-phaser",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "phaser": "^4.1.0",
+    "@vibuca/synth8-core": "^1.0.0",
+    "@vibuca/synth8-player": "^1.0.2"
+  }
+}
