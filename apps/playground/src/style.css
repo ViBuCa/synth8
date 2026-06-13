@@ -153,12 +153,12 @@ button:disabled {
     opacity: 0.68;
 }
 
-.play
+.play,
 #play {
     background: #50fa7b;
 }
 
-.stop
+.stop,
 #stop {
     background: #ff5555;
     color: #101018;
