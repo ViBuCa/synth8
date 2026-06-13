@@ -309,9 +309,9 @@ root.innerHTML = `
 
       <div id="game-audio-status" class="game-audio-status" role="status" aria-live="polite">Game audio idle.</div>
     </section>
-
-    <label for="output">Compiled pattern output</label>
-    <pre id="output"></pre>
+    
+    <div id="output-label" class="output-label">Compiled pattern output</div>
+    <pre id="output" aria-labelledby="output-label"></pre>
   </main>
   <section class="guide">
     <h2>Mini Guide</h2>

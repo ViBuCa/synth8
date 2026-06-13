@@ -260,8 +260,8 @@ export function renderTutorial(root: HTMLElement) {
                 <span>BPM</span>
                 <input class="tutorial-bpm-input" type="number" min="40" max="240" value="${example.bpm ?? 120}" />
               </label>
-              <button class="play" type="button">Play</button>
-              <button class="stop" type="button">Stop</button>
+              <button id="tutorial-play" class="play" type="button">Play</button>
+              <button id="tutorial-stop" class="stop" type="button">Stop</button>
             </div>
             <div class="tutorial-status" role="status" aria-live="polite">Idle.</div>
           </article>
@@ -280,8 +280,8 @@ export function renderTutorial(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>(".tutorial-card").forEach((card) => {
     const editor = card.querySelector<HTMLTextAreaElement>(".tutorial-editor")!;
     const bpmInput = card.querySelector<HTMLInputElement>(".tutorial-bpm-input")!;
-    const playButton = card.querySelector<HTMLButtonElement>(".tutorial-play")!;
-    const stopButton = card.querySelector<HTMLButtonElement>(".tutorial-stop")!;
+    const playButton = card.querySelector<HTMLButtonElement>("#tutorial-play")!;
+    const stopButton = card.querySelector<HTMLButtonElement>("#tutorial-stop")!;
     const status = card.querySelector<HTMLDivElement>(".tutorial-status")!;
 
     playButton.addEventListener("click", async () => {
