@@ -1,46 +1,120 @@
 import Phaser from "phaser";
 import { compile } from "@vibuca/synth8-core";
-import { play, stop } from "@vibuca/synth8-player";
-
-export type Synth8PlayOptions = {
-    bpm?: number;
-};
+import {
+  createGameAudio,
+  pause,
+  play,
+  resume,
+  stop,
+} from "@vibuca/synth8-player";
+import type {
+  GameAudio,
+  PlayOptions,
+  PreparedPlayback,
+  PreparedSfx,
+} from "@vibuca/synth8-player";
 
 export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
-    private currentBpm = 120;
+  private gameAudio?: GameAudio;
+  private music?: PreparedPlayback;
+  private sfx = new Map<string, PreparedSfx>();
 
-    constructor(scene: Phaser.Scene, pluginManager: Phaser.Plugins.PluginManager) {
-        super(scene, pluginManager, "Synt8Plugin");
+  async play(source: string, options: PlayOptions = {}) {
+    const pattern = compile(source);
+    await play(pattern, options);
+  }
 
-        scene.events.once("shutdown", this.shutdown, this);
-        scene.events.once("destroy", this.destroy, this);
+  pause() {
+    pause();
+  }
+
+  resume() {
+    resume();
+  }
+
+  stop() {
+    stop();
+  }
+
+  async startGameAudio(options?: {
+    masterVolume?: number;
+    musicVolume?: number;
+    sfxVolume?: number;
+  }) {
+    this.gameAudio = await createGameAudio(options);
+    return this.gameAudio;
+  }
+
+  private async getGameAudio(): Promise<GameAudio> {
+    if (!this.gameAudio) {
+      this.gameAudio = await createGameAudio();
     }
 
-    play(source: string, options: Synth8PlayOptions = {}): void {
-        this.currentBpm = options.bpm ?? this.currentBpm;
+    return this.gameAudio;
+  }
 
-        const pattern = compile(source);
+  async playMusic(source: string, options?: Parameters<GameAudio["prepareMusic"]>[1]
+) {
+    const audio = await this.getGameAudio();
 
-        stop();
-        play(pattern, {
-            bpm: this.currentBpm,
-        });
+    this.music?.stop();
+
+    this.music = await audio.prepareMusic(compile(source), options);
+    this.music.start();
+
+    return this.music;
+  }
+
+  stopMusic() {
+    this.music?.stop();
+    this.music = undefined;
+  }
+
+  async prepareSfx(
+    key: string,
+    source: string,
+    options: PlayOptions & { voices?: number } = {}
+
+  ) {
+    const audio = await this.getGameAudio();
+    const prepared = await audio.prepareSfx(compile(source), options);
+
+    this.sfx.set(key, prepared);
+
+    return prepared;
+  }
+
+  async playSfx(key: string) {
+    const audio = await this.getGameAudio();
+    const prepared = this.sfx.get(key);
+
+    if (!prepared) {
+      throw new Error(`Unknown Synth8 SFX: ${key}`);
     }
 
-    stop(): void {
-        stop();
-    }
+    audio.playSfx(prepared);
+  }
 
-    setBpm(bpm: number): void {
-        this.currentBpm = bpm;
-        // Later: forward to player when Synth8 supports live BPM changes.
-    }
+  setMasterVolume(value: number) {
+    this.gameAudio?.setMasterVolume(value);
+  }
 
-    shutdown(): void {
-        this.stop();
-    }
+  setMusicVolume(value: number) {
+    this.gameAudio?.setMusicVolume(value);
+  }
 
-    destroy(): void {
-        this.stop();
-    }
+  setSfxVolume(value: number) {
+    this.gameAudio?.setSfxVolume(value);
+  }
+
+  shutdown() {
+    this.stop();
+    this.stopMusic();
+    this.sfx.clear();
+  }
+
+  destroy() {
+    this.shutdown();
+    super.destroy();
+  }
 }
