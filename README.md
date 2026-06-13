@@ -151,12 +151,12 @@ Implemented:
 * Drum synthesizers
 * Test suite
 * Panning
-
-Planned:
-
 * Instrument banks
 * Effects
 * MIDI export
+
+Planned:
+
 * Editor package
 * Phaser examples
 * Procedural composition helpers
