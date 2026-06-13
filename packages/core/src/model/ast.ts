@@ -6,6 +6,8 @@ export type AstNode =
   | SongExpression
   | SequenceExpression;
 
+export type ArpeggioMode = "up" | "down" | "updown";
+
 type Modifiers = {
   repeat: number;
   offset: number;
@@ -40,6 +42,7 @@ export type MelodyExpression = {
   notes: MelodyStep[];
   rate: number;
   transpose: number;
+  arp?: "up" | "down" | "updown";
 } & Modifiers;
 
 export type MelodyStep =

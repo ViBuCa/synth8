@@ -74,6 +74,43 @@ beat("kick+hihat snare")
 melody("c4+e4+g4 f4")
 ```
 
+### Arpeggios
+
+Use `.arp()` to turn chords into fast melodic note sequences.
+
+```ts
+melody("c4+e4+g4").arp()
+```
+
+This plays the chord notes one after another instead of all at once.
+
+`.arp()` defaults to upward order:
+
+```ts
+melody("c4+e4+g4").arp()
+melody("c4+e4+g4").arp("up")
+```
+
+Supported arpeggio modes:
+
+```ts
+arp("up")
+arp("down")
+arp("updown")
+```
+
+Examples:
+
+```ts
+melody("c4+e4+g4").arp("up")     // c4 e4 g4
+melody("c4+e4+g4").arp("down")   // g4 e4 c4
+melody("c4+e4+g4").arp("updown") // c4 e4 g4 e4
+```
+
+Arpeggios are compile-time transformations. They modify the generated melody events before playback.
+
+This makes it easy to create classic chiptune and retro-game style "fake chords" using a single melodic voice.
+
 ### Velocity
 
 ```ts

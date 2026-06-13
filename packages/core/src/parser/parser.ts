@@ -1,5 +1,5 @@
 import type { EffectConfig, EnvelopeConfig, PlaybackBank, PlaybackPreset, Waveform } from "../model";
-import type { AstNode } from "../model/ast";
+import type { ArpeggioMode, AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
 import { tokenize, type Token } from "./tokenizer";
@@ -22,9 +22,11 @@ type Modifiers = {
   pan?: number;
   envelope?: EnvelopeConfig;
   effects?: EffectConfig;
+  arp?: ArpeggioMode;
 };
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "square", "sawtooth"];
+const ARPEGGIOS: ArpeggioMode[] = ["up", "down", "updown"];
 const PLAYBACK_PRESETS: PlaybackPreset[] = [
   "chip-lead",
   "chip-bass",
@@ -74,6 +76,16 @@ const expectString = (state: ParserState): string => {
 
   if (token?.type !== "string") {
     throw new Error("Expected string.");
+  }
+
+  return token.value;
+};
+
+const expectOptionalString = (state: ParserState): string | undefined => {
+  const token = advance(state);
+
+  if (token?.type !== "string") {
+    return undefined;
   }
 
   return token.value;
@@ -133,12 +145,15 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let pan: number | undefined = undefined;
   const envelope: EnvelopeConfig = {};
   const effects: EffectConfig = {};
+  let arp: ArpeggioMode | undefined = undefined;
 
   while (matchSymbol(state, ".")) {
     const modifier = expectAnyIdentifier(state);
 
     let value: number = 0;
     let str = '';
+
+    let skipClosing = false;
 
     expectSymbol(state, "(");
 
@@ -165,6 +180,15 @@ const parseModifiers = (state: ParserState): Modifiers => {
       case "chorus":
         value = expectNumber(state);
         break;
+      case "arp":
+        const id = expectOptionalString(state);
+        if (!id) {
+          str = "up";
+          skipClosing = true
+        } else {
+          str = id;
+        }
+        break;
       case "sound":
       case "preset":
       case "bank":
@@ -176,7 +200,9 @@ const parseModifiers = (state: ParserState): Modifiers => {
         throw new Error(`Unknown modifier: ${modifier}`);
     }
 
-    expectSymbol(state, ")");
+    if (!skipClosing) {
+      expectSymbol(state, ")");
+    }
 
     switch (modifier) {
       case "rate":
@@ -285,6 +311,13 @@ const parseModifiers = (state: ParserState): Modifiers => {
         effects[modifier] = value;
         break;
 
+      case "arp": 
+        if (!ARPEGGIOS.includes(str as ArpeggioMode)) {
+          throw new Error(`Illegal arp value: ${str}`);
+        }
+        arp = str as ArpeggioMode;
+        break;
+
       case "lowpass":
       case "highpass":
         if (value < 20 || value > 20000) {
@@ -312,6 +345,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
     pan,
     envelope: Object.keys(envelope).length > 0 ? envelope : undefined,
     effects: Object.keys(effects).length > 0 ? effects : undefined,
+    arp
   };
 };
 
@@ -350,7 +384,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
-  const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, arp } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -367,6 +401,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     pan,
     envelope,
     effects,
+    arp
   };
 };
 

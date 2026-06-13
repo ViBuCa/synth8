@@ -1,4 +1,4 @@
-import type { AstNode, Event, Pattern, BeatStep, MelodyStep, Waveform, PlaybackConfig } from "../model";
+import type { AstNode, Event, Pattern, BeatStep, MelodyStep, Waveform, PlaybackConfig, ArpeggioMode } from "../model";
 import { parse } from "../parser/parser";
 import { loopEvents, repeatArray } from "./repeat-helper";
 import { transposeNote } from "./transpose-helper";
@@ -285,6 +285,38 @@ const mergePlayback = (
   return playback;
 };
 
+const arpeggiateMelodySteps = (
+  steps: MelodyStep[],
+  mode: ArpeggioMode
+): MelodyStep[] =>
+  steps.flatMap((step) => {
+    if (step.kind !== "MelodyParallel") {
+      return [step];
+    }
+
+    const notes =
+      mode === "down"
+        ? [...step.notes].reverse()
+        : mode === "updown"
+          ? [
+            ...step.notes,
+            ...step.notes.slice(1, -1).reverse(),
+          ]
+          : step.notes;
+
+    if (notes.length === 0) {
+      return [];
+    }
+
+    const totalDuration = getMelodyStepDuration(step);
+    const childDuration = totalDuration / notes.length;
+
+    return notes.map((note) => ({
+      ...note,
+      duration: childDuration,
+    }));
+  });
+
 const compileAst = (ast: AstNode): Pattern => {
   switch (ast.kind) {
     case "BeatExpression": {
@@ -312,7 +344,12 @@ const compileAst = (ast: AstNode): Pattern => {
     }
 
     case "MelodyExpression": {
-      const notes = repeatArray(ast.notes, ast.repeat);
+      const arpeggiatedNotes =
+        ast.arp !== undefined
+          ? arpeggiateMelodySteps(ast.notes, ast.arp)
+          : ast.notes;
+
+      const notes = repeatArray(arpeggiatedNotes, ast.repeat);
       const beatDuration = 1 / ast.rate;
 
       const patternLength = getMelodyStepsDuration(notes) * beatDuration;

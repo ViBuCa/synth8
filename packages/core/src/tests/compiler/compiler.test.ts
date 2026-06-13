@@ -534,4 +534,46 @@ describe("compile", () => {
 
     expect(pattern.layers[0].playback).toEqual({ pan: 0.5 });
   });
+
+  it("arpeggiates chords upward by default", () => {
+    expect(compile('melody("c4+e4+g4").arp()').events).toEqual([
+      { time: 0, dur: 1 / 3, type: "note", value: "c4" },
+      { time: 1 / 3, dur: 1 / 3, type: "note", value: "e4" },
+      { time: 2 / 3, dur: 1 / 3, type: "note", value: "g4" },
+    ]);
+  });
+
+  it("arpeggiates chords upward explicitly", () => {
+    expect(compile('melody("c4+e4+g4").arp("up")').events).toEqual([
+      { time: 0, dur: 1 / 3, type: "note", value: "c4" },
+      { time: 1 / 3, dur: 1 / 3, type: "note", value: "e4" },
+      { time: 2 / 3, dur: 1 / 3, type: "note", value: "g4" },
+    ]);
+  });
+
+  it("arpeggiates chords downward", () => {
+    expect(compile('melody("c4+e4+g4").arp("down")').events).toEqual([
+      { time: 0, dur: 1 / 3, type: "note", value: "g4" },
+      { time: 1 / 3, dur: 1 / 3, type: "note", value: "e4" },
+      { time: 2 / 3, dur: 1 / 3, type: "note", value: "c4" },
+    ]);
+  });
+
+  it("arpeggiates chords up and down without repeating edges", () => {
+    expect(compile('melody("c4+e4+g4").arp("updown")').events).toEqual([
+      { time: 0, dur: 0.25, type: "note", value: "c4" },
+      { time: 0.25, dur: 0.25, type: "note", value: "e4" },
+      { time: 0.5, dur: 0.25, type: "note", value: "g4" },
+      { time: 0.75, dur: 0.25, type: "note", value: "e4" },
+    ]);
+  });
+
+  it("arpeggiates before repeat", () => {
+    expect(compile('melody("c4+e4").arp("down").repeat(2)').events).toEqual([
+      { time: 0, dur: 0.5, type: "note", value: "e4" },
+      { time: 0.5, dur: 0.5, type: "note", value: "c4" },
+      { time: 1, dur: 0.5, type: "note", value: "e4" },
+      { time: 1.5, dur: 0.5, type: "note", value: "c4" },
+    ]);
+  });
 });

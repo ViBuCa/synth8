@@ -41,6 +41,21 @@ const tutorialExamples: TutorialExample[] = [
     source: `melody("c4+e4+g4 _ f4+a4+c5 _ g4+b4+d5 _ c4+e4+g4")`,
   },
   {
+    title: "Arpeggios",
+    body: "Arpeggios turn chords into fast melodic note sequences.",
+    details: "Modes: up, down, updown. This technique was commonly used on classic systems such as the NES, Game Boy, and Commodore 64.",
+    source: `song(
+  melody("c4+e4+g4 c4+f4+a4")
+    .arp("up")
+    .preset("chip-lead"),
+
+  melody("c2+g2")
+    .arp("updown")
+    .preset("chip-bass")
+    .gain(0.7)
+)`
+  },
+  {
     title: "Drums",
     body: "Beat patterns use named drum sounds such as kick, snare, hihat, clap, and tom.",
     details: "Drums: kick, snare, clap, hihat, openhat, tom, lowtom, midtom, hitom, crash.",
