@@ -260,8 +260,8 @@ export function renderTutorial(root: HTMLElement) {
                 <span>BPM</span>
                 <input class="tutorial-bpm-input" type="number" min="40" max="240" value="${example.bpm ?? 120}" />
               </label>
-              <button class="tutorial-play" type="button">Play</button>
-              <button class="tutorial-stop" type="button">Stop</button>
+              <button class="play" type="button">Play</button>
+              <button class="stop" type="button">Stop</button>
             </div>
             <div class="tutorial-status" role="status" aria-live="polite">Idle.</div>
           </article>

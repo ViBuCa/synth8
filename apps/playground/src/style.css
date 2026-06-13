@@ -479,16 +479,6 @@ button:disabled {
     max-width: 120px;
 }
 
-.tutorial-play {
-    background: #50fa7b;
-    color: #101018;
-}
-
-.tutorial-stop {
-    background: #ff5555;
-    color: white;
-}
-
 .tutorial-status {
     color: #8f8fa3;
     font-size: 14px;

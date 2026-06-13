@@ -184,8 +184,6 @@ root.innerHTML = `
     </label>
 
     </div>
-    <label for="source">Pattern</label>
-
     <label for="source">Synth8 source</label>
     <textarea id="source" rows="6">${startupSource}</textarea>
 
