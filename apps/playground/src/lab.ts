@@ -178,14 +178,15 @@ root.innerHTML = `
         type="file"
         accept=".mid,.midi,audio/midi"
       />
-    <div class="option-row">
+    <label class="option-row">
       <span><input id="split-piano" type="checkbox" checked /></span>
-      <span>Split piano roll into lead/bass</span>
-    </div>
+      Split piano roll into lead/bass
+    </label>
 
     </div>
     <label for="source">Pattern</label>
 
+    <label for="source">Synth8 source</label>
     <textarea id="source" rows="6">${startupSource}</textarea>
 
     <label for="bpm">BPM</label>
@@ -311,6 +312,7 @@ root.innerHTML = `
       <div id="game-audio-status" class="game-audio-status" role="status" aria-live="polite">Game audio idle.</div>
     </section>
 
+    <label for="output">Compiled pattern output</label>
     <pre id="output"></pre>
   </main>
   <section class="guide">

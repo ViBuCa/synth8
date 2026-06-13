@@ -251,7 +251,10 @@ export function renderTutorial(root: HTMLElement) {
               <p>${example.body}</p>
               <p class="tutorial-details">${example.details}</p>
             </div>
-            <textarea class="tutorial-editor" rows="5">${escapeHtml(example.source)}</textarea>
+            <label class="sr-only" for="tutorial-source-${index}">
+              Synth8 source for ${example.title}
+            </label>
+            <textarea class="tutorial-editor" id="tutorial-source-${index}" rows="5">${escapeHtml(example.source)}</textarea>
             <div class="tutorial-controls">
               <label class="tutorial-bpm">
                 <span>BPM</span>
