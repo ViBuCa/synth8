@@ -306,14 +306,21 @@ button:disabled {
 }
 
 .site-footer a {
-    color: #bd93f9;
-    text-decoration: none;
+    color: #f1fa8c;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
     font-weight: 700;
 }
 
-.site-footer a:hover {
-    color: #ff79c6;
-    text-decoration: underline;
+.site-footer a:hover,
+.site-footer a:focus-visible {
+    color: #ffffff;
+}
+
+.site-footer a:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 4px;
+    border-radius: 4px;
 }
 
 .site-footer span {
