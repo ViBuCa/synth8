@@ -1,48 +1,55 @@
 import Phaser from "phaser";
 import { compile } from "@vibuca/synth8-core";
-import {
-  createGameAudio,
-  pause,
-  play,
-  resume,
-  stop,
-} from "@vibuca/synth8-player";
+import { createGameAudio, prepare } from "@vibuca/synth8-player";
 import type {
   GameAudio,
+  GameAudioOptions,
+  GameMusicOptions,
+  GameSfxOptions,
   PlayOptions,
+  PlaySfxOptions,
   PreparedPlayback,
   PreparedSfx,
 } from "@vibuca/synth8-player";
 
 export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
   private gameAudio?: GameAudio;
+  private playback?: PreparedPlayback;
   private music?: PreparedPlayback;
   private sfx = new Map<string, PreparedSfx>();
 
-  async play(source: string, options: PlayOptions = {}) {
-    const pattern = compile(source);
-    await play(pattern, options);
+  async play(
+    source: string,
+    options: PlayOptions = {}
+  ): Promise<PreparedPlayback> {
+    this.playback?.stop();
+
+    this.playback = await prepare(compile(source), options);
+    this.playback.start();
+
+    return this.playback;
+  }
+
+  async startAudio(options?: GameAudioOptions) {
+    this.gameAudio = await createGameAudio(options);
+    return this.gameAudio;
   }
 
   pause() {
-    pause();
+    this.playback?.pause();
   }
 
   resume() {
-    resume();
+    this.playback?.resume();
   }
 
   stop() {
-    stop();
+    this.playback?.stop();
+    this.playback = undefined;
   }
 
-  async startGameAudio(options?: {
-    masterVolume?: number;
-    musicVolume?: number;
-    sfxVolume?: number;
-  }) {
-    this.gameAudio = await createGameAudio(options);
-    return this.gameAudio;
+  async startGameAudio(options?: GameAudioOptions) {
+    return this.startAudio(options);
   }
 
   private async getGameAudio(): Promise<GameAudio> {
@@ -53,8 +60,10 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
     return this.gameAudio;
   }
 
-  async playMusic(source: string, options?: Parameters<GameAudio["prepareMusic"]>[1]
-) {
+  async playMusic(
+    source: string,
+    options?: GameMusicOptions
+  ): Promise<PreparedPlayback> {
     const audio = await this.getGameAudio();
 
     this.music?.stop();
@@ -65,6 +74,14 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
     return this.music;
   }
 
+  pauseMusic() {
+    this.music?.pause();
+  }
+
+  resumeMusic() {
+    this.music?.resume();
+  }
+
   stopMusic() {
     this.music?.stop();
     this.music = undefined;
@@ -73,8 +90,7 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
   async prepareSfx(
     key: string,
     source: string,
-    options: PlayOptions & { voices?: number } = {}
-
+    options: GameSfxOptions = {}
   ) {
     const audio = await this.getGameAudio();
     const prepared = await audio.prepareSfx(compile(source), options);
@@ -84,7 +100,7 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
     return prepared;
   }
 
-  async playSfx(key: string) {
+  async playSfx(key: string, options?: PlaySfxOptions) {
     const audio = await this.getGameAudio();
     const prepared = this.sfx.get(key);
 
@@ -92,7 +108,7 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
       throw new Error(`Unknown Synth8 SFX: ${key}`);
     }
 
-    audio.playSfx(prepared);
+    audio.playSfx(prepared, options);
   }
 
   setMasterVolume(value: number) {

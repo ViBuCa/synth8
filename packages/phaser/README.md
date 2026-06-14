@@ -54,6 +54,12 @@ declare global {
 ## Play music
 
 ```ts
+await this.synth8.startAudio({
+  masterVolume: 1,
+  musicVolume: 0.7,
+  sfxVolume: 1,
+});
+
 await this.synth8.playMusic(
   `song(
     melody("c4 e4 g4 c5")
@@ -76,12 +82,12 @@ await this.synth8.playMusic(
 this.synth8.stopMusic();
 ```
 
-## Pause and resume simple playback
+## Pause and resume music
 
 ```ts
-this.synth8.pause();
-this.synth8.resume();
-this.synth8.stop();
+this.synth8.pauseMusic();
+this.synth8.resumeMusic();
+this.synth8.stopMusic();
 ```
 
 ## Sound effects
