@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import type { Synth8Plugin } from "@vibuca/synth8-phaser";
+import type { Synth8Plugin } from "@vibuca/synth8-phaser-plugin";
 
 declare global {
     namespace Phaser {

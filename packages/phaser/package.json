@@ -1,5 +1,5 @@
 {
-  "name": "@vibuca/synth8-phaser",
+  "name": "@vibuca/synth8-phaser-plugin",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",

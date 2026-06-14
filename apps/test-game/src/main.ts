@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { Synth8Plugin } from "@vibuca/synth8-phaser";
+import { Synth8Plugin } from "@vibuca/synth8-phaser-plugin";
 import { GameScene } from "./scenes/GameScene";
 
 const config: Phaser.Types.Core.GameConfig = {
