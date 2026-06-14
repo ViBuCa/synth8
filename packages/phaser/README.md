@@ -42,8 +42,8 @@ const config: Phaser.Types.Core.GameConfig = {
 ## TypeScript scene typing
 
 ```ts
-declare module "phaser" {
-  namespace Phaser.Scene {
+declare global {
+  namespace Phaser {
     interface Scene {
       synth8: Synth8Plugin;
     }
