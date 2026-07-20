@@ -50,6 +50,47 @@ const PRESET_PLAYBACK: Record<PlaybackPreset, PlaybackConfig> = {
             release: 0.08,
         },
     },
+    "deep-bass": {
+        sound: "sine",
+        gain: 0.95,
+        envelope: {
+            attack: 0.002,
+            decay: 0.12,
+            sustain: 0.8,
+            release: 0.12,
+        },
+        effects: {
+            lowpass: 900,
+        },
+    },
+    "warm-pad": {
+        sound: "sawtooth",
+        gain: 0.55,
+        envelope: {
+            attack: 0.55,
+            decay: 0.35,
+            sustain: 0.65,
+            release: 1.2,
+        },
+        effects: {
+            lowpass: 1800,
+            chorus: 0.25,
+        },
+    },
+    "glass-lead": {
+        sound: "sine",
+        gain: 0.65,
+        envelope: {
+            attack: 0.004,
+            decay: 0.18,
+            sustain: 0.25,
+            release: 0.35,
+        },
+        effects: {
+            echo: 0.18,
+            reverb: 0.18,
+        },
+    },
 };
 
 export const resolvePlaybackPreset = (

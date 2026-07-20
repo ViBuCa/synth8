@@ -40,6 +40,13 @@ describe("tokenize", () => {
         ]);
     });
 
+    it("tokenizes single quoted and escaped strings", () => {
+        expect(withoutPositions(tokenize(`'kick \\'snare\\'' "c4 \\"e4\\""`))).toEqual([
+            { type: "string", value: "kick 'snare'" },
+            { type: "string", value: `c4 "e4"` },
+        ]);
+    });
+
     it("tokenizes numbers", () => {
         expect(withoutPositions(tokenize("1 12 3.5"))).toEqual([
             { type: "number", value: 1 },

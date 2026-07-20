@@ -110,17 +110,48 @@ export const tokenize = (source: string): Token[] => {
             continue;
         }
 
-        if (char === '"') {
+        if (char === '"' || char === "'") {
             const start = position();
-
-            advanceChar();
+            const quote = advanceChar();
             let value = "";
 
-            while (index < source.length && source[index] !== '"') {
+            while (index < source.length && source[index] !== quote) {
+                if (source[index] === "\\") {
+                    advanceChar();
+
+                    if (index >= source.length) {
+                        errorAt("Unterminated string literal", start);
+                    }
+
+                    const escaped = advanceChar();
+
+                    switch (escaped) {
+                        case "n":
+                            value += "\n";
+                            break;
+                        case "t":
+                            value += "\t";
+                            break;
+                        case "r":
+                            value += "\r";
+                            break;
+                        case "\\":
+                        case "\"":
+                        case "'":
+                            value += escaped;
+                            break;
+                        default:
+                            value += escaped;
+                            break;
+                    }
+
+                    continue;
+                }
+
                 value += advanceChar();
             }
 
-            if (source[index] !== '"') {
+            if (source[index] !== quote) {
                 errorAt("Unterminated string literal", start);
             }
 

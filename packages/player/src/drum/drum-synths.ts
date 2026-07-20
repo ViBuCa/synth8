@@ -47,7 +47,9 @@ export const createDrums = (
     const connectableInstruments: DrumInstrument[] = [];
     const disposables: { dispose: () => void }[] = [];
     const is808 = bank === "808";
+    const is909 = bank === "909";
     const isArcade = bank === "arcade";
+    const isChip = bank === "chip";
 
     const addInstrument = <T extends DrumInstrument>(instrument: T): T => {
         connectableInstruments.push(instrument);
@@ -73,19 +75,43 @@ export const createDrums = (
                         release: 0.02,
                     },
                 }
-                : is808
+                : isChip
                     ? {
-                        pitchDecay: 0.035,
-                        octaves: 6,
-                        oscillator: { type: "sine" },
+                        pitchDecay: 0.01,
+                        octaves: 3,
+                        oscillator: { type: "square" },
                         envelope: {
                             attack: 0.001,
-                            decay: 0.55,
+                            decay: 0.09,
                             sustain: 0,
-                            release: 0.18,
+                            release: 0.01,
                         },
                     }
-                    : undefined
+                    : is909
+                        ? {
+                            pitchDecay: 0.025,
+                            octaves: 4,
+                            oscillator: { type: "sine" },
+                            envelope: {
+                                attack: 0.001,
+                                decay: 0.32,
+                                sustain: 0,
+                                release: 0.08,
+                            },
+                        }
+                        : is808
+                            ? {
+                                pitchDecay: 0.035,
+                                octaves: 6,
+                                oscillator: { type: "sine" },
+                                envelope: {
+                                    attack: 0.001,
+                                    decay: 0.55,
+                                    sustain: 0,
+                                    release: 0.18,
+                                },
+                            }
+                            : undefined
         ))
         : undefined;
 
@@ -93,7 +119,7 @@ export const createDrums = (
         noise: { type: "white" },
         envelope: {
             attack: 0.001,
-            decay: isArcade ? 0.08 : is808 ? 0.28 : 0.15,
+            decay: isArcade || isChip ? 0.08 : is909 ? 0.18 : is808 ? 0.28 : 0.15,
             sustain: 0,
             release: is808 ? 0.04 : undefined,
         }
@@ -105,7 +131,7 @@ export const createDrums = (
         },
         envelope: {
             attack: 0.001,
-            decay: isArcade ? 0.035 : is808 ? 0.05 : 0.08,
+            decay: isArcade || isChip ? 0.035 : is909 ? 0.06 : is808 ? 0.05 : 0.08,
             sustain: 0,
             release: isArcade ? 0.005 : 0.02,
         },
@@ -121,7 +147,7 @@ export const createDrums = (
         noise: { type: "white" },
         envelope: {
             attack: 0.001,
-            decay: isArcade ? 0.07 : is808 ? 0.18 : 0.12,
+            decay: isArcade || isChip ? 0.07 : is909 ? 0.11 : is808 ? 0.18 : 0.12,
             sustain: 0,
             release: is808 ? 0.03 : undefined,
         },
@@ -133,7 +159,7 @@ export const createDrums = (
         },
         envelope: {
             attack: 0.001,
-            decay: isArcade ? 0.18 : is808 ? 0.55 : 0.35,
+            decay: isArcade || isChip ? 0.18 : is909 ? 0.32 : is808 ? 0.55 : 0.35,
             sustain: 0,
             release: isArcade ? 0.03 : 0.08,
         },

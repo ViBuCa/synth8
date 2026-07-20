@@ -53,7 +53,21 @@ song(
 )
 ```
 
-### Comments
+### Strings and comments
+
+Pattern bodies and string modifier values can use double or single quotes:
+
+```ts
+melody("c4 e4 g4")
+melody('c4 e4 g4')
+```
+
+Use backslash escapes when the string itself needs a quote:
+
+```ts
+melody('c4 "e4" g4')
+melody("c4 'e4' g4")
+```
 
 Use `//` for line comments and `/* ... */` for block comments between Synth8 expressions and modifiers.
 
@@ -246,6 +260,9 @@ melody("c2 _ g1 _").preset("chip-bass")
 melody("c4 e4 g4 c5").preset("soft-pad")
 melody("c4+g4 _ eb4+bb4 _").preset("metal-rhythm")
 melody("c6 g5 e5 c5").preset("arcade-pluck")
+melody("c2 _ g1 _").preset("deep-bass")
+melody("c4+e4+g4").preset("warm-pad")
+melody("c6 e6 g6").preset("glass-lead")
 ```
 
 Supported presets:
@@ -256,6 +273,9 @@ chip-bass
 soft-pad
 metal-rhythm
 arcade-pluck
+deep-bass
+warm-pad
+glass-lead
 ```
 
 Presets are stored on the compiled layer playback config. Explicit modifiers such as `.sound()` or `.release()` can override preset defaults during playback.
@@ -266,7 +286,9 @@ Use `.bank(name)` to choose a broader instrument family for a layer. Banks are e
 
 ```ts
 beat("kick _ snare _").bank("808")
+beat("kick _ snare _").bank("909")
 beat("_ hihat _ hihat").fast(2).bank("arcade")
+beat("kick+hihat _ snare _").bank("chip")
 ```
 
 Supported banks:
@@ -274,12 +296,18 @@ Supported banks:
 ```ts
 default
 808
+909
 arcade
+chip
 ```
 
 `808` is inspired by classic synthesized drum machines, with rounder, longer drum envelopes.
 
+`909` is tighter and punchier.
+
 `arcade` is short and clicky, closer to retro game sound effects.
+
+`chip` is very short and square-wave-like for tiny retro hits.
 
 Banks are stored on the compiled layer playback config. They do not modify individual events.
 
@@ -335,7 +363,10 @@ melody("c4 e4 g4").repeat(2)
 ```ts
 beat("kick snare").offset(4)
 melody("c4 e4 g4").offset(8)
+melody("g4 c5").offset(0.5)
 ```
+
+`offset()` accepts non-negative beat values, including fractional values for small delays or swing-like layer shifts.
 
 ### Sequence
 

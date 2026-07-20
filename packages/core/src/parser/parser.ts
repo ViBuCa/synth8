@@ -34,8 +34,11 @@ const PLAYBACK_PRESETS: PlaybackPreset[] = [
   "soft-pad",
   "metal-rhythm",
   "arcade-pluck",
+  "deep-bass",
+  "warm-pad",
+  "glass-lead",
 ];
-const PLAYBACK_BANKS: PlaybackBank[] = ["default", "808", "arcade"];
+const PLAYBACK_BANKS: PlaybackBank[] = ["default", "808", "909", "arcade", "chip"];
 
 const createState = (source: string): ParserState => ({
   tokens: tokenize(source),
@@ -254,8 +257,8 @@ const parseModifiers = (state: ParserState): Modifiers => {
         break;
 
       case "offset":
-        if (!Number.isInteger(value)) {
-          throw new Error(`Offset value must be an integer: ${value}`);
+        if (!Number.isFinite(value) || value < 0) {
+          throw new Error(`Offset value must be a non-negative number: ${value}`);
         }
         offset += value;
         break;

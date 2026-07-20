@@ -195,9 +195,15 @@ melody("c4 e4")
         );
     });
 
-    it("rejects decimal offset values", () => {
-        expect(() => parse(`beat("kick").offset(1.5)`)).toThrow(
-            "Offset value must be an integer: 1.5"
+    it("parses fractional offset values", () => {
+        expect(parse(`beat("kick").offset(1.5)`)).toMatchObject({
+            offset: 1.5,
+        });
+    });
+
+    it("rejects negative offset values", () => {
+        expect(() => parse(`beat("kick").offset(-1)`)).toThrow(
+            "Offset value must be a non-negative number: -1"
         );
     });
 
@@ -246,6 +252,15 @@ melody("c4 e4")
         expect(parse(`melody("c6").preset("arcade-pluck")`)).toMatchObject({
             preset: "arcade-pluck",
         });
+        expect(parse(`melody("c2").preset("deep-bass")`)).toMatchObject({
+            preset: "deep-bass",
+        });
+        expect(parse(`melody("c4").preset("warm-pad")`)).toMatchObject({
+            preset: "warm-pad",
+        });
+        expect(parse(`melody("c6").preset("glass-lead")`)).toMatchObject({
+            preset: "glass-lead",
+        });
     });
 
     it("parses bank modifiers", () => {
@@ -254,6 +269,12 @@ melody("c4 e4")
         });
         expect(parse(`beat("kick snare").bank("arcade")`)).toMatchObject({
             bank: "arcade",
+        });
+        expect(parse(`beat("kick snare").bank("909")`)).toMatchObject({
+            bank: "909",
+        });
+        expect(parse(`beat("kick snare").bank("chip")`)).toMatchObject({
+            bank: "chip",
         });
         expect(parse(`beat("kick snare").bank("default")`)).toMatchObject({
             bank: "default",
@@ -309,8 +330,8 @@ melody("c4 e4")
     });
 
     it("rejects unknown bank values", () => {
-        expect(() => parse(`beat("kick").bank("909")`)).toThrow(
-            "Illegal bank value: 909"
+        expect(() => parse(`beat("kick").bank("vinyl")`)).toThrow(
+            "Illegal bank value: vinyl"
         );
     });
 

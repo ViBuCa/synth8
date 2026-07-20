@@ -200,7 +200,7 @@ const tutorialExamples: TutorialExample[] = [
   {
     title: "Offsets",
     body: "offset() delays a layer or phrase by a number of beats.",
-    details: "Value: integer beats, for example offset(2).",
+    details: "Value: non-negative beats, including fractions such as offset(0.5) or offset(2).",
     source: `song(
   melody("c4 _ e4 _ g4 _ c5 _"),
   melody("g4 _ c5 _ e5 _ g5 _").offset(2).sound("square").gain(0.45)

@@ -16,12 +16,17 @@ export type PlaybackPreset =
   | "chip-bass"
   | "soft-pad"
   | "metal-rhythm"
-  | "arcade-pluck";
+  | "arcade-pluck"
+  | "deep-bass"
+  | "warm-pad"
+  | "glass-lead";
 
 export type PlaybackBank =
   | "default"
   | "808"
-  | "arcade";
+  | "909"
+  | "arcade"
+  | "chip";
 
 export type EffectConfig = {
   delay?: number;

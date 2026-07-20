@@ -64,6 +64,38 @@ const examples = {
     .preset("arcade-pluck")
     .echo(0.2)
 )`,
+
+  "Fractional Offset": `song(
+  beat("kick _ snare _")
+    .bank("909")
+    .loop(),
+
+  beat("_ hihat _ hihat")
+    .bank("chip")
+    .fast(2)
+    .gain(0.25)
+    .offset(0.5)
+    .loop(),
+
+  melody('c4 e4 g4 c5')
+    .preset("glass-lead")
+    .echo(0.18)
+)`,
+
+  "New Presets": `song(
+  melody("c2 _ g1 _ bb1 _ g1 _")
+    .preset("deep-bass")
+    .loop(),
+
+  melody("c4+e4+g4 _ f4+a4+c5 _")
+    .preset("warm-pad")
+    .gain(0.45)
+    .loop(),
+
+  melody("c6 e6 g6 c7")
+    .preset("glass-lead")
+    .offset(0.5)
+)`,
   "8bit Toccata": `
   song(
   sequence(
@@ -102,6 +134,16 @@ const examples = {
     .gain(0.25)
     .loop()
 )`
+};
+
+const snippets = {
+  Melody: `melody("c4 e4 g4 c5")`,
+  Beat: `beat("kick _ snare _")`,
+  Song: `song(\n  melody("c4 e4 g4 c5"),\n  beat("kick _ snare _")\n)`,
+  Sequence: `sequence(\n  melody("c4 e4"),\n  melody("g4 c5")\n)`,
+  Preset: `.preset("chip-lead")`,
+  Bank: `.bank("808")`,
+  Effect: `.echo(0.2)`,
 };
 
 const gameSfxSources = {
@@ -203,6 +245,11 @@ root.innerHTML = `
 
     </div>
     <label for="source">Synth8 source</label>
+    <div class="examples" aria-label="Insert snippets">
+      ${Object.keys(snippets)
+    .map((name) => `<button class="snippet-button" type="button" data-snippet="${name}">${name}</button>`)
+    .join("")}
+    </div>
     <textarea id="source" rows="6">${startupSource}</textarea>
 
     <label for="bpm">BPM</label>
@@ -626,6 +673,24 @@ document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button)
     }
 
     sourceInput.value = examples[name as keyof typeof examples];
+    output.textContent = "";
+  });
+});
+
+document.querySelectorAll<HTMLButtonElement>(".snippet-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const name = button.dataset.snippet as keyof typeof snippets | undefined;
+
+    if (!name) {
+      return;
+    }
+
+    const snippet = snippets[name];
+    const start = sourceInput.selectionStart ?? sourceInput.value.length;
+    const end = sourceInput.selectionEnd ?? start;
+
+    sourceInput.setRangeText(snippet, start, end, "end");
+    sourceInput.focus();
     output.textContent = "";
   });
 });

@@ -318,6 +318,13 @@ describe("compile", () => {
     ]);
   });
 
+  it("supports fractional offsets", () => {
+    expect(compile(`beat("kick snare").offset(0.5)`).events).toEqual([
+      { time: 0.5, dur: 1, type: "drum", value: "kick" },
+      { time: 1.5, dur: 1, type: "drum", value: "snare" },
+    ]);
+  });
+
   it("offsets melody events", () => {
     expect(compile(`melody("c4 e4").offset(2)`).events).toEqual([
       { time: 2, dur: 1, type: "note", value: "c4" },
