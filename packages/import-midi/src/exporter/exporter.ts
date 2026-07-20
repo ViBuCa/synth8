@@ -1,5 +1,5 @@
-import { ImportedMidiSong, MapDrumsOptions, MidiToSynth8Options, MidiToSynth8SourceOptions, SlotNote } from "../model";
-import { DEFAULT_DRUM_MAP, durationSuffix, formatVelocity, quantize } from "../utils";
+import { ImportedMidiSong, MapDrumsOptions, MidiToSynth8Options, MidiToSynth8SourceOptions } from "../model";
+import { DEFAULT_DRUM_MAP } from "../utils";
 import { splitPianoSong } from "../utils/piano-roll-splitter";
 import { getOrderedTracks } from "../utils/track-order-helper";
 import { midiToPatternSource } from "./midi-to-pattern-mapper";
@@ -34,21 +34,54 @@ export const midiToMelodySource = (
     return midiToPatternSource(song, options, 'melody');
 }
 
+const splitMixedDrumTracks = (song: ImportedMidiSong): ImportedMidiSong => {
+    const trackKinds = new Map<string, { hasDrums: boolean; hasNotes: boolean }>();
+
+    for (const note of song.notes) {
+        const kinds = trackKinds.get(note.track) ?? { hasDrums: false, hasNotes: false };
+
+        if (note.kind === "drum") {
+            kinds.hasDrums = true;
+        } else {
+            kinds.hasNotes = true;
+        }
+
+        trackKinds.set(note.track, kinds);
+    }
+
+    return {
+        length: song.length,
+        notes: song.notes.map((note) => {
+            const kinds = trackKinds.get(note.track);
+
+            if (note.kind !== "drum" && kinds?.hasDrums && kinds.hasNotes) {
+                return {
+                    ...note,
+                    track: `${note.track}-melody`,
+                };
+            }
+
+            return note;
+        }),
+    };
+};
+
 export const midiToSongSource = (
     song: ImportedMidiSong,
     options: MidiToSynth8Options = {}
 ): string => {
-    const tracks = getOrderedTracks(song, options.trackOrder);
+    const exportSong = splitMixedDrumTracks(song);
+    const tracks = getOrderedTracks(exportSong, options.trackOrder);
 
     if (tracks.length === 0) {
-        return "song()";
+        return `song(\n        melody("_")\n    )`;
     }
 
     const patterns = tracks.map((track) => {
-        const trackNotes = song.notes.filter((note) => note.track === track);
-        const isDrumTrack = trackNotes.some((note) => note.kind === "drum");
+        const trackNotes = exportSong.notes.filter((note) => note.track === track);
+        const isDrumTrack = trackNotes.every((note) => note.kind === "drum");
         return midiToPatternSource(
-            song,
+            exportSong,
             {
                 ...options,
                 track,

@@ -30,7 +30,7 @@ export const midiToPatternSource = (
         : song.notes;
 
     if (notes.length === 0) {
-        return `${wrapper}("")`;
+        return `${wrapper}("_")`;
     }
 
     const step = resolveQuantizationStep(notes, options.step);

@@ -56,6 +56,7 @@ Options:
 type PlayOptions = {
   bpm?: number;
   playbackMode?: "auto" | "rendered" | "live" | "streamed";
+  autoRenderedEventLimit?: number;
   lookAhead?: number;
   updateInterval?: number;
   streamChunkDuration?: number;
@@ -211,6 +212,15 @@ await play(pattern, { bpm: 120, playbackMode: "auto" });
 ```
 
 Auto mode renders small and medium patterns, then falls back to live playback for dense patterns. This avoids situations where a very dense song spends a long time in `Tone.Offline` before any sound can start.
+
+The density threshold can be tuned with `autoRenderedEventLimit`:
+
+```ts
+await play(pattern, {
+  playbackMode: "auto",
+  autoRenderedEventLimit: 1024,
+});
+```
 
 If you need deterministic behavior, choose `"rendered"` or `"live"` explicitly.
 

@@ -13,8 +13,18 @@ const toMelodyNote = (value: string): MelodyNote => {
     };
 };
 
+const splitParallelParts = (value: string): string[] => {
+    const parts = value.split("+");
+
+    if (parts.length === 0 || parts.some((part) => part.length === 0)) {
+        throw new Error(`Invalid parallel melody token: ${value}`);
+    }
+
+    return parts;
+};
+
 const toMelodyStep = (value: string): MelodyStep => {
-    const parts = value.split("+").filter(Boolean);
+    const parts = splitParallelParts(value);
 
     if (parts.length === 1) {
         return toMelodyNote(parts[0]);
@@ -27,11 +37,7 @@ const toMelodyStep = (value: string): MelodyStep => {
 };
 
 const validateMelodyToken = (value: string): void => {
-    const parts = value.split("+").filter(Boolean);
-
-    if (parts.length === 0) {
-        throw new Error("Expected note.");
-    }
+    const parts = splitParallelParts(value);
 
     for (const part of parts) {
         const token = parsePatternToken(part);
@@ -46,7 +52,7 @@ export const parseMelodyPattern = (source: string): MelodyStep[] => {
     let index = 0;
 
     const skipWhitespace = () => {
-        while (chars[index] === " ") index++;
+        while (/\s/.test(chars[index] ?? "")) index++;
     };
 
     const parseSteps = (until?: string): MelodyStep[] => {
@@ -58,6 +64,10 @@ export const parseMelodyPattern = (source: string): MelodyStep[] => {
             if (until && chars[index] === until) {
                 index++;
                 return notes;
+            }
+
+            if (chars[index] === "]") {
+                throw new Error("Unexpected closing group ']'.");
             }
 
             if (chars[index] === "[") {
@@ -73,7 +83,7 @@ export const parseMelodyPattern = (source: string): MelodyStep[] => {
 
             while (
                 index < chars.length &&
-                chars[index] !== " " &&
+                !/\s/.test(chars[index]) &&
                 chars[index] !== "[" &&
                 chars[index] !== "]"
             ) {

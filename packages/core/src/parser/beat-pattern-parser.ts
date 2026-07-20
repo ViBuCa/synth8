@@ -13,7 +13,11 @@ const toBeatSound = (value: string): BeatSound => {
 };
 
 const toBeatStep = (value: string): BeatStep => {
-    const parts = value.split("+").filter(Boolean);
+    const parts = value.split("+");
+
+    if (parts.some((part) => part.length === 0)) {
+        throw new Error(`Invalid parallel beat token: ${value}`);
+    }
 
     if (parts.length === 1) {
         return toBeatSound(parts[0]);

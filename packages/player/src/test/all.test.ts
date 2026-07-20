@@ -431,6 +431,31 @@ describe("player", () => {
         expect(transport.start).toHaveBeenCalled();
     });
 
+    it("allows auto mode rendered event limit to be configured", async () => {
+        const { play } = await import("../index");
+
+        const events = Array.from({ length: 2 }, (_, index) => ({
+            type: "note" as const,
+            value: "c4",
+            time: index,
+            dur: 1,
+        }));
+
+        const pattern: Pattern = {
+            length: 2,
+            loopLength: 2,
+            loop: false,
+            events,
+            layers: [],
+        };
+
+        await play(pattern, { autoRenderedEventLimit: 1 });
+
+        expect(offline).not.toHaveBeenCalled();
+        expect(transport.loop).toBe(true);
+        expect(transport.start).toHaveBeenCalled();
+    });
+
     it("prepares streamed playback from an initial audio chunk", async () => {
         const { prepare } = await import("../index");
 

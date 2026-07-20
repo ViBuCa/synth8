@@ -113,6 +113,15 @@ describe("parseBeatPattern", () => {
         ]);
     });
 
+    it("rejects empty parallel sound parts", () => {
+        expect(() => parseBeatPattern("kick+")).toThrow(
+            "Invalid parallel beat token: kick+"
+        );
+        expect(() => parseBeatPattern("kick++snare")).toThrow(
+            "Invalid parallel beat token: kick++snare"
+        );
+    });
+
     it("returns an empty array for an empty pattern", () => {
         expect(parseBeatPattern("")).toEqual([]);
     });

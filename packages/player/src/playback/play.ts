@@ -21,7 +21,9 @@ const resolvePlaybackMode = (pattern: Pattern, options: PlayOptions): PreparedPl
         return options.playbackMode;
     }
 
-    return eventCount(pattern) > RENDERED_EVENT_LIMIT ? "live" : "rendered";
+    const renderedEventLimit = options.autoRenderedEventLimit ?? RENDERED_EVENT_LIMIT;
+
+    return eventCount(pattern) > renderedEventLimit ? "live" : "rendered";
 };
 
 type StreamChunk = {

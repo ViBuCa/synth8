@@ -62,13 +62,13 @@ describe("midiToMelodySource", () => {
         );
     });
 
-    it("returns an empty melody when no notes match", () => {
+    it("returns a silent melody when no notes match", () => {
         const song: ImportedMidiSong = {
             length: 0,
             notes: [],
         };
 
-        expect(midiToMelodySource(song)).toBe(`melody("")`);
+        expect(midiToMelodySource(song)).toBe(`melody("_")`);
     });
 
     it("exports note durations", () => {
@@ -174,13 +174,15 @@ describe("midiToSongSource", () => {
         )`));
     });
 
-    it("returns an empty song when no notes exist", () => {
+    it("returns a silent song when no notes exist", () => {
         const song: ImportedMidiSong = {
             length: 0,
             notes: [],
         };
 
-        expect(midiToSongSource(song)).toBe("song()");
+        expect(normalizeSource(midiToSongSource(song))).toBe(normalizeSource(`song(
+            melody("_")
+        )`));
     });
 
     it("keeps rests within each track", () => {
@@ -196,6 +198,21 @@ describe("midiToSongSource", () => {
         expect(normalizeSource(midiToSongSource(song, { step: 0.25 }))).toBe(normalizeSource(`song(
             melody("_ c2").fast(4),
             melody("c4 _ e4").fast(4)
+        )`));
+    });
+
+    it("splits mixed drum and melody tracks before exporting", () => {
+        const song: ImportedMidiSong = {
+            length: 1,
+            notes: [
+                { track: "drums", time: 0, dur: 0.25, midi: 36, name: "c2", velocity: 1, kind: "drum", drum: "kick" },
+                { track: "drums", time: 0.5, dur: 0.25, midi: 60, name: "c4", velocity: 1 },
+            ],
+        };
+
+        expect(normalizeSource(midiToSongSource(song, { step: 0.25 }))).toBe(normalizeSource(`song(
+            beat("kick").fast(4),
+            melody("_ _ c4").fast(4)
         )`));
     });
 });

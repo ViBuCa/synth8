@@ -10,8 +10,8 @@ describe("parseMelodyPattern", () => {
         ]);
     });
 
-    it("ignores extra spaces", () => {
-        expect(parseMelodyPattern("  c4   d4   e4  ")).toEqual([
+    it("ignores extra whitespace", () => {
+        expect(parseMelodyPattern("  c4   d4\n\te4  ")).toEqual([
             { kind: "MelodyNote", value: "c4", velocity: undefined, duration: 1 },
             { kind: "MelodyNote", value: "d4", velocity: undefined, duration: 1 },
             { kind: "MelodyNote", value: "e4", velocity: undefined, duration: 1 },
@@ -129,6 +129,15 @@ describe("parseMelodyPattern", () => {
         ]);
     });
 
+    it("rejects empty parallel note parts", () => {
+        expect(() => parseMelodyPattern("c4+")).toThrow(
+            "Invalid parallel melody token: c4+"
+        );
+        expect(() => parseMelodyPattern("c4++e4")).toThrow(
+            "Invalid parallel melody token: c4++e4"
+        );
+    });
+
     it("returns an empty array for an empty pattern", () => {
         expect(parseMelodyPattern("")).toEqual([]);
     });
@@ -143,6 +152,12 @@ describe("parseMelodyPattern", () => {
 
     it("throws on unknown notes inside parallel notes", () => {
         expect(() => parseMelodyPattern("c4+nope4")).toThrow("Unknown note: nope4");
+    });
+
+    it("throws on unexpected closing groups", () => {
+        expect(() => parseMelodyPattern("c4 ] d4")).toThrow(
+            "Unexpected closing group ']'."
+        );
     });
 
     it("throws on unclosed groups", () => {
