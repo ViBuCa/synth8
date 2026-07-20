@@ -317,6 +317,7 @@ describe("player", () => {
         chorusInstances.length = 0;
         renderedToneBuffer.get.mockClear();
         renderedAudioBuffer.getChannelData.mockClear();
+        delete (renderedAudioBuffer as { duration?: number }).duration;
 
         transport.bpm.value = 120;
         transport.loop = false;
@@ -404,6 +405,28 @@ describe("player", () => {
         });
 
         expect(calls).toEqual(["ready", "start"]);
+    });
+
+    it("clamps rendered playback loop end to the rendered buffer duration", async () => {
+        const { prepare } = await import("../index");
+
+        (renderedAudioBuffer as { duration?: number }).duration = 21.666643990929707;
+
+        const pattern: Pattern = {
+            length: 65,
+            loopLength: 65,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        await prepare(pattern, { bpm: 180, playbackMode: "rendered" });
+
+        expect(playerInstances[0]).toMatchObject({
+            loop: true,
+            loopStart: 0,
+            loopEnd: 21.666643990929707,
+        });
     });
 
     it("uses live playback for dense patterns in auto mode", async () => {
@@ -1231,6 +1254,30 @@ describe("player", () => {
         const music = await audio.prepareMusic(pattern, { playbackMode: "rendered" });
 
         expect(music.playbackMode).toBe("rendered");
+    });
+
+    it("clamps rendered game music loop end to the rendered buffer duration", async () => {
+        const { createGameAudio } = await import("../index");
+
+        (renderedAudioBuffer as { duration?: number }).duration = 21.666643990929707;
+
+        const pattern: Pattern = {
+            length: 65,
+            loopLength: 65,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const audio = await createGameAudio();
+
+        await audio.prepareMusic(pattern, { bpm: 180, playbackMode: "rendered" });
+
+        expect(playerInstances[0]).toMatchObject({
+            loop: true,
+            loopStart: 0,
+            loopEnd: 21.666643990929707,
+        });
     });
 
     it("routes rendered game music through the music bus", async () => {

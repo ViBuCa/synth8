@@ -12,6 +12,16 @@ const RENDERED_EVENT_LIMIT = 512;
 const DEFAULT_STREAM_CHUNK_DURATION = 5;
 const DEFAULT_STREAM_TAIL_DURATION = 0.25;
 
+const safeLoopEnd = (buffer: AudioBuffer, requestedLoopEnd: number): number => {
+    const bufferDuration = buffer.duration;
+
+    if (!Number.isFinite(bufferDuration) || bufferDuration <= 0) {
+        return requestedLoopEnd;
+    }
+
+    return Math.min(requestedLoopEnd, bufferDuration);
+};
+
 const resolvePlaybackMode = (pattern: Pattern, options: PlayOptions): PreparedPlayback["playbackMode"] => {
     if (
         options.playbackMode === "rendered" ||
@@ -127,7 +137,7 @@ const prepareRendered = async (
 
     player.loop = true;
     player.loopStart = 0;
-    player.loopEnd = loopDuration;
+    player.loopEnd = safeLoopEnd(buffer, loopDuration);
     player.toDestination();
 
     addActiveNode(player);
@@ -224,7 +234,7 @@ const prepareStreamed = async (
         if (chunk.playDuration >= loopDuration) {
             player.loop = true;
             player.loopStart = 0;
-            player.loopEnd = loopDuration;
+            player.loopEnd = safeLoopEnd(chunk.buffer, loopDuration);
         }
 
         player.start(startTime);

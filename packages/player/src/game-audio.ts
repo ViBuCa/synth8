@@ -42,6 +42,16 @@ const setPlayerVolume = (player: Tone.Player, volume: number): void => {
     player.volume.value = toDecibels(volume);
 };
 
+const safeLoopEnd = (buffer: AudioBuffer, requestedLoopEnd: number): number => {
+    const bufferDuration = buffer.duration;
+
+    if (!Number.isFinite(bufferDuration) || bufferDuration <= 0) {
+        return requestedLoopEnd;
+    }
+
+    return Math.min(requestedLoopEnd, bufferDuration);
+};
+
 const loopOffset = (startedAt: number, loopDuration: number): number => {
     const elapsed = Tone.immediate() - startedAt;
 
@@ -91,7 +101,7 @@ export const createGameAudio = async (
 
         player.loop = true;
         player.loopStart = 0;
-        player.loopEnd = duration;
+        player.loopEnd = safeLoopEnd(buffer, duration);
         player.connect(musicGain);
 
         const playback: InternalPreparedMusic = {
@@ -240,7 +250,7 @@ export const createGameAudio = async (
             if (chunk.playDuration >= duration) {
                 player.loop = true;
                 player.loopStart = 0;
-                player.loopEnd = duration;
+                player.loopEnd = safeLoopEnd(chunk.buffer, duration);
             }
 
             player.start(startTime);
