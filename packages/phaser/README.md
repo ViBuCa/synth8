@@ -1,4 +1,4 @@
-# @vibuca/synth8-phaser
+# @vibuca/synth8-phaser-plugin
 
 Phaser integration for Synth8, an MIT-licensed TypeScript music DSL and playback toolkit.
 
@@ -7,7 +7,7 @@ Use Synth8 patterns directly inside Phaser scenes for background music and overl
 ## Install
 
 ```bash
-npm install @vibuca/synth8-core @vibuca/synth8-player @vibuca/synth8-phaser
+npm install @vibuca/synth8-core @vibuca/synth8-player @vibuca/synth8-phaser-plugin
 ```
 
 You also need Phaser:
@@ -20,7 +20,7 @@ npm install phaser
 
 ```ts
 import Phaser from "phaser";
-import { Synth8Plugin } from "@vibuca/synth8-phaser";
+import { Synth8Plugin } from "@vibuca/synth8-phaser-plugin";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

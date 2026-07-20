@@ -9,6 +9,10 @@ export const loopEvents = (
   trackLength: number,
   songLength: number
 ): Event[] => {
+  if (trackLength <= 0) {
+    throw new Error("Cannot loop a zero-length pattern.");
+  }
+
   const result: Event[] = [];
 
   for (let offset = 0; offset < songLength; offset += trackLength) {

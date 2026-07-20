@@ -299,6 +299,18 @@ describe("compile", () => {
     ]);
   });
 
+  it("rejects zero-length loop tracks", () => {
+    expect(() => compile(`song(
+      beat("").loop(),
+      melody("c4 d4 e4 f4")
+    )`)).toThrow("beat() requires at least one step.");
+
+    expect(() => compile(`song(
+      melody("").loop(),
+      beat("kick snare")
+    )`)).toThrow("melody() requires at least one note.");
+  });
+
   it("offsets beat events", () => {
     expect(compile(`beat("kick snare").offset(2)`).events).toEqual([
       { time: 2, dur: 1, type: "drum", value: "kick" },

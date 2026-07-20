@@ -140,6 +140,15 @@ describe("parse", () => {
         );
     });
 
+    it("rejects empty beat and melody patterns", () => {
+        expect(() => parse(`beat("")`)).toThrow(
+            "beat() requires at least one step."
+        );
+        expect(() => parse(`melody("")`)).toThrow(
+            "melody() requires at least one note."
+        );
+    });
+
     it("rejects unknown expressions", () => {
         expect(() => parse(`foo("bar")`)).toThrow("Unknown expression: foo");
     });

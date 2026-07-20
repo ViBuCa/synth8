@@ -357,11 +357,17 @@ const parseBeatExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
+  const steps = parseBeatPattern(body);
+
+  if (steps.length === 0) {
+    throw new Error("beat() requires at least one step.");
+  }
+
   const { rate, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
-    steps: parseBeatPattern(body),
+    steps,
     rate,
     repeat,
     loop,
@@ -384,11 +390,17 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
 
   expectSymbol(state, ")");
 
+  const notes = parseMelodyPattern(body);
+
+  if (notes.length === 0) {
+    throw new Error("melody() requires at least one note.");
+  }
+
   const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, arp } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
-    notes: parseMelodyPattern(body),
+    notes,
     rate,
     transpose,
     repeat,
