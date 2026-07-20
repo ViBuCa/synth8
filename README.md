@@ -117,6 +117,10 @@ await play(pattern, { bpm: 120, playbackMode: "live" });
 
 The playground includes a playback mode switch so auto, rendered and live playback can be compared in the browser.
 
+## LLM Composer Guide
+
+If you want an LLM to compose Synth8 music for you, copy the prompt/reference in [docs/llm-composer-guide.md](docs/llm-composer-guide.md) into your chat and ask for a song, loop, or SFX.
+
 ## Packages
 
 | Package                    | Description                           |
