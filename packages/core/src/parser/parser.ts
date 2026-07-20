@@ -2,11 +2,12 @@ import type { EffectConfig, EnvelopeConfig, PlaybackBank, PlaybackPreset, Wavefo
 import type { ArpeggioMode, AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
-import { tokenize, type Token } from "./tokenizer";
+import { formatTokenPosition, tokenize, type SourcePosition, type Token } from "./tokenizer";
 
 type ParserState = {
   tokens: Token[];
   index: number;
+  end: SourcePosition;
 };
 
 type Modifiers = {
@@ -36,13 +37,38 @@ const PLAYBACK_PRESETS: PlaybackPreset[] = [
 ];
 const PLAYBACK_BANKS: PlaybackBank[] = ["default", "808", "arcade"];
 
-const createState = (tokens: Token[]): ParserState => ({
-  tokens,
+const createState = (source: string): ParserState => ({
+  tokens: tokenize(source),
   index: 0,
+  end: sourcePositionAtEnd(source),
 });
+
+const sourcePositionAtEnd = (source: string): SourcePosition => {
+  let line = 1;
+  let column = 1;
+
+  for (const char of source) {
+    if (char === "\n") {
+      line++;
+      column = 1;
+    } else {
+      column++;
+    }
+  }
+
+  return {
+    index: source.length,
+    line,
+    column,
+  };
+};
 
 const peek = (state: ParserState): Token | undefined => {
   return state.tokens[state.index];
+};
+
+const parserError = (state: ParserState, message: string, token = peek(state)): never => {
+  throw new Error(`${message} at ${formatTokenPosition(token, state.end)}.`);
 };
 
 const advance = (state: ParserState): Token | undefined => {
@@ -57,28 +83,28 @@ const expectIdentifier = (state: ParserState, value: string): void => {
   const token = advance(state);
 
   if (token?.type !== "identifier" || token.value !== value) {
-    throw new Error(`Expected identifier "${value}".`);
+    parserError(state, `Expected identifier "${value}"`, token);
   }
 };
 
 const expectAnyIdentifier = (state: ParserState): string => {
   const token = advance(state);
 
-  if (token?.type !== "identifier") {
-    throw new Error("Expected identifier.");
+  if (!token || token.type !== "identifier") {
+    parserError(state, "Expected identifier", token);
   }
 
-  return token.value;
+  return (token as Extract<Token, { type: "identifier" }>).value;
 };
 
 const expectString = (state: ParserState): string => {
   const token = advance(state);
 
-  if (token?.type !== "string") {
-    throw new Error("Expected string.");
+  if (!token || token.type !== "string") {
+    parserError(state, "Expected string", token);
   }
 
-  return token.value;
+  return (token as Extract<Token, { type: "string" }>).value;
 };
 
 const expectOptionalString = (state: ParserState): string | undefined => {
@@ -94,11 +120,11 @@ const expectOptionalString = (state: ParserState): string | undefined => {
 const expectNumber = (state: ParserState): number => {
   const token = advance(state);
 
-  if (token?.type !== "number") {
-    throw new Error("Expected number.");
+  if (!token || token.type !== "number") {
+    parserError(state, "Expected number", token);
   }
 
-  return token.value;
+  return (token as Extract<Token, { type: "number" }>).value;
 };
 
 const expectSymbol = (
@@ -108,7 +134,7 @@ const expectSymbol = (
   const token = advance(state);
 
   if (token?.type !== "symbol" || token.value !== value) {
-    throw new Error(`Expected "${value}".`);
+    parserError(state, `Expected "${value}"`, token);
   }
 };
 
@@ -480,11 +506,13 @@ const parseSongExpression = (state: ParserState): AstNode => {
 const parseExpression = (state: ParserState): AstNode => {
   const token = peek(state);
 
-  if (token?.type !== "identifier") {
-    throw new Error("Expected expression.");
+  if (!token || token.type !== "identifier") {
+    parserError(state, "Expected expression", token);
   }
 
-  switch (token.value) {
+  const expressionToken = token as Extract<Token, { type: "identifier" }>;
+
+  switch (expressionToken.value) {
     case "beat":
       return parseBeatExpression(state);
 
@@ -498,16 +526,16 @@ const parseExpression = (state: ParserState): AstNode => {
       return parseSongExpression(state);
 
     default:
-      throw new Error(`Unknown expression: ${token.value}`);
+      return parserError(state, `Unknown expression: ${expressionToken.value}`, expressionToken);
   }
 };
 
 export const parse = (source: string): AstNode => {
-  const state = createState(tokenize(source));
+  const state = createState(source);
   const node = parseExpression(state);
 
   if (!isAtEnd(state)) {
-    throw new Error("Unexpected tokens after expression.");
+    parserError(state, "Unexpected tokens after expression");
   }
 
   return node;

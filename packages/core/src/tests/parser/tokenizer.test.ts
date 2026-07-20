@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { tokenize } from "../../parser/tokenizer";
+import { tokenize, type Token } from "../../parser/tokenizer";
+
+const withoutPositions = (tokens: Token[]) => tokens.map(({ type, value }) => ({ type, value }));
 
 describe("tokenize", () => {
     it("tokenizes a beat expression", () => {
-        expect(tokenize(`beat("kick snare hihat hihat").rate(2)`)).toEqual([
+        expect(withoutPositions(tokenize(`beat("kick snare hihat hihat").rate(2)`))).toEqual([
             { type: "identifier", value: "beat" },
             { type: "symbol", value: "(" },
             { type: "string", value: "kick snare hihat hihat" },
@@ -17,7 +19,7 @@ describe("tokenize", () => {
     });
 
     it("tokenizes identifiers", () => {
-        expect(tokenize("beat melody sequence song")).toEqual([
+        expect(withoutPositions(tokenize("beat melody sequence song"))).toEqual([
             { type: "identifier", value: "beat" },
             { type: "identifier", value: "melody" },
             { type: "identifier", value: "sequence" },
@@ -26,20 +28,20 @@ describe("tokenize", () => {
     });
 
     it("tokenizes identifiers with numbers and underscores", () => {
-        expect(tokenize("foo_1 bar2")).toEqual([
+        expect(withoutPositions(tokenize("foo_1 bar2"))).toEqual([
             { type: "identifier", value: "foo_1" },
             { type: "identifier", value: "bar2" },
         ]);
     });
 
     it("tokenizes strings", () => {
-        expect(tokenize(`"kick snare"`)).toEqual([
+        expect(withoutPositions(tokenize(`"kick snare"`))).toEqual([
             { type: "string", value: "kick snare" },
         ]);
     });
 
     it("tokenizes numbers", () => {
-        expect(tokenize("1 12 3.5")).toEqual([
+        expect(withoutPositions(tokenize("1 12 3.5"))).toEqual([
             { type: "number", value: 1 },
             { type: "number", value: 12 },
             { type: "number", value: 3.5 },
@@ -47,7 +49,7 @@ describe("tokenize", () => {
     });
 
     it("tokenizes negative numbers", () => {
-        expect(tokenize("-1 -12 -3.5")).toEqual([
+        expect(withoutPositions(tokenize("-1 -12 -3.5"))).toEqual([
             { type: "number", value: -1 },
             { type: "number", value: -12 },
             { type: "number", value: -3.5 },
@@ -55,7 +57,7 @@ describe("tokenize", () => {
     });
 
     it("tokenizes symbols", () => {
-        expect(tokenize("().,")).toEqual([
+        expect(withoutPositions(tokenize("().,"))).toEqual([
             { type: "symbol", value: "(" },
             { type: "symbol", value: ")" },
             { type: "symbol", value: "." },
@@ -64,7 +66,7 @@ describe("tokenize", () => {
     });
 
     it("ignores whitespace", () => {
-        expect(tokenize(`  beat \n\t ( "kick" )  `)).toEqual([
+        expect(withoutPositions(tokenize(`  beat \n\t ( "kick" )  `))).toEqual([
             { type: "identifier", value: "beat" },
             { type: "symbol", value: "(" },
             { type: "string", value: "kick" },
@@ -72,8 +74,29 @@ describe("tokenize", () => {
         ]);
     });
 
+    it("ignores line and block comments", () => {
+        expect(withoutPositions(tokenize(`// intro\nbeat("kick") /* layer */ .loop()`))).toEqual([
+            { type: "identifier", value: "beat" },
+            { type: "symbol", value: "(" },
+            { type: "string", value: "kick" },
+            { type: "symbol", value: ")" },
+            { type: "symbol", value: "." },
+            { type: "identifier", value: "loop" },
+            { type: "symbol", value: "(" },
+            { type: "symbol", value: ")" },
+        ]);
+    });
+
+    it("tracks token source positions", () => {
+        expect(tokenize(`\n  beat("kick")`)[0]).toMatchObject({
+            type: "identifier",
+            value: "beat",
+            start: { line: 2, column: 3 },
+        });
+    });
+
     it("tokenizes a full expression", () => {
-        expect(tokenize(`melody("c4 d4").transpose(-12).repeat(2)`)).toEqual([
+        expect(withoutPositions(tokenize(`melody("c4 d4").transpose(-12).repeat(2)`))).toEqual([
             { type: "identifier", value: "melody" },
             { type: "symbol", value: "(" },
             { type: "string", value: "c4 d4" },
@@ -93,15 +116,21 @@ describe("tokenize", () => {
 
     it("throws on unterminated strings", () => {
         expect(() => tokenize(`beat("kick snare)`)).toThrow(
-            "Unterminated string literal."
+            "Unterminated string literal at line 1, column 6."
         );
     });
 
     it("throws on unexpected characters", () => {
-        expect(() => tokenize(`beat["kick"]`)).toThrow("Unexpected character: [");
+        expect(() => tokenize(`beat["kick"]`)).toThrow("Unexpected character: [ at line 1, column 5.");
+    });
+
+    it("throws on unterminated block comments", () => {
+        expect(() => tokenize(`beat("kick") /* nope`)).toThrow(
+            "Unterminated block comment at line 1, column 14."
+        );
     });
 
     it("treats a standalone minus as unexpected", () => {
-        expect(() => tokenize(`transpose(-)`)).toThrow("Unexpected character: -");
+        expect(() => tokenize(`transpose(-)`)).toThrow("Unexpected character: - at line 1, column 11.");
     });
 });

@@ -46,6 +46,24 @@ const examples = {
 
   "Chords": `melody("c4+e4+g4 _ f4+a4+c5 _ g4+b4+d5 _ c4+e4+g4")
   .sound("triangle")`,
+
+  "Commented Groove": `song(
+  // A short commented example for readable sketches.
+  beat("kick _ snare _")
+    .bank("808")
+    .gain(0.75)
+    .loop(),
+
+  /* Fast hats sit on their own layer. */
+  beat("_ hihat _ hihat")
+    .fast(2)
+    .gain(0.25)
+    .loop(),
+
+  melody("c4 e4 g4 c5")
+    .preset("arcade-pluck")
+    .echo(0.2)
+)`,
   "8bit Toccata": `
   song(
   sequence(

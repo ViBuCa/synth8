@@ -128,6 +128,18 @@ describe("parse", () => {
         });
     });
 
+    it("ignores comments between expressions and modifiers", () => {
+        expect(
+            parse(`// lead layer
+melody("c4 e4")
+  /* playback */
+  .sound("square")`)
+        ).toMatchObject({
+            kind: "MelodyExpression",
+            sound: "square",
+        });
+    });
+
     it("rejects an empty sequence", () => {
         expect(() => parse(`sequence()`)).toThrow(
             "sequence() requires at least one pattern."
@@ -155,7 +167,13 @@ describe("parse", () => {
 
     it("rejects trailing tokens", () => {
         expect(() => parse(`beat("kick") beat("snare")`)).toThrow(
-            "Unexpected tokens after expression."
+            "Unexpected tokens after expression at line 1, column 14."
+        );
+    });
+
+    it("includes source positions in syntax errors", () => {
+        expect(() => parse(`song(\n  beat("kick"),\n  melody("c4")\n  beat("snare")\n)`)).toThrow(
+            "Expected \")\" at line 4, column 3."
         );
     });
 

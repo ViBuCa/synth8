@@ -1,75 +1,159 @@
+export type SourcePosition = {
+    index: number;
+    line: number;
+    column: number;
+};
+
+type TokenBase = {
+    start: SourcePosition;
+    end: SourcePosition;
+};
+
 export type Token =
-    | { type: "identifier"; value: string }
-    | { type: "string"; value: string }
-    | { type: "number"; value: number }
-    | { type: "symbol"; value: '(' | ')' | '.' | ',' };
+    | ({ type: "identifier"; value: string } & TokenBase)
+    | ({ type: "string"; value: string } & TokenBase)
+    | ({ type: "number"; value: number } & TokenBase)
+    | ({ type: "symbol"; value: '(' | ')' | '.' | ',' } & TokenBase);
+
+const formatPosition = (position: SourcePosition): string => {
+    return `line ${position.line}, column ${position.column}`;
+};
+
+export const formatTokenPosition = (token: Token | undefined, fallback: SourcePosition): string => {
+    return formatPosition(token?.start ?? fallback);
+};
 
 export const tokenize = (source: string): Token[] => {
     const tokens: Token[] = [];
     let index = 0;
+    let line = 1;
+    let column = 1;
+
+    const position = (): SourcePosition => ({ index, line, column });
+
+    const advanceChar = (): string => {
+        const char = source[index];
+
+        index++;
+
+        if (char === "\n") {
+            line++;
+            column = 1;
+        } else {
+            column++;
+        }
+
+        return char;
+    };
+
+    const errorAt = (message: string, at: SourcePosition = position()): never => {
+        throw new Error(`${message} at ${formatPosition(at)}.`);
+    };
+
+    const pushToken = (token: Omit<Token, "start" | "end">, start: SourcePosition): void => {
+        tokens.push({
+            ...token,
+            start,
+            end: position(),
+        } as Token);
+    };
 
     while (index < source.length) {
         const char = source[index];
 
         if (/\s/.test(char)) {
-            index++;
+            advanceChar();
+            continue;
+        }
+
+        if (char === "/" && source[index + 1] === "/") {
+            while (index < source.length && source[index] !== "\n") {
+                advanceChar();
+            }
+            continue;
+        }
+
+        if (char === "/" && source[index + 1] === "*") {
+            const start = position();
+            let closed = false;
+
+            advanceChar();
+            advanceChar();
+
+            while (index < source.length) {
+                if (source[index] === "*" && source[index + 1] === "/") {
+                    advanceChar();
+                    advanceChar();
+                    closed = true;
+                    break;
+                }
+
+                advanceChar();
+            }
+
+            if (!closed) {
+                errorAt("Unterminated block comment", start);
+            }
+
             continue;
         }
 
         if (/[a-zA-Z_]/.test(char)) {
+            const start = position();
             let value = "";
 
             while (/[a-zA-Z0-9_]/.test(source[index] ?? "")) {
-                value += source[index];
-                index++;
+                value += advanceChar();
             }
 
-            tokens.push({ type: "identifier", value });
+            pushToken({ type: "identifier", value }, start);
             continue;
         }
 
         if (char === '"') {
-            index++;
+            const start = position();
+
+            advanceChar();
             let value = "";
 
             while (index < source.length && source[index] !== '"') {
-                value += source[index];
-                index++;
+                value += advanceChar();
             }
 
             if (source[index] !== '"') {
-                throw new Error("Unterminated string literal.");
+                errorAt("Unterminated string literal", start);
             }
 
-            index++;
-            tokens.push({ type: "string", value });
+            advanceChar();
+            pushToken({ type: "string", value }, start);
             continue;
         }
 
         if (/\d/.test(char) || (char === "-" && /\d/.test(source[index + 1] ?? ""))) {
+            const start = position();
             let value = "";
 
             if (char === "-") {
-                value += char;
-                index++;
+                value += advanceChar();
             }
 
             while (/[\d.]/.test(source[index] ?? "")) {
-                value += source[index];
-                index++;
+                value += advanceChar();
             }
 
-            tokens.push({ type: "number", value: Number(value) });
+            pushToken({ type: "number", value: Number(value) }, start);
             continue;
         }
 
         if (char === "(" || char === ")" || char === "." || char === ",") {
-            tokens.push({ type: "symbol", value: char });
-            index++;
+            const start = position();
+            const value = advanceChar();
+
+            pushToken({ type: "symbol", value: value as Token["value"] }, start);
             continue;
         }
 
-        throw new Error(`Unexpected character: ${char}`);
+        errorAt(`Unexpected character: ${char}`);
     }
 
     return tokens;

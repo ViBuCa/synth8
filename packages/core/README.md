@@ -53,6 +53,23 @@ song(
 )
 ```
 
+### Comments
+
+Use `//` for line comments and `/* ... */` for block comments between Synth8 expressions and modifiers.
+
+```ts
+song(
+  // drums
+  beat("kick _ snare _").loop(),
+
+  /* lead melody */
+  melody("c4 e4 g4 c5")
+    .sound("square")
+)
+```
+
+Comments are ignored by the parser. Inside quoted beat or melody patterns, text is still treated as pattern text.
+
 ### Rests
 
 ```ts
