@@ -1208,6 +1208,25 @@ describe("player", () => {
         expect(music.playbackMode).toBe("rendered");
     });
 
+    it("routes rendered game music through the music bus", async () => {
+        const { createGameAudio } = await import("../index");
+
+        const pattern: Pattern = {
+            length: 1,
+            loopLength: 1,
+            loop: false,
+            events: [],
+            layers: [],
+        };
+
+        const audio = await createGameAudio();
+
+        await audio.prepareMusic(pattern, { playbackMode: "rendered" });
+
+        expect(playerConnect).toHaveBeenCalledWith(gainInstances[1]);
+        expect(playerToDestination).not.toHaveBeenCalled();
+    });
+
     it("prepares replacement game music without stopping the current music", async () => {
         const { createGameAudio } = await import("../index");
 

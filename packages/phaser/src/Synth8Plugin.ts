@@ -31,6 +31,9 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
   }
 
   async startAudio(options?: GameAudioOptions) {
+    this.stopMusic();
+    this.disposeSfx();
+    this.gameAudio?.dispose();
     this.gameAudio = await createGameAudio(options);
     return this.gameAudio;
   }
@@ -123,10 +126,20 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
     this.gameAudio?.setSfxVolume(value);
   }
 
+  private disposeSfx() {
+    for (const sfx of this.sfx.values()) {
+      sfx.dispose();
+    }
+
+    this.sfx.clear();
+  }
+
   shutdown() {
     this.stop();
     this.stopMusic();
-    this.sfx.clear();
+    this.disposeSfx();
+    this.gameAudio?.dispose();
+    this.gameAudio = undefined;
   }
 
   destroy() {

@@ -22,9 +22,7 @@ type InternalPreparedSfx = PreparedSfx & {
     nextVoice: number;
 };
 
-type InternalPreparedMusic = PreparedPlayback & {
-    applyVolume(volume: number): void;
-};
+type InternalPreparedMusic = PreparedPlayback;
 
 const normalizeVolume = (volume: number): number => Math.max(0, volume);
 
@@ -78,16 +76,6 @@ export const createGameAudio = async (
     limiter.connect(masterGain);
     masterGain.toDestination();
 
-    const applyMusicPlayerVolume = (music: InternalPreparedMusic): void => {
-        music.applyVolume(masterVolume * musicVolume);
-    };
-
-    const applyAllMusicPlayerVolumes = (): void => {
-        for (const music of musicSet) {
-            applyMusicPlayerVolume(music);
-        }
-    };
-
     const prepareRenderedMusic = async (
         pattern: Pattern,
         musicOptions: GameMusicOptions = {}
@@ -104,12 +92,9 @@ export const createGameAudio = async (
         player.loop = true;
         player.loopStart = 0;
         player.loopEnd = duration;
-        player.toDestination();
+        player.connect(musicGain);
 
         const playback: InternalPreparedMusic = {
-            applyVolume(volume: number) {
-                setPlayerVolume(player, volume);
-            },
             playbackMode: "rendered",
             start() {
                 if (currentMusic && currentMusic !== playback) {
@@ -125,7 +110,6 @@ export const createGameAudio = async (
                 started = true;
                 paused = false;
                 currentMusic = playback;
-                applyMusicPlayerVolume(playback);
                 player.start();
             },
             pause() {
@@ -251,8 +235,7 @@ export const createGameAudio = async (
             const player = new Tone.Player(chunk.buffer);
 
             activePlayers.add(player);
-            setPlayerVolume(player, masterVolume * musicVolume);
-            player.toDestination();
+            player.connect(musicGain);
 
             if (chunk.playDuration >= duration) {
                 player.loop = true;
@@ -293,11 +276,6 @@ export const createGameAudio = async (
 
         const playback: InternalPreparedMusic = {
             playbackMode: "streamed",
-            applyVolume(volume: number) {
-                for (const player of activePlayers) {
-                    setPlayerVolume(player, volume);
-                }
-            },
             start() {
                 if (currentMusic && currentMusic !== playback) {
                     currentMusic.dispose();
@@ -415,12 +393,10 @@ export const createGameAudio = async (
         setMasterVolume(volume: number) {
             masterVolume = normalizeVolume(volume);
             setVolume(masterGain, masterVolume);
-            applyAllMusicPlayerVolumes();
         },
         setMusicVolume(volume: number) {
             musicVolume = normalizeVolume(volume);
             setVolume(musicGain, musicVolume);
-            applyAllMusicPlayerVolumes();
         },
         setSfxVolume(volume: number) {
             sfxVolume = normalizeVolume(volume);

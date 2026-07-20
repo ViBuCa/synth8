@@ -28,6 +28,7 @@ jobs:
           cache: pnpm
 
       - run: pnpm install
+      - run: pnpm test
       - run: pnpm --filter @vibuca/synth8-core build
       - run: pnpm --filter @vibuca/synth8-player build
       - run: pnpm --filter @vibuca/synth8-import-midi build
