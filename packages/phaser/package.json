@@ -26,6 +26,8 @@
     "LICENSE"
   ],
   "devDependencies": {
+    "@vibuca/synth8-core": "workspace:*",
+    "@vibuca/synth8-player": "workspace:*",
     "unplugin-dts": "^1.0.2"
   }
 }

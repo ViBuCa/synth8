@@ -223,14 +223,14 @@ importers:
   apps/playground:
     dependencies:
       '@vibuca/synth8-core':
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: workspace:*
+        version: link:../../packages/core
       '@vibuca/synth8-import-midi':
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: workspace:*
+        version: link:../../packages/import-midi
       '@vibuca/synth8-player':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/player
 
   apps/test-game:
     dependencies:
@@ -277,16 +277,16 @@ importers:
 
   packages/phaser:
     dependencies:
-      '@vibuca/synth8-core':
-        specifier: ^1.0.0
-        version: 1.0.0
-      '@vibuca/synth8-player':
-        specifier: ^1.0.2
-        version: 1.0.2
       phaser:
         specifier: ^3.90.0
         version: 3.90.0
     devDependencies:
+      '@vibuca/synth8-core':
+        specifier: workspace:*
+        version: link:../core
+      '@vibuca/synth8-player':
+        specifier: workspace:*
+        version: link:../player
       unplugin-dts:
         specifier: ^1.0.2
         version: 1.0.2(esbuild@0.27.7)(rolldown@1.0.3)(rollup@4.62.0)(typescript@6.0.3)(vite@8.0.16(esbuild@0.27.7))
@@ -758,15 +758,6 @@ packages:
 
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
-
-  '@vibuca/synth8-core@1.0.0':
-    resolution: {integrity: sha512-Is1esaczZmTn0YgRZs76s0LcdJlmduEIU9SjnO7IZDAbDKXzlCalH2070U+vTTPJXDQGhGdBNEUY3jQ0meHrbw==}
-
-  '@vibuca/synth8-import-midi@1.0.0':
-    resolution: {integrity: sha512-UCH5BgdGan9qPlUbDAAMtSk8u5zT2Cz0smJJ/y/T8tBTRAD/kVKvPpvMVXIV4XZKG/DMeHgEtxSv6GRphi0z2A==}
-
-  '@vibuca/synth8-player@1.0.2':
-    resolution: {integrity: sha512-Dhs7PqahQ8ECU6fwvfAK0maPFlOByFzbStQdAgyyCT4gFM2X696cAOxmbDjJ5jzCSjl9vGom3vC3S/TwzCkd8Q==}
 
   '@vitejs/plugin-basic-ssl@2.3.0':
     resolution: {integrity: sha512-bdyo8rB3NnQbikdMpHaML9Z1OZPBu6fFOBo+OtxsBlvMJtysWskmBcnbIDhUqgC8tcxNv/a+BcV5U+2nQMm1OQ==}
@@ -1620,17 +1611,6 @@ snapshots:
   '@types/deep-eql@4.0.2': {}
 
   '@types/estree@1.0.9': {}
-
-  '@vibuca/synth8-core@1.0.0': {}
-
-  '@vibuca/synth8-import-midi@1.0.0':
-    dependencies:
-      '@tonejs/midi': 2.0.28
-
-  '@vibuca/synth8-player@1.0.2':
-    dependencies:
-      '@vibuca/synth8-core': 1.0.0
-      tone: 15.1.22
 
   '@vitejs/plugin-basic-ssl@2.3.0(vite@8.0.16(esbuild@0.27.7))':
     dependencies:
