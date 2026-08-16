@@ -87,7 +87,18 @@ export const scheduleLayers = (
     // Layers commonly all start at beat zero, so scheduling layer-by-layer is
     // invalid for multi-layer patterns.
     events.sort((left, right) => left.event.time - right.event.time);
-    for (const { runtime, event } of events) {
-        transport.schedule((time) => scheduleLayerEvent(runtime, event, time), event.time * secondsPerBeat);
+    for (let index = 0; index < events.length;) {
+        const start = events[index].event.time;
+        const group: typeof events = [];
+        while (index < events.length && events[index].event.time === start) {
+            group.push(events[index]);
+            index += 1;
+        }
+        // One Transport event per timestamp is required: Tone's timeline does
+        // not accept equal start times, while chords/layers commonly produce
+        // several events that must still be triggered simultaneously.
+        transport.schedule((time) => {
+            for (const { runtime, event } of group) scheduleLayerEvent(runtime, event, time);
+        }, start * secondsPerBeat);
     }
 };

@@ -118,11 +118,22 @@ const prepareLive = (
             });
         }
         candidates.sort((left, right) => left.eventTime - right.eventTime);
-        for (const { runtime, event, eventIndex, layerIndex, eventTime } of candidates) {
-            const key = `${cycle}:${layerIndex}:${eventIndex}`;
-            if (scheduled.has(key)) continue;
-            scheduled.add(key);
-            transport.schedule((eventTransportTime) => scheduleLayerEvent(runtime, event, eventTransportTime), cycle * loopDuration + eventTime);
+        for (let index = 0; index < candidates.length;) {
+            const eventTime = candidates[index].eventTime;
+            const group = [] as typeof candidates;
+            while (index < candidates.length && candidates[index].eventTime === eventTime) {
+                const candidate = candidates[index++];
+                const key = `${cycle}:${candidate.layerIndex}:${candidate.eventIndex}`;
+                if (!scheduled.has(key)) {
+                    scheduled.add(key);
+                    group.push(candidate);
+                }
+            }
+            if (group.length > 0) {
+                transport.schedule((eventTransportTime) => {
+                    for (const candidate of group) scheduleLayerEvent(candidate.runtime, candidate.event, eventTransportTime);
+                }, cycle * loopDuration + eventTime);
+            }
         }
         cycleTime += interval;
         if (cycleTime >= loopDuration) {
