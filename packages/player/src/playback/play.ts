@@ -107,16 +107,22 @@ const prepareLive = (
     let cycle = 0;
     let cycleTime = 0;
     const scheduleWindow = (_time: number): void => {
+        const candidates: Array<{ runtime: ReturnType<typeof createScheduledLayers>[number]; event: (typeof runtimes)[number]["layer"]["events"][number]; eventIndex: number; layerIndex: number; eventTime: number }> = [];
         for (let layerIndex = 0; layerIndex < runtimes.length; layerIndex++) {
             const runtime = runtimes[layerIndex];
             runtime.layer.events.forEach((event, eventIndex) => {
                 const eventTime = event.time * secondsPerBeat;
-                if (eventTime < cycleTime || eventTime >= cycleTime + lookAhead) return;
-                const key = `${cycle}:${layerIndex}:${eventIndex}`;
-                if (scheduled.has(key)) return;
-                scheduled.add(key);
-                transport.schedule((eventTransportTime) => scheduleLayerEvent(runtime, event, eventTransportTime), cycle * loopDuration + eventTime);
+                if (eventTime >= cycleTime && eventTime < cycleTime + lookAhead) {
+                    candidates.push({ runtime, event, eventIndex, layerIndex, eventTime });
+                }
             });
+        }
+        candidates.sort((left, right) => left.eventTime - right.eventTime);
+        for (const { runtime, event, eventIndex, layerIndex, eventTime } of candidates) {
+            const key = `${cycle}:${layerIndex}:${eventIndex}`;
+            if (scheduled.has(key)) continue;
+            scheduled.add(key);
+            transport.schedule((eventTransportTime) => scheduleLayerEvent(runtime, event, eventTransportTime), cycle * loopDuration + eventTime);
         }
         cycleTime += interval;
         if (cycleTime >= loopDuration) {

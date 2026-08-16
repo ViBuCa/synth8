@@ -80,9 +80,14 @@ export const scheduleLayers = (
     transport: TransportLike, output?: Tone.ToneAudioNode
 ): void => {
     const runtimes = createScheduledLayers(layers, secondsPerBeat, registerActiveLayer, output);
-    for (const runtime of runtimes) {
-        for (const event of runtime.layer.events) {
-            transport.schedule((time) => scheduleLayerEvent(runtime, event, time), event.time * secondsPerBeat);
-        }
+    const events = runtimes.flatMap((runtime) =>
+        runtime.layer.events.map((event) => ({ runtime, event }))
+    );
+    // Tone's event timeline requires insertion times to be strictly ordered.
+    // Layers commonly all start at beat zero, so scheduling layer-by-layer is
+    // invalid for multi-layer patterns.
+    events.sort((left, right) => left.event.time - right.event.time);
+    for (const { runtime, event } of events) {
+        transport.schedule((time) => scheduleLayerEvent(runtime, event, time), event.time * secondsPerBeat);
     }
 };
