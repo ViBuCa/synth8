@@ -2,7 +2,35 @@ export type Waveform =
   | "sine"
   | "triangle"
   | "square"
-  | "sawtooth";
+  | "sawtooth"
+  | "pulse12"
+  | "pulse25"
+  | "pulse50"
+  | "pulse75"
+  | "noise"
+  | "wavetable";
+
+export type PitchExpression = {
+  vibratoRate?: number;
+  vibratoDepth?: number;
+  vibratoDelay?: number;
+  portamento?: number;
+};
+
+export type FilterEnvelope = {
+  start: number;
+  peak: number;
+  attack: number;
+  decay: number;
+  sustain: number;
+  release: number;
+};
+
+export type FilterConfig = {
+  cutoff?: number;
+  resonance?: number;
+  envelope?: FilterEnvelope;
+};
 
 export type EnvelopeConfig = {
   attack?: number;
@@ -57,4 +85,6 @@ export type PlaybackConfig = {
   pan?: number; // -1 left, 1 right
   envelope?: EnvelopeConfig;
   effects?: EffectConfig;
+  pitch?: PitchExpression;
+  filter?: FilterConfig;
 };

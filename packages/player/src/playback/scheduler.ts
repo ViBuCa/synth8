@@ -23,7 +23,7 @@ export const scheduleLayers = (
     registerActiveLayer: (
         gainNode: Tone.Gain,
         panner: Tone.Panner,
-        synth: Tone.PolySynth<Tone.Synth> | undefined,
+        synth: Tone.PolySynth<Tone.Synth> | Tone.NoiseSynth | undefined,
         drums: ReturnType<typeof createDrums> | undefined,
         effectNodes: Tone.ToneAudioNode[]
     ) => void,
@@ -39,7 +39,7 @@ export const scheduleLayers = (
 
         const gainNode = new Tone.Gain(gain);
         const panner = new Tone.Panner(playback?.pan ?? 0);
-        const effectNodes = createEffectNodes(playback?.effects);
+        const effectNodes = createEffectNodes(playback?.effects, playback?.filter, playback?.pitch);
 
         let chainEnd: Tone.ToneAudioNode = gainNode;
 
@@ -57,7 +57,7 @@ export const scheduleLayers = (
         }
 
         const synth = noteEvents.length > 0
-            ? createSynth(sound, playback?.envelope).connect(gainNode)
+            ? createSynth(sound, playback?.envelope, playback?.pitch).connect(gainNode)
             : undefined;
         const drums = drumEvents.length > 0
             ? playback?.bank
@@ -71,20 +71,35 @@ export const scheduleLayers = (
 
         for (const event of layer.events) {
             const eventTime = event.time * secondsPerBeat;
-            const eventDuration = event.dur * secondsPerBeat;
+            const eventDuration = event.dur * secondsPerBeat * (
+                event.articulation === "staccato" ? 0.35 :
+                event.articulation === "mute" ? 0.18 : 1
+            );
 
             transport.schedule((time) => {
+                if (event.type === "note" && playback?.filter?.envelope) {
+                    const envelope = playback.filter.envelope;
+                    const filterNode = effectNodes.find((node) => node instanceof Tone.Filter) as Tone.Filter | undefined;
+                    if (filterNode) {
+                        filterNode.frequency.setValueAtTime(envelope.start, time);
+                        filterNode.frequency.linearRampToValueAtTime(envelope.peak, time + envelope.attack);
+                        filterNode.frequency.linearRampToValueAtTime(envelope.sustain, time + envelope.attack + envelope.decay);
+                        filterNode.frequency.linearRampToValueAtTime(envelope.sustain, time + eventDuration);
+                        filterNode.frequency.linearRampToValueAtTime(envelope.start, time + eventDuration + envelope.release);
+                    }
+                }
+
                 if (event.type === "drum" && drums) {
                     playDrum(drums, event.value, time, event.velocity ?? 1);
                 }
 
                 if (event.type === "note" && synth) {
-                    synth.triggerAttackRelease(
-                        event.value,
-                        eventDuration,
-                        time,
-                        event.velocity ?? 0.8
-                    );
+                    const velocity = Math.min(1, (event.velocity ?? 0.8) * (event.articulation === "accent" ? 1.15 : 1));
+                    if (sound === "noise") {
+                        synth.triggerAttackRelease(eventDuration, time, velocity);
+                    } else {
+                        synth.triggerAttackRelease(event.value, eventDuration, time, velocity);
+                    }
                 }
             }, eventTime);
         }

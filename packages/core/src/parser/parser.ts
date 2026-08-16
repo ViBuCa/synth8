@@ -1,4 +1,4 @@
-import type { EffectConfig, EnvelopeConfig, PlaybackBank, PlaybackPreset, Waveform } from "../model";
+import type { EffectConfig, EnvelopeConfig, FilterConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "../model";
 import type { ArpeggioMode, AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
@@ -23,10 +23,12 @@ type Modifiers = {
   pan?: number;
   envelope?: EnvelopeConfig;
   effects?: EffectConfig;
+  pitch?: PitchExpression;
+  filter?: FilterConfig;
   arp?: ArpeggioMode;
 };
 
-const WAVEFORMS: Waveform[] = ["sine", "triangle", "square", "sawtooth"];
+const WAVEFORMS: Waveform[] = ["sine", "triangle", "square", "sawtooth", "pulse12", "pulse25", "pulse50", "pulse75", "noise", "wavetable"];
 const ARPEGGIOS: ArpeggioMode[] = ["up", "down", "updown"];
 const PLAYBACK_PRESETS: PlaybackPreset[] = [
   "chip-lead",
@@ -184,6 +186,8 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let pan: number | undefined = undefined;
   const envelope: EnvelopeConfig = {};
   const effects: EffectConfig = {};
+  let pitch: PitchExpression | undefined = undefined;
+  let filter: FilterConfig | undefined = undefined;
   let arp: ArpeggioMode | undefined = undefined;
 
   while (matchSymbol(state, ".")) {
@@ -195,6 +199,31 @@ const parseModifiers = (state: ParserState): Modifiers => {
     let skipClosing = false;
 
     expectSymbol(state, "(");
+
+    if (modifier === "vibrato") {
+      const rate = expectNumber(state);
+      expectSymbol(state, ",");
+      const depth = expectNumber(state);
+      let delay = 0;
+      if (matchSymbol(state, ",")) delay = expectNumber(state);
+      expectSymbol(state, ")");
+      if (rate <= 0 || rate > 20 || depth < 0 || depth > 1 || delay < 0 || delay > 30) {
+        throw new Error("vibrato() expects rate 0-20 Hz, depth 0-1, and optional delay 0-30 seconds.");
+      }
+      pitch = { ...(pitch ?? {}), vibratoRate: rate, vibratoDepth: depth, ...(delay ? { vibratoDelay: delay } : {}) };
+      continue;
+    }
+
+    if (modifier === "filterEnvelope") {
+      const values = [expectNumber(state)];
+      while (matchSymbol(state, ",")) values.push(expectNumber(state));
+      expectSymbol(state, ")");
+      if (values.length !== 6 || values.some((item) => item < 0)) {
+        throw new Error("filterEnvelope() expects six non-negative values.");
+      }
+      filter = { ...(filter ?? {}), envelope: { start: values[0], peak: values[1], attack: values[2], decay: values[3], sustain: values[4], release: values[5] } };
+      continue;
+    }
 
     switch (modifier) {
       case "rate":
@@ -217,6 +246,9 @@ const parseModifiers = (state: ParserState): Modifiers => {
       case "highpass":
       case "distortion":
       case "chorus":
+      case "portamento":
+      case "cutoff":
+      case "resonance":
         value = expectNumber(state);
         break;
       case "arp":
@@ -350,6 +382,21 @@ const parseModifiers = (state: ParserState): Modifiers => {
         effects[modifier] = value;
         break;
 
+      case "portamento":
+        if (value < 0 || value > 30) throw new Error("portamento() must be between 0 and 30 seconds.");
+        pitch = { ...pitch, portamento: value };
+        break;
+
+      case "cutoff":
+        if (value < 20 || value > 20000) throw new Error("cutoff() must be between 20 and 20000 Hz.");
+        filter = { ...filter, cutoff: value };
+        break;
+
+      case "resonance":
+        if (value < 0 || value > 1) throw new Error("resonance() must be between 0 and 1.");
+        filter = { ...filter, resonance: value };
+        break;
+
       case "arp": 
         if (!ARPEGGIOS.includes(str as ArpeggioMode)) {
           throw new Error(`Illegal arp value: ${str}`);
@@ -384,6 +431,8 @@ const parseModifiers = (state: ParserState): Modifiers => {
     pan,
     envelope: Object.keys(envelope).length > 0 ? envelope : undefined,
     effects: Object.keys(effects).length > 0 ? effects : undefined,
+    pitch,
+    filter,
     arp
   };
 };
@@ -402,7 +451,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     throw new Error("beat() requires at least one step.");
   }
 
-  const { rate, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects } = parseModifiers(state);
+  const { rate, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -418,6 +467,8 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     pan,
     envelope,
     effects,
+    pitch,
+    filter,
   };
 };
 
@@ -435,7 +486,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     throw new Error("melody() requires at least one note.");
   }
 
-  const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, arp } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -452,6 +503,8 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     pan,
     envelope,
     effects,
+    pitch,
+    filter,
     arp
   };
 };
@@ -474,7 +527,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects } = parseModifiers(state);
+  const { repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -489,6 +542,8 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     pan,
     envelope,
     effects,
+    pitch,
+    filter,
   };
 };
 

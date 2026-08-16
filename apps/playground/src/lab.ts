@@ -96,6 +96,25 @@ const examples = {
     .preset("glass-lead")
     .offset(0.5)
 )`,
+  "Expression Demo": `song(
+  melody("bb4{accent}/1 f5{slide}/1 bb5{bend:+2}/2")
+    .preset("metal-lead")
+    .vibrato(5.5, 0.16, 0.4)
+    .portamento(0.08)
+    .cutoff(4200),
+  melody("c5 d5 e5 g5")
+    .sound("pulse25")
+    .cutoff(3000)
+    .gain(0.35),
+  melody("c3/2 _ c3/2 _")
+    .sound("noise")
+    .release(0.04)
+    .gain(0.18),
+  melody("c4+g4/1 eb4+bb4/1")
+    .preset("synth-brass")
+    .cutoff(1800)
+    .resonance(0.3)
+)`,
   "8bit Toccata": `
   song(
   sequence(

@@ -9,12 +9,26 @@ const toMelodyNote = (value: string): MelodyNote => {
         kind: "MelodyNote",
         value: token.value,
         velocity: token.velocity,
-        duration: token.duration
+        duration: token.duration,
+        articulation: token.articulation,
+        bend: token.bend
     };
 };
 
 const splitParallelParts = (value: string): string[] => {
-    const parts = value.split("+");
+    const parts: string[] = [];
+    let start = 0;
+    let braces = 0;
+
+    for (let index = 0; index < value.length; index++) {
+        if (value[index] === "{") braces++;
+        if (value[index] === "}") braces--;
+        if (value[index] === "+" && braces === 0) {
+            parts.push(value.slice(start, index));
+            start = index + 1;
+        }
+    }
+    parts.push(value.slice(start));
 
     if (parts.length === 0 || parts.some((part) => part.length === 0)) {
         throw new Error(`Invalid parallel melody token: ${value}`);

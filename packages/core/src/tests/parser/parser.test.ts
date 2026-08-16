@@ -57,6 +57,24 @@ describe("parse", () => {
         });
     });
 
+    it("parses expression modifiers and note articulation", () => {
+        expect(parse('melody("bb4{accent} f5{bend:+2} bb5{staccato}/2")\n            .vibrato(5.5, 0.16, 0.4).portamento(0.08).cutoff(2200).resonance(0.35)'))
+            .toMatchObject({
+                pitch: { vibratoRate: 5.5, vibratoDepth: 0.16, vibratoDelay: 0.4, portamento: 0.08 },
+                filter: { cutoff: 2200, resonance: 0.35 },
+                notes: [
+                    { articulation: "accent" },
+                    { bend: 2 },
+                    { articulation: "staccato", duration: 2 },
+                ],
+            });
+    });
+
+    it("parses pulse and noise sound sources", () => {
+        expect(parse('melody("c5").sound("pulse25")')).toMatchObject({ sound: "pulse25" });
+        expect(parse('melody("c5").sound("noise")')).toMatchObject({ sound: "noise" });
+    });
+
     it("parses parallel melody notes", () => {
         expect(parse('melody("c4+e4+g4")')).toMatchObject({
             kind: "MelodyExpression",
@@ -318,8 +336,8 @@ melody("c4 e4")
     });
 
     it("rejects unknown sound values", () => {
-        expect(() => parse(`melody("c4").sound("noise")`)).toThrow(
-            "Illegal sound value: noise"
+        expect(() => parse(`melody("c4").sound("wind")`)).toThrow(
+            "Illegal sound value: wind"
         );
     });
 

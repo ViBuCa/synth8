@@ -229,7 +229,36 @@ sine
 triangle
 square
 sawtooth
+pulse12
+pulse25
+pulse50
+pulse75
+noise
+wavetable
 ```
+
+Pulse variants are normalized retro pulse sources (12.5%, 25%, 50%, and 75% duty). `noise` is currently rendered through the pitched synth voice as a percussive approximation; note pitch is not musically meaningful. `wavetable` is reserved for the minimal built-in wavetable source and currently falls back to the basic synth oscillator in live playback.
+
+### Pitch expression, filters, and articulation
+
+Sustained layers can use vibrato, portamento, and a low-pass filter:
+
+```ts
+melody("bb4/1 f5/1 bb5/2")
+  .preset("metal-lead")
+  .vibrato(5.5, 0.16, 0.4)
+  .portamento(0.08)
+  .cutoff(4200)
+  .resonance(0.2)
+```
+
+Vibrato rate is Hz, depth is normalized from `0` to `1`, and delay/portamento are seconds. Cutoff is `20`–`20000` Hz and resonance is `0`–`1`. Notes may carry one compact articulation; bends use semitones:
+
+```ts
+melody("bb4{accent} f5{staccato} bb5{bend:+2} bb5{mute}/2")
+```
+
+Supported articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. Staccato and mute shorten playback without changing rhythmic timing; accent is velocity-limited to avoid clipping. Filter envelopes use `.filterEnvelope(start, peak, attack, decay, sustain, release)` and are stored in the compiled layer configuration. Vibrato delay and filter-envelope automation are retained in compiled data; live and rendered Tone playback currently apply the static portion only.
 
 ### Envelope
 

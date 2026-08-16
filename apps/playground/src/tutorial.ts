@@ -70,9 +70,9 @@ const tutorialExamples: TutorialExample[] = [
   {
     title: "Sounds",
     body: "Use sound() to choose the synth waveform for a melody layer.",
-    details: "Waveforms: sine, triangle, square, sawtooth.",
+    details: "Sources: sine, triangle, square, sawtooth, pulse12, pulse25, pulse50, pulse75, noise, wavetable. Pulse duty is fixed by the source name.",
     source: `melody("c4 e4 g4 c5")
-  .sound("square")`,
+  .sound("pulse25")`,
   },
   {
     title: "Envelope",
@@ -111,6 +111,16 @@ const tutorialExamples: TutorialExample[] = [
     .fast(2)
     .bank("808")
 )`,
+  },
+  {
+    title: "Expression",
+    body: "Add movement and phrasing to sustained notes without changing their rhythmic positions.",
+    details: "vibrato(rateHz, depth, delaySeconds), portamento(seconds), cutoff(20-20000), resonance(0-1). Articulation syntax: {accent}, {staccato}, {mute}, {slide}, or {bend:+2}.",
+    source: `melody("bb4{accent} f5{slide} bb5{bend:+2}/2")
+  .preset("metal-lead")
+  .vibrato(5.5, 0.16, 0.4)
+  .portamento(0.08)
+  .cutoff(4200)`,
   },
   {
     title: "Effects",

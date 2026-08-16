@@ -49,7 +49,7 @@ Melody-only modifiers:
 - .arp("up"), .arp("down"), .arp("updown"): turns chord tokens into fast arpeggios.
 
 Playback/layer modifiers:
-- .sound("sine" | "triangle" | "square" | "sawtooth")
+- .sound("sine" | "triangle" | "square" | "sawtooth" | "pulse12" | "pulse25" | "pulse50" | "pulse75" | "noise" | "wavetable")
 - .preset("chip-lead" | "chip-bass" | "soft-pad" | "metal-rhythm" | "arcade-pluck" | "deep-bass" | "warm-pad" | "glass-lead" | "metal-lead" | "anthem-lead" | "palm-muted" | "arena-chords" | "picked-bass" | "metal-bass" | "synth-brass" | "dark-pad" | "orchestra-hit" | "warm-keys")
 - .bank("default" | "808" | "909" | "arcade" | "chip") for drum character
 - .gain(0..1)
@@ -58,6 +58,12 @@ Playback/layer modifiers:
 Envelope modifiers:
 - .attack(seconds), .decay(seconds), .release(seconds): 0 to 30
 - .sustain(level): 0 to 1
+
+Expression:
+- .vibrato(rateHz, depth, delaySeconds?): rate 0-20, depth 0-1, delay 0-30
+- .portamento(seconds): 0 to 30
+- .cutoff(hz): 20 to 20000; .resonance(amount): 0 to 1
+- Note articulation: `{accent}`, `{staccato}`, `{legato}`, `{slide}`, `{vibrato}`, `{mute}`, or `{bend:+2}` (semitones)
 
 Effects:
 - .delay(seconds): 0 to 2

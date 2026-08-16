@@ -397,6 +397,19 @@ melody("c4 e4 g4")
 
 `delay()` uses seconds from 0 to 2. `lowpass()` and `highpass()` use Hz from 20 to 20000. The other effect modifiers use an amount from 0 to 1.
 
+Expressive playback is also available:
+
+```ts
+melody("bb4{accent} f5{slide} bb5{bend:+2}/2")
+  .preset("metal-lead")
+  .vibrato(5.5, 0.16, 0.4)
+  .portamento(0.08)
+  .cutoff(4200)
+  .resonance(0.2)
+```
+
+Vibrato uses Hz and normalized depth (`0`–`1`); bend values are semitones. Supported note articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. Staccato and mute shorten the gate while preserving event timing. Pulse sources (`pulse12`, `pulse25`, `pulse50`, `pulse75`) use fixed duty cycles, and `noise` uses Tone's noise instrument so note pitch is ignored. The minimal `wavetable` source currently uses the basic oscillator fallback. Filter envelopes are serialized in playback configuration, but only static cutoff/resonance are currently automated by the player.
+
 ## Event Structure
 The player consumes compiled events:
 ```ts

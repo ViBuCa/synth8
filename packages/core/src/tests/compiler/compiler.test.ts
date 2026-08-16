@@ -488,6 +488,22 @@ describe("compile", () => {
     });
   });
 
+  it("compiles note articulation and pitch/filter playback data", () => {
+    const pattern = compile('melody("bb4{accent} f5{bend:+2} bb5{mute}").vibrato(5, 0.15).cutoff(1800)');
+
+    expect(pattern.layers[0]).toMatchObject({
+      playback: {
+        pitch: { vibratoRate: 5, vibratoDepth: 0.15 },
+        filter: { cutoff: 1800 },
+      },
+      events: [
+        { articulation: "accent" },
+        { bend: 2 },
+        { articulation: "mute" },
+      ],
+    });
+  });
+
   it("stores preset on layer playback config", () => {
     expect(compile('melody("c4").preset("metal-rhythm")').layers[0].playback)
       .toEqual({

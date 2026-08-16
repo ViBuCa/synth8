@@ -1,4 +1,4 @@
-import type { AstNode, Event, Pattern, BeatStep, MelodyStep, Waveform, PlaybackConfig, ArpeggioMode } from "../model";
+import type { AstNode, Articulation, Event, Pattern, BeatStep, MelodyStep, Waveform, PlaybackConfig, ArpeggioMode } from "../model";
 import { parse } from "../parser/parser";
 import { loopEvents, repeatArray } from "./repeat-helper";
 import { transposeNote } from "./transpose-helper";
@@ -66,13 +66,17 @@ const createNoteEvent = (
   time: number,
   dur: number,
   value: string,
-  velocity?: number
+  velocity?: number,
+  articulation?: Articulation,
+  bend?: number
 ): Event => ({
   time,
   dur,
   type: "note",
   value,
   ...(velocity !== undefined ? { velocity } : {}),
+  ...(articulation ? { articulation } : {}),
+  ...(bend !== undefined ? { bend } : {}),
 });
 
 const getBeatStepDuration = (step: BeatStep): number => {
@@ -182,7 +186,9 @@ const compileMelodySteps = (
             time,
             noteDuration,
             transposeNote(note.value, transpose),
-            note.velocity
+            note.velocity,
+            note.articulation,
+            note.bend
           )
         );
       }
@@ -197,7 +203,9 @@ const compileMelodySteps = (
             time,
             child.duration * unitDuration,
             transposeNote(child.value, transpose),
-            child.velocity
+            child.velocity,
+            child.articulation,
+            child.bend
           )
         );
       }
@@ -221,6 +229,8 @@ const compilePlayback = (ast: {
   pan?: number;
   envelope?: PlaybackConfig["envelope"];
   effects?: PlaybackConfig["effects"];
+  pitch?: PlaybackConfig["pitch"];
+  filter?: PlaybackConfig["filter"];
 }): PlaybackConfig | undefined => {
   const playback: PlaybackConfig = {};
 
@@ -252,6 +262,9 @@ const compilePlayback = (ast: {
     playback.effects = ast.effects;
   }
 
+  if (ast.pitch !== undefined) playback.pitch = ast.pitch;
+  if (ast.filter !== undefined) playback.filter = ast.filter;
+
   return Object.keys(playback).length > 0
     ? playback
     : undefined;
@@ -281,6 +294,13 @@ const mergePlayback = (
       ...child?.effects,
     };
   }
+
+  if (parent?.pitch || child?.pitch) playback.pitch = { ...parent?.pitch, ...child?.pitch };
+  if (parent?.filter || child?.filter) playback.filter = {
+    ...parent?.filter,
+    ...child?.filter,
+    envelope: child?.filter?.envelope ?? parent?.filter?.envelope,
+  };
 
   return playback;
 };

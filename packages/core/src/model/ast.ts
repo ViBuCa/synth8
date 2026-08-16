@@ -1,4 +1,4 @@
-import { EffectConfig, EnvelopeConfig, PlaybackBank, PlaybackPreset, Waveform } from "./playback-config";
+import { EffectConfig, EnvelopeConfig, FilterConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "./playback-config";
 
 export type AstNode =
   | BeatExpression
@@ -19,6 +19,8 @@ type Modifiers = {
   pan?: number;
   envelope?: EnvelopeConfig;
   effects?: EffectConfig;
+  pitch?: PitchExpression;
+  filter?: FilterConfig;
 }
 
 export type SequenceExpression = {
@@ -50,11 +52,15 @@ export type MelodyStep =
   | MelodyGroup
   | MelodyParallel;
 
+export type Articulation = "accent" | "staccato" | "legato" | "slide" | "vibrato" | "mute";
+
 export type MelodyNote = {
   kind: "MelodyNote";
   value: string;
   velocity?: number;
   duration: number;
+  articulation?: Articulation;
+  bend?: number;
 };
 
 export type MelodyGroup = {

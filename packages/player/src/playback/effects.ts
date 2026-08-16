@@ -1,12 +1,29 @@
 import * as Tone from "tone";
-import type { EffectConfig } from "@vibuca/synth8-core";
+import type { EffectConfig, FilterConfig, PitchExpression } from "@vibuca/synth8-core";
 
-export const createEffectNodes = (effects?: EffectConfig): Tone.ToneAudioNode[] => {
-    if (!effects) {
-        return [];
+export const createEffectNodes = (
+    effects?: EffectConfig,
+    filter?: FilterConfig,
+    pitch?: PitchExpression
+): Tone.ToneAudioNode[] => {
+    const nodes: Tone.ToneAudioNode[] = [];
+
+    if (filter?.cutoff !== undefined) {
+        nodes.push(new Tone.Filter({
+            type: "lowpass",
+            frequency: filter.cutoff,
+            Q: filter.resonance ?? 0,
+        }));
     }
 
-    const nodes: Tone.ToneAudioNode[] = [];
+    if (pitch?.vibratoRate !== undefined && pitch.vibratoDepth !== undefined && pitch.vibratoDepth > 0) {
+        // Tone's vibrato depth is normalized; Synth8 documents the same 0-1 range.
+        nodes.push(new Tone.Vibrato(pitch.vibratoRate, pitch.vibratoDepth));
+    }
+
+    if (!effects) {
+        return nodes;
+    }
 
     if (effects.lowpass !== undefined) {
         nodes.push(new Tone.Filter(effects.lowpass, "lowpass"));
