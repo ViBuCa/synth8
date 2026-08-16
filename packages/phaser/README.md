@@ -51,6 +51,25 @@ declare global {
 }
 ```
 
+## Prepared tracks, persistent audio, and backends
+
+The audio service is owned by the Phaser `Game`, not a scene, so it survives
+scene changes and level transitions. Register tracks once (for example in a
+loading scene), then preload or play them by key:
+
+```ts
+this.synth8.registerTrack("menu", `song(melody("c4 e4 g4").loop())`, {
+  bpm: 120, playbackMode: "rendered", // "live" | "streamed" | "rendered"
+});
+await this.synth8.preload("menu");
+await this.synth8.playTrack("menu");
+```
+
+Use `pushMusic`/`popMusic` for a pause or boss stack. `setMusicDucking(0.35)`
+attenuates music while dialogue plays and `unduckMusic()` restores it. Phaser
+assets that were rendered or loaded separately can optionally use
+`this.synth8.playBuffer("asset-key")` (Phaser's Web Audio backend).
+
 ## Play music
 
 ```ts

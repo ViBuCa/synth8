@@ -10,6 +10,7 @@ import type {
     PreparedSfx,
 } from "./model";
 import { normalizeAudioBuffer, renderChunkToAudioBuffer, renderToAudioBuffer } from "./playback/render";
+import { prepare as preparePlayback } from "./playback/play";
 
 const DEFAULT_BPM = 120;
 const DEFAULT_SFX_VOICES = 8;
@@ -61,11 +62,19 @@ const loopOffset = (startedAt: number, loopDuration: number): number => {
 export const createGameAudio = async (
     options: GameAudioOptions = {}
 ): Promise<GameAudio> => {
-    await Tone.start();
+    // AudioContext.resume() is commonly rejected on Android/WebView until a
+    // user gesture. Do not make constructing the service fail; Tone.start()
+    // will be retried by the first user-initiated play.
+    try {
+        await Tone.start();
+    } catch {
+        // The service remains usable and can be started from a pointer event.
+    }
 
     let masterVolume = normalizeVolume(options.masterVolume ?? 1);
     let musicVolume = normalizeVolume(options.musicVolume ?? 1);
     let sfxVolume = normalizeVolume(options.sfxVolume ?? 1);
+    let musicDucking = 1;
     const masterGain = new Tone.Gain(masterVolume);
     const musicGain = new Tone.Gain(musicVolume);
     const sfxGain = new Tone.Gain(sfxVolume);
@@ -121,7 +130,9 @@ export const createGameAudio = async (
                 paused = false;
                 currentMusic = playback;
                 player.start();
-                previousMusic?.dispose();
+                // Starting a new track must not dispose a prepared track: it
+                // may be retained by the track cache or a music stack.
+                previousMusic?.stop();
             },
             pause() {
                 if (!started || paused) {
@@ -370,6 +381,9 @@ export const createGameAudio = async (
         pattern: Pattern,
         musicOptions: GameMusicOptions = {}
     ): Promise<PreparedPlayback> => {
+        if (musicOptions.playbackMode === "live") {
+            return preparePlayback(pattern, { ...musicOptions, playbackMode: "live" });
+        }
         if (musicOptions.playbackMode === "rendered") {
             return prepareRenderedMusic(pattern, musicOptions);
         }
@@ -434,11 +448,17 @@ export const createGameAudio = async (
         },
         setMusicVolume(volume: number) {
             musicVolume = normalizeVolume(volume);
-            setVolume(musicGain, musicVolume);
+            setVolume(musicGain, musicVolume * musicDucking);
         },
         setSfxVolume(volume: number) {
             sfxVolume = normalizeVolume(volume);
             setVolume(sfxGain, sfxVolume);
+        },
+        setMusicDucking(ducking: { amount?: number; ramp?: number } | number) {
+            const amount = typeof ducking === "number" ? ducking : ducking.amount ?? 0.5;
+            musicDucking = Math.min(1, Math.max(0, amount));
+            // Keep the public music volume independent from ducking.
+            setVolume(musicGain, musicVolume * musicDucking);
         },
         dispose() {
             currentMusic?.dispose();

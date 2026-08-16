@@ -7,9 +7,16 @@ export type GameAudioOptions = {
     sfxVolume?: number;
 };
 
+export type MusicDuckingOptions = {
+    /** Multiplier applied to music while ducking (0..1). */
+    amount?: number;
+    /** Optional fade time in seconds. */
+    ramp?: number;
+};
+
 export type GameMusicOptions = {
     bpm?: number;
-    playbackMode?: "rendered" | "streamed";
+    playbackMode?: "live" | "rendered" | "streamed";
     streamChunkDuration?: number;
     streamTailDuration?: number;
     /** Number of chunks rendered ahead while the current chunk is playing. */
@@ -39,5 +46,7 @@ export type GameAudio = {
     setMasterVolume(volume: number): void;
     setMusicVolume(volume: number): void;
     setSfxVolume(volume: number): void;
+    /** Temporarily attenuate music, useful for dialogue and boss warnings. */
+    setMusicDucking(ducking: MusicDuckingOptions | number): void;
     dispose(): void;
 };

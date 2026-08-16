@@ -278,7 +278,7 @@ importers:
   packages/phaser:
     dependencies:
       phaser:
-        specifier: ^3.90.0
+        specifier: '>=3.90.0 <5'
         version: 3.90.0
     devDependencies:
       '@vibuca/synth8-core':

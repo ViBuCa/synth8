@@ -384,7 +384,14 @@ export const prepare = async (
 ): Promise<PreparedPlayback> => {
     const bpm = options.bpm ?? 120;
 
-    await Tone.start();
+    // Mobile WebViews may reject resume() until a gesture. Preparation should
+    // still be usable from a loading scene; start() will be retried by Tone
+    // when the gesture arrives.
+    try {
+        await Tone.start();
+    } catch {
+        // Intentionally ignored for Android/WebView compatibility.
+    }
     configureScheduling(options);
     // Do not tear down the active session while preparing. This is important
     // for menus that prepare the next track asynchronously. `start()` remains
