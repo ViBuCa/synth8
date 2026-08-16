@@ -19,7 +19,17 @@ export type PlaybackPreset =
   | "arcade-pluck"
   | "deep-bass"
   | "warm-pad"
-  | "glass-lead";
+  | "glass-lead"
+  | "metal-lead"
+  | "anthem-lead"
+  | "palm-muted"
+  | "arena-chords"
+  | "picked-bass"
+  | "metal-bass"
+  | "synth-brass"
+  | "dark-pad"
+  | "orchestra-hit"
+  | "warm-keys";
 
 export type PlaybackBank =
   | "default"

@@ -88,14 +88,16 @@ const tutorialExamples: TutorialExample[] = [
   {
     title: "Presets",
     body: "Use preset() for quick layer defaults that can still be overridden.",
-    details: "Presets: chip-lead, chip-bass, soft-pad, metal-rhythm, arcade-pluck.",
+    details: "Role presets: metal-lead, anthem-lead, metal-rhythm, palm-muted, arena-chords, picked-bass, metal-bass, arcade-pluck, synth-brass, dark-pad, orchestra-hit, warm-keys. Older chip, pad, bass, and glass presets remain available.",
     source: `song(
-  melody("c5 e5 g5 c6")
-    .preset("chip-lead"),
-  melody("c2 _ g1 _")
-    .preset("chip-bass"),
+  melody("bb4/1 f5/1 bb5/2")
+    .preset("metal-lead"),
   melody("c4+g4 _ eb4+bb4 _")
-    .preset("metal-rhythm")
+    .preset("palm-muted"),
+  melody("c2 _ g1 _")
+    .preset("picked-bass"),
+  melody("c5+e5+g5")
+    .preset("arena-chords")
 )`,
   },
   {

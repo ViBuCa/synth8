@@ -343,20 +343,20 @@ melody("c6 g5 e5 c5").preset("arcade-pluck")
 melody("c2 _ g1 _").preset("deep-bass")
 melody("c4+e4+g4").preset("warm-pad")
 melody("c6 e6 g6").preset("glass-lead")
+melody("bb4/1 f5/1 bb5/2").preset("metal-lead").gain(0.55)
 ```
 
-Supported presets:
+Supported presets by role:
 
-```ts
-chip-lead
-chip-bass
-soft-pad
-metal-rhythm
-arcade-pluck
-deep-bass
-warm-pad
-glass-lead
-```
+- **Lead:** `metal-lead`, `anthem-lead`, `chip-lead`, `glass-lead`
+- **Rhythm and chords:** `metal-rhythm`, `palm-muted`, `arena-chords`
+- **Bass:** `picked-bass`, `metal-bass`, `chip-bass`, `deep-bass`
+- **Pluck and sequence:** `arcade-pluck`
+- **Atmosphere:** `dark-pad`, `soft-pad`, `warm-pad`
+- **Percussive or dramatic:** `synth-brass`, `orchestra-hit`
+- **Keyboard:** `warm-keys`
+
+The guitar and orchestral sounds are deliberately single-oscillator approximations, not sampled instruments. Gains are conservative for layering; explicit layer modifiers override preset defaults.
 
 Explicit layer modifiers override preset defaults. For example, `.preset("chip-lead").release(0.2)` keeps the chip lead sound while changing the release time.
 

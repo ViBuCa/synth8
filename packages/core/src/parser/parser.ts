@@ -37,6 +37,16 @@ const PLAYBACK_PRESETS: PlaybackPreset[] = [
   "deep-bass",
   "warm-pad",
   "glass-lead",
+  "metal-lead",
+  "anthem-lead",
+  "palm-muted",
+  "arena-chords",
+  "picked-bass",
+  "metal-bass",
+  "synth-brass",
+  "dark-pad",
+  "orchestra-hit",
+  "warm-keys",
 ];
 const PLAYBACK_BANKS: PlaybackBank[] = ["default", "808", "909", "arcade", "chip"];
 

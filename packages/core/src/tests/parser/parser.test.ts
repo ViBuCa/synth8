@@ -323,6 +323,18 @@ melody("c4 e4")
         );
     });
 
+    it("accepts the arrangement-focused preset library", () => {
+        const presets = [
+            "metal-lead", "anthem-lead", "metal-rhythm", "palm-muted",
+            "arena-chords", "picked-bass", "metal-bass", "arcade-pluck",
+            "synth-brass", "dark-pad", "orchestra-hit", "warm-keys",
+        ];
+
+        for (const preset of presets) {
+            expect(parse(`melody("c4").preset("${preset}")`)).toMatchObject({ preset });
+        }
+    });
+
     it("rejects unknown preset values", () => {
         expect(() => parse(`melody("c4").preset("space-pad")`)).toThrow(
             "Illegal preset value: space-pad"

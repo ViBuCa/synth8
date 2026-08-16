@@ -263,20 +263,22 @@ melody("c6 g5 e5 c5").preset("arcade-pluck")
 melody("c2 _ g1 _").preset("deep-bass")
 melody("c4+e4+g4").preset("warm-pad")
 melody("c6 e6 g6").preset("glass-lead")
+melody("bb4/1 f5/1 bb5/2").preset("metal-lead").gain(0.55)
 ```
 
-Supported presets:
+Supported presets, grouped by arrangement role:
 
-```ts
-chip-lead
-chip-bass
-soft-pad
-metal-rhythm
-arcade-pluck
-deep-bass
-warm-pad
-glass-lead
-```
+| Role | Presets |
+| --- | --- |
+| Lead | `metal-lead` (bright sustained hard-rock solo), `anthem-lead` (smooth wide theme), `chip-lead`, `glass-lead` |
+| Rhythm and chords | `metal-rhythm` (tight distorted fifths), `palm-muted` (short percussive guitar), `arena-chords` (wide glossy backing) |
+| Bass | `picked-bass` (defined rock eighth notes), `metal-bass` (aggressive supporting bass), `chip-bass`, `deep-bass` |
+| Pluck and sequence | `arcade-pluck` (bright short arpeggio) |
+| Atmosphere | `dark-pad` (subdued tension pad), `soft-pad`, `warm-pad` |
+| Percussive or dramatic | `synth-brass` (retro stabs), `orchestra-hit` (artificial 80s punctuation) |
+| Keyboard | `warm-keys` (soft unobtrusive keys) |
+
+The guitar and orchestral presets are intentionally single-oscillator approximations: Synth8 has no sampled instruments or oscillator layering. Preset gains are conservative so layers can be combined; use `.gain()` for arrangement-specific balance.
 
 Presets are stored on the compiled layer playback config. Explicit modifiers such as `.sound()` or `.release()` can override preset defaults during playback.
 

@@ -50,7 +50,7 @@ Melody-only modifiers:
 
 Playback/layer modifiers:
 - .sound("sine" | "triangle" | "square" | "sawtooth")
-- .preset("chip-lead" | "chip-bass" | "soft-pad" | "metal-rhythm" | "arcade-pluck" | "deep-bass" | "warm-pad" | "glass-lead")
+- .preset("chip-lead" | "chip-bass" | "soft-pad" | "metal-rhythm" | "arcade-pluck" | "deep-bass" | "warm-pad" | "glass-lead" | "metal-lead" | "anthem-lead" | "palm-muted" | "arena-chords" | "picked-bass" | "metal-bass" | "synth-brass" | "dark-pad" | "orchestra-hit" | "warm-keys")
 - .bank("default" | "808" | "909" | "arcade" | "chip") for drum character
 - .gain(0..1)
 - .pan(-1..1)

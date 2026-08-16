@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Pattern } from "@vibuca/synth8-core";
+import type { Pattern, PlaybackPreset } from "@vibuca/synth8-core";
+import { resolvePlaybackPreset } from "../playback/presets";
 
 const scheduledCallbacks: Array<{ callback: (time: number) => void; time: number }> = [];
 
@@ -297,6 +298,26 @@ vi.mock("../drum", async (importOriginal) => ({
 }));
 
 describe("player", () => {
+    it("resolves every arrangement preset to valid playback values", () => {
+        const presets: PlaybackPreset[] = [
+            "metal-lead", "anthem-lead", "metal-rhythm", "palm-muted",
+            "arena-chords", "picked-bass", "metal-bass", "arcade-pluck",
+            "synth-brass", "dark-pad", "orchestra-hit", "warm-keys",
+        ];
+
+        for (const preset of presets) {
+            const playback = resolvePlaybackPreset({ preset });
+            expect(playback?.sound).toMatch(/^(sine|triangle|square|sawtooth)$/);
+            expect(playback?.gain).toBeGreaterThan(0);
+            expect(playback?.gain).toBeLessThanOrEqual(1);
+            expect(playback?.envelope?.attack).toBeGreaterThanOrEqual(0);
+            expect(playback?.envelope?.sustain).toBeGreaterThanOrEqual(0);
+            expect(playback?.envelope?.sustain).toBeLessThanOrEqual(1);
+            for (const value of Object.values(playback?.effects ?? {})) {
+                expect(value).toBeGreaterThanOrEqual(0);
+            }
+        }
+    });
     beforeEach(async () => {
         const { clearPlaybackSession } = await import("../playback/session");
         const { clearRenderCache } = await import("../index");
