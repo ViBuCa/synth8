@@ -157,6 +157,8 @@ const url = URL.createObjectURL(blob);
 
 Tone.js provides offline rendering, but it does not provide built-in MP3 or OGG encoders for deterministic exports. WAV is encoded directly from the rendered audio buffer.
 
+In browser builds, the player runs offline rendering in a bundled module worker by default and transfers the rendered PCM data back to the live audio context. This keeps the expensive synthesis work off the game/UI thread. Environments without worker offline-audio support transparently fall back to the main-thread renderer. A custom `RenderWorker` may still be supplied through `RenderOptions.worker` when an application has its own worker setup.
+
 ### `stop()`
 
 Stops playback.

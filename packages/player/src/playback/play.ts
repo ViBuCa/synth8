@@ -4,7 +4,7 @@ import type { Pattern } from '@vibuca/synth8-core';
 import { getLayers } from './layers';
 import { addActiveNode, addDisposable, disposeActiveNodes } from './lifecycle';
 import { clearPlaybackSession, pauseSession, resumeSession, setLiveSession, setRenderedSession, setStreamedSession, stopSession } from './session';
-import { eventCount, scheduleLayers } from './scheduler';
+import { createScheduledLayers, eventCount, scheduleLayerEvent, scheduleLayers } from './scheduler';
 import { normalizeAudioBuffer, renderChunkToAudioBuffer, renderToAudioBuffer } from './render';
 
 const DEFAULT_LOOK_AHEAD = 0.25;
@@ -74,55 +74,70 @@ const stopPreparedPlayback = (): void => {
 
 const prepareLive = (
     pattern: Pattern,
-    bpm: number
+    bpm: number,
+    options: PlayOptions
 ): PreparedPlayback => {
     const transport = Tone.getTransport();
-
-    // Preparation must not interrupt the currently active track. The old
-    // session is replaced when the returned playback is started.
     transport.bpm.value = bpm;
-
     const secondsPerBeat = 60 / bpm;
     const loopDuration = pattern.length * secondsPerBeat;
+    const lookAhead = Math.max(0.05, options.lookAhead ?? DEFAULT_LOOK_AHEAD);
 
     transport.loop = true;
     transport.loopStart = 0;
     transport.loopEnd = loopDuration;
 
-    scheduleLayers(
-        getLayers(pattern),
-        secondsPerBeat,
-        (gainNode, panner, synth, drums, effectNodes) => {
-            if (synth) {
-                addActiveNode(gainNode, panner, synth, ...effectNodes);
-            } else {
-                addActiveNode(gainNode, panner, ...effectNodes);
-            }
-
-            if (drums) {
-                addDisposable(drums);
-            }
-        },
-        transport
-    );
+    const registerActiveLayer = (gainNode: Tone.Gain, panner: Tone.Panner, synth: ReturnType<typeof createScheduledLayers>[number]["synth"], drums: ReturnType<typeof createScheduledLayers>[number]["drums"], effectNodes: Tone.ToneAudioNode[]) => {
+        addActiveNode(gainNode, panner, ...(synth ? [synth] : []), ...effectNodes);
+        if (drums) addDisposable(drums);
+    };
+    const scheduleRepeat = (transport as unknown as { scheduleRepeat?: Function }).scheduleRepeat;
+    if (!scheduleRepeat) {
+        scheduleLayers(getLayers(pattern), secondsPerBeat, registerActiveLayer, transport);
+        return {
+            playbackMode: "live",
+            start() { stopSession(); transport.stop(); transport.cancel(); setLiveSession(); transport.start(); },
+            pause() { pauseSession(); }, resume() { resumeSession(); },
+            stop: stopPreparedPlayback, dispose: stopPreparedPlayback,
+        };
+    }
+    const runtimes = createScheduledLayers(getLayers(pattern), secondsPerBeat, registerActiveLayer);
+    const scheduled = new Set<string>();
+    const interval = Math.max(0.05, lookAhead / 2);
+    let cycle = 0;
+    let cycleTime = 0;
+    const scheduleWindow = (_time: number): void => {
+        for (let layerIndex = 0; layerIndex < runtimes.length; layerIndex++) {
+            const runtime = runtimes[layerIndex];
+            runtime.layer.events.forEach((event, eventIndex) => {
+                const eventTime = event.time * secondsPerBeat;
+                if (eventTime < cycleTime || eventTime >= cycleTime + lookAhead) return;
+                const key = `${cycle}:${layerIndex}:${eventIndex}`;
+                if (scheduled.has(key)) return;
+                scheduled.add(key);
+                transport.schedule((eventTransportTime) => scheduleLayerEvent(runtime, event, eventTransportTime), cycle * loopDuration + eventTime);
+            });
+        }
+        cycleTime += interval;
+        if (cycleTime >= loopDuration) {
+            cycleTime -= loopDuration;
+            cycle += 1;
+        }
+    };
+    const rollingId = (transport as unknown as { scheduleRepeat: (callback: (time: number) => void, interval: number, start?: number) => number })
+        .scheduleRepeat(scheduleWindow, interval, 0);
+    const stopLive = (): void => {
+        (transport as unknown as { clear: (id: number) => void }).clear(rollingId);
+        stopPreparedPlayback();
+    };
 
     return {
         playbackMode: "live",
-        start() {
-            stopSession();
-            transport.stop();
-            transport.cancel();
-            setLiveSession();
-            transport.start();
-        },
-        pause() {
-            pauseSession();
-        },
-        resume() {
-            resumeSession();
-        },
-        stop: stopPreparedPlayback,
-        dispose: stopPreparedPlayback,
+        start() { stopSession(); transport.stop(); transport.cancel(); setLiveSession(); transport.start(); },
+        pause() { pauseSession(); },
+        resume() { resumeSession(); },
+        stop: stopLive,
+        dispose: stopLive,
     };
 };
 
@@ -378,7 +393,7 @@ export const prepare = async (
     const playbackMode = resolvePlaybackMode(pattern, options);
 
     if (playbackMode === "live") {
-        return prepareLive(pattern, bpm);
+        return prepareLive(pattern, bpm, options);
     }
 
     if (playbackMode === "streamed") {

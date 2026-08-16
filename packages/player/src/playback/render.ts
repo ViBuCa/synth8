@@ -3,16 +3,15 @@ import type { Pattern } from "@vibuca/synth8-core";
 import { getLayers } from "./layers";
 import { scheduleLayers } from "./scheduler";
 import { runRender } from "./render-queue";
+import type { WorkerRenderResponse } from "./render-worker";
 
 export type RenderWorkerRequest = {
     pattern: Pattern;
     options: RenderOptions;
+    chunk?: { start: number; duration: number; tail?: number };
 };
 
-/** A worker adapter can run the Tone/offline renderer in a worker bundle.
- * The adapter deliberately lives at the boundary so bundlers can provide a
- * worker containing Tone without forcing Phaser to load one on the main thread.
- */
+/** A worker adapter can run the Tone/offline renderer in a worker bundle. */
 export type RenderWorker = {
     render(request: RenderWorkerRequest): Promise<AudioBuffer>;
 };
@@ -22,7 +21,7 @@ export type RenderOptions = {
     cache?: boolean;
     channels?: number;
     sampleRate?: number;
-    /** Optional worker adapter; rendering stays on the main thread by default. */
+    /** Optional worker adapter. Browsers use the built-in renderer worker by default. */
     worker?: RenderWorker;
 };
 
@@ -69,6 +68,48 @@ export const renderToAudioBufferInWorker = async (
     options: RenderOptions = {}
 ): Promise<AudioBuffer> => runRender(() => worker.render({ pattern, options }));
 
+const audioBufferFromWorker = (response: WorkerRenderResponse): AudioBuffer => {
+    const rawContext = (Tone.getContext() as unknown as { rawContext?: AudioContext }).rawContext;
+    if (!rawContext?.createBuffer) throw new Error("The current audio context cannot create a rendered buffer.");
+    const buffer = rawContext.createBuffer(response.channels, response.length, response.sampleRate);
+    response.data.forEach((channel, index) =>
+        buffer.copyToChannel(channel as unknown as Float32Array<ArrayBuffer>, index)
+    );
+    return buffer;
+};
+
+let builtInWorker: RenderWorker | undefined;
+let workerId = 0;
+
+const getBuiltInWorker = (): RenderWorker | undefined => {
+    if (typeof Worker === "undefined" || typeof URL === "undefined") return undefined;
+    if (builtInWorker) return builtInWorker;
+    const worker = new Worker(new URL("./render-worker.ts", import.meta.url), { type: "module" });
+    const pending = new Map<number, { resolve: (buffer: AudioBuffer) => void; reject: (error: Error) => void }>();
+    worker.onmessage = (event: MessageEvent<WorkerRenderResponse>) => {
+        const request = pending.get(event.data.id);
+        if (!request) return;
+        pending.delete(event.data.id);
+        if (event.data.error) request.reject(new Error(event.data.error));
+        else request.resolve(audioBufferFromWorker(event.data));
+    };
+    worker.onerror = (event) => {
+        const error = new Error(event.message || "Synth8 rendering worker failed.");
+        for (const request of pending.values()) request.reject(error);
+        pending.clear();
+        worker.terminate();
+        builtInWorker = undefined;
+    };
+    builtInWorker = { render: (request) => new Promise((resolve, reject) => {
+        const id = ++workerId;
+        pending.set(id, { resolve, reject });
+        worker.postMessage({ id, pattern: request.pattern, bpm: request.options.bpm ?? DEFAULT_BPM,
+            channels: request.options.channels ?? 2, sampleRate: request.options.sampleRate ?? Tone.getContext().sampleRate,
+            ...request.chunk });
+    }) };
+    return builtInWorker;
+};
+
 export const renderToAudioBuffer = async (
     pattern: Pattern,
     options: RenderOptions = {}
@@ -91,10 +132,15 @@ export const renderToAudioBuffer = async (
         }
     }
 
-    if (options.worker) {
-        const workerBuffer = await options.worker.render({ pattern, options });
-        if (cacheKey) rememberRender(cacheKey, workerBuffer);
-        return workerBuffer;
+    const worker = options.worker ?? getBuiltInWorker();
+    if (worker) {
+        try {
+            const workerBuffer = await worker.render({ pattern, options });
+            if (cacheKey) rememberRender(cacheKey, workerBuffer);
+            return workerBuffer;
+        } catch (error) {
+            if (options.worker) throw error;
+        }
     }
 
     const secondsPerBeat = 60 / bpm;
@@ -125,6 +171,14 @@ export const renderChunkToAudioBuffer = async (
     pattern: Pattern,
     options: RenderChunkOptions
 ): Promise<AudioBuffer> => runRender(async () => {
+    const worker = options.worker ?? getBuiltInWorker();
+    if (worker) {
+        try {
+            return await worker.render({ pattern, options, chunk: { start: options.start, duration: options.duration, tail: options.tail } });
+        } catch (error) {
+            if (options.worker) throw error;
+        }
+    }
     const bpm = options.bpm ?? DEFAULT_BPM;
     const channels = options.channels ?? 2;
     const sampleRate = options.sampleRate ?? Tone.getContext().sampleRate;
