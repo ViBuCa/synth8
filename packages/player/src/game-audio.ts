@@ -9,7 +9,7 @@ import type {
     PreparedPlayback,
     PreparedSfx,
 } from "./model";
-import { renderChunkToAudioBuffer, renderToAudioBuffer } from "./playback/render";
+import { normalizeAudioBuffer, renderChunkToAudioBuffer, renderToAudioBuffer } from "./playback/render";
 
 const DEFAULT_BPM = 120;
 const DEFAULT_SFX_VOICES = 8;
@@ -93,7 +93,7 @@ export const createGameAudio = async (
         const bpm = musicOptions.bpm ?? DEFAULT_BPM;
         const buffer = await renderToAudioBuffer(pattern, { bpm });
         const duration = pattern.length * (60 / bpm);
-        const player = new Tone.Player(buffer);
+        const player = new Tone.Player(normalizeAudioBuffer(buffer));
         let startedAt = 0;
         let offset = 0;
         let started = false;
@@ -107,9 +107,9 @@ export const createGameAudio = async (
         const playback: InternalPreparedMusic = {
             playbackMode: "rendered",
             start() {
-                if (currentMusic && currentMusic !== playback) {
-                    currentMusic.dispose();
-                }
+                const previousMusic = currentMusic && currentMusic !== playback
+                    ? currentMusic
+                    : undefined;
 
                 if (started) {
                     player.stop();
@@ -121,6 +121,7 @@ export const createGameAudio = async (
                 paused = false;
                 currentMusic = playback;
                 player.start();
+                previousMusic?.dispose();
             },
             pause() {
                 if (!started || paused) {
@@ -177,7 +178,7 @@ export const createGameAudio = async (
             musicOptions.streamChunkDuration ?? DEFAULT_STREAM_CHUNK_DURATION
         );
         const tailDuration = Math.max(0, musicOptions.streamTailDuration ?? DEFAULT_STREAM_TAIL_DURATION);
-        const prefetchChunks = Math.max(1, Math.floor(musicOptions.streamPrefetchChunks ?? 2));
+        const prefetchChunks = Math.max(0, Math.floor(musicOptions.streamPrefetchChunks ?? 0));
         const duration = pattern.length * (60 / bpm);
         const activePlayers = new Set<Tone.Player>();
         const renderTimers: ReturnType<typeof setTimeout>[] = [];
@@ -193,6 +194,7 @@ export const createGameAudio = async (
         let started = false;
         let paused = false;
         let generation = 0;
+        let pendingReplacement: InternalPreparedMusic | undefined;
         const prefetched = new Map<number, Promise<{ buffer: AudioBuffer; playDuration: number; start: number }>>();
 
         const clearTimers = (): void => {
@@ -266,10 +268,13 @@ export const createGameAudio = async (
                 return;
             }
 
-            const player = new Tone.Player(chunk.buffer);
+            const player = new Tone.Player(normalizeAudioBuffer(chunk.buffer));
 
             activePlayers.add(player);
             player.connect(musicGain);
+            currentMusic = playback;
+            pendingReplacement?.dispose();
+            pendingReplacement = undefined;
 
             if (chunk.playDuration >= duration) {
                 player.loop = true;
@@ -304,7 +309,6 @@ export const createGameAudio = async (
             startedAt = Tone.immediate() - start;
             started = true;
             paused = false;
-            currentMusic = playback;
 
             void scheduleNext(start, Tone.now(), generation);
         };
@@ -312,10 +316,9 @@ export const createGameAudio = async (
         const playback: InternalPreparedMusic = {
             playbackMode: "streamed",
             start() {
-                if (currentMusic && currentMusic !== playback) {
-                    currentMusic.dispose();
-                }
-
+                pendingReplacement = currentMusic && currentMusic !== playback
+                    ? currentMusic
+                    : undefined;
                 disposePlayers();
                 startFrom(0);
             },
@@ -383,7 +386,7 @@ export const createGameAudio = async (
         const buffer = await renderToAudioBuffer(pattern, { bpm });
         const duration = pattern.length * (60 / bpm);
         const players = Array.from({ length: voices }, () => {
-            const player = new Tone.Player(buffer);
+            const player = new Tone.Player(normalizeAudioBuffer(buffer));
 
             player.connect(sfxGain);
             return player;

@@ -2,6 +2,7 @@ import * as Tone from "tone";
 import type { Pattern } from "@vibuca/synth8-core";
 import { getLayers } from "./layers";
 import { scheduleLayers } from "./scheduler";
+import { runRender } from "./render-queue";
 
 export type RenderWorkerRequest = {
     pattern: Pattern;
@@ -66,12 +67,12 @@ export const renderToAudioBufferInWorker = async (
     pattern: Pattern,
     worker: RenderWorker,
     options: RenderOptions = {}
-): Promise<AudioBuffer> => worker.render({ pattern, options });
+): Promise<AudioBuffer> => runRender(() => worker.render({ pattern, options }));
 
 export const renderToAudioBuffer = async (
     pattern: Pattern,
     options: RenderOptions = {}
-): Promise<AudioBuffer> => {
+): Promise<AudioBuffer> => runRender(async () => {
     const bpm = options.bpm ?? DEFAULT_BPM;
     const channels = options.channels ?? 2;
     const sampleRate = options.sampleRate ?? Tone.getContext().sampleRate;
@@ -118,12 +119,12 @@ export const renderToAudioBuffer = async (
     }
 
     return audioBuffer;
-};
+});
 
 export const renderChunkToAudioBuffer = async (
     pattern: Pattern,
     options: RenderChunkOptions
-): Promise<AudioBuffer> => {
+): Promise<AudioBuffer> => runRender(async () => {
     const bpm = options.bpm ?? DEFAULT_BPM;
     const channels = options.channels ?? 2;
     const sampleRate = options.sampleRate ?? Tone.getContext().sampleRate;
@@ -155,6 +156,23 @@ export const renderChunkToAudioBuffer = async (
     }
 
     return audioBuffer;
+});
+
+/** Copy a rendered buffer into the live context before handing it to a Player. */
+export const normalizeAudioBuffer = (buffer: AudioBuffer): AudioBuffer => {
+    const context = Tone.getContext() as unknown as { rawContext?: AudioContext };
+    const rawContext = context.rawContext;
+    if (!rawContext?.createBuffer) return buffer;
+
+    const normalized = rawContext.createBuffer(
+        buffer.numberOfChannels,
+        buffer.length,
+        buffer.sampleRate
+    );
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        normalized.copyToChannel(buffer.getChannelData(channel), channel);
+    }
+    return normalized;
 };
 
 const writeString = (view: DataView, offset: number, value: string): void => {

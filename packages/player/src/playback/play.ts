@@ -5,7 +5,7 @@ import { getLayers } from './layers';
 import { addActiveNode, addDisposable, disposeActiveNodes } from './lifecycle';
 import { clearPlaybackSession, pauseSession, resumeSession, setLiveSession, setRenderedSession, setStreamedSession, stopSession } from './session';
 import { eventCount, scheduleLayers } from './scheduler';
-import { renderChunkToAudioBuffer, renderToAudioBuffer } from './render';
+import { normalizeAudioBuffer, renderChunkToAudioBuffer, renderToAudioBuffer } from './render';
 
 const DEFAULT_LOOK_AHEAD = 0.25;
 const RENDERED_EVENT_LIMIT = 512;
@@ -133,7 +133,7 @@ const prepareRendered = async (
 
     transport.loop = false;
 
-    const player = new Tone.Player(buffer);
+    const player = new Tone.Player(normalizeAudioBuffer(buffer));
 
     player.loop = true;
     player.loopStart = 0;
@@ -191,7 +191,7 @@ const prepareStreamed = async (
 ): Promise<PreparedPlayback> => {
     const chunkDuration = Math.max(0.5, options.streamChunkDuration ?? DEFAULT_STREAM_CHUNK_DURATION);
     const tailDuration = Math.max(0, options.streamTailDuration ?? DEFAULT_STREAM_TAIL_DURATION);
-    const prefetchChunks = Math.max(1, Math.floor(options.streamPrefetchChunks ?? 2));
+    const prefetchChunks = Math.max(0, Math.floor(options.streamPrefetchChunks ?? 0));
     const loopDuration = pattern.length * (60 / bpm);
     const activePlayers: Tone.Player[] = [];
     const renderTimers: ReturnType<typeof setTimeout>[] = [];
@@ -250,7 +250,7 @@ const prepareStreamed = async (
             return;
         }
 
-        const player = new Tone.Player(chunk.buffer);
+        const player = new Tone.Player(normalizeAudioBuffer(chunk.buffer));
 
         activePlayers.push(player);
         player.toDestination();
