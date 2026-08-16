@@ -18,11 +18,17 @@
   },
   "scripts": {
     "build": "vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.browser.config.ts"
   },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "devDependencies": {
+    "@vitest/browser": "4.1.10",
+    "@vitest/browser-playwright": "4.1.10",
+    "playwright": "1.52.0"
+  }
 }

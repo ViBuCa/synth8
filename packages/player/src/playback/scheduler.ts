@@ -74,6 +74,25 @@ export const scheduleLayerEvent = (runtime: ScheduledLayer, event: Event, time: 
     }
 };
 
+/** Trigger a timestamp group while coalescing duplicate drum hits. A looped
+ * layer can contain the same drum/value at the same time; Tone's one-shot
+ * drum source cannot be restarted at an identical timestamp. */
+export const scheduleLayerEvents = (
+    events: Array<{ runtime: ScheduledLayer; event: Event }>,
+    time: number
+): void => {
+    const drumKeys = new Map<ScheduledLayer, Set<string>>();
+    for (const { runtime, event } of events) {
+        if (event.type === "drum") {
+            const keys = drumKeys.get(runtime) ?? new Set<string>();
+            if (keys.has(event.value)) continue;
+            keys.add(event.value);
+            drumKeys.set(runtime, keys);
+        }
+        scheduleLayerEvent(runtime, event, time);
+    }
+};
+
 export const scheduleLayers = (
     layers: PlaybackLayer[], secondsPerBeat: number,
     registerActiveLayer: Parameters<typeof createScheduledLayers>[2],
@@ -98,7 +117,7 @@ export const scheduleLayers = (
         // not accept equal start times, while chords/layers commonly produce
         // several events that must still be triggered simultaneously.
         transport.schedule((time) => {
-            for (const { runtime, event } of group) scheduleLayerEvent(runtime, event, time);
+            scheduleLayerEvents(group, time);
         }, start * secondsPerBeat);
     }
 };

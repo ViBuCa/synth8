@@ -4,7 +4,7 @@ import type { Pattern } from '@vibuca/synth8-core';
 import { getLayers } from './layers';
 import { addActiveNode, addDisposable, disposeActiveNodes } from './lifecycle';
 import { clearPlaybackSession, pauseSession, resumeSession, setLiveSession, setRenderedSession, setStreamedSession, stopSession } from './session';
-import { createScheduledLayers, eventCount, scheduleLayerEvent, scheduleLayers } from './scheduler';
+import { createScheduledLayers, eventCount, scheduleLayerEvents, scheduleLayers } from './scheduler';
 import { normalizeAudioBuffer, renderChunkToAudioBuffer, renderToAudioBuffer } from './render';
 
 const DEFAULT_LOOK_AHEAD = 0.25;
@@ -131,7 +131,7 @@ const prepareLive = (
             }
             if (group.length > 0) {
                 transport.schedule((eventTransportTime) => {
-                    for (const candidate of group) scheduleLayerEvent(candidate.runtime, candidate.event, eventTransportTime);
+                    scheduleLayerEvents(group, eventTransportTime);
                 }, cycle * loopDuration + eventTime);
             }
         }
