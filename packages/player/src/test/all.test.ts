@@ -450,7 +450,7 @@ describe("player", () => {
         });
     });
 
-    it("uses live playback for dense patterns in auto mode", async () => {
+    it("uses streamed playback for dense patterns in auto mode", async () => {
         const { play } = await import("../index");
 
         const events = Array.from({ length: 513 }, (_, index) => ({
@@ -470,8 +470,8 @@ describe("player", () => {
 
         await play(pattern);
 
-        expect(offline).not.toHaveBeenCalled();
-        expect(transport.loop).toBe(true);
+        expect(offline).toHaveBeenCalled();
+        expect(transport.loop).toBe(false);
         expect(transport.start).toHaveBeenCalled();
     });
 
@@ -495,8 +495,8 @@ describe("player", () => {
 
         await play(pattern, { autoRenderedEventLimit: 1 });
 
-        expect(offline).not.toHaveBeenCalled();
-        expect(transport.loop).toBe(true);
+        expect(offline).toHaveBeenCalled();
+        expect(transport.loop).toBe(false);
         expect(transport.start).toHaveBeenCalled();
     });
 

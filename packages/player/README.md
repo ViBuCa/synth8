@@ -220,7 +220,7 @@ await play(pattern, { bpm: 120 });
 await play(pattern, { bpm: 120, playbackMode: "auto" });
 ```
 
-Auto mode renders small and medium patterns, then falls back to live playback for dense patterns. This avoids situations where a very dense song spends a long time in `Tone.Offline` before any sound can start.
+Auto mode renders small and medium patterns, then falls back to streamed playback for dense patterns. Streaming renders short chunks before playback, avoiding both the long upfront render of a complete song and the large number of callbacks that dense live playback would place on `Tone.Transport`.
 
 The density threshold can be tuned with `autoRenderedEventLimit`:
 

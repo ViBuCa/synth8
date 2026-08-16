@@ -33,7 +33,11 @@ const resolvePlaybackMode = (pattern: Pattern, options: PlayOptions): PreparedPl
 
     const renderedEventLimit = options.autoRenderedEventLimit ?? RENDERED_EVENT_LIMIT;
 
-    return eventCount(pattern) > renderedEventLimit ? "live" : "rendered";
+    // Dense patterns can overwhelm the live scheduler in a browser. Stream the
+    // song in short rendered chunks instead of handing hundreds of callbacks
+    // to Tone.Transport at once. This keeps startup bounded while avoiding
+    // the long upfront render of a complete song.
+    return eventCount(pattern) > renderedEventLimit ? "streamed" : "rendered";
 };
 
 type StreamChunk = {
