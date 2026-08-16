@@ -16,8 +16,8 @@
     "build": "vite build"
   },
   "peerDependencies": {
-    "@vibuca/synth8-core": "^1.0.0",
-    "@vibuca/synth8-player": "^1.0.2",
+    "@vibuca/synth8-core": "^1.3.0",
+    "@vibuca/synth8-player": "^1.3.0",
     "phaser": "^3.90.0"
   },
   "files": [

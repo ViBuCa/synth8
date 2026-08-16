@@ -12,6 +12,7 @@ Your task:
 - Return only the Synth8 source in one code block unless I ask for explanation.
 - Prefer short, loopable game-music phrases.
 - Use clear layers: drums, bass, chords/pad, lead/melody, optional countermelody or SFX-like accents.
+- Keep the number of independent layers as low as musically practical: each layer can require a separate synthesis/effect chain and increases replay/render cost, especially on mobile WebViews.
 - Keep it playable and valid according to the syntax below.
 
 Core syntax:
@@ -185,6 +186,7 @@ melody("c4+e4+g4 f4+a4+c5 g4+b4+d5")
 - Use `.bank(...)` mainly on `beat(...)` layers.
 - Use `.preset(...)` mainly on `melody(...)` layers.
 - If using many dense layers, prefer shorter loops or simpler hihat/arpeggio parts.
+- Prefer `sequence(...).repeat(n)` with one consistently configured voice when appropriate; Synth8 can coalesce safe repeated single-layer sequences. Do not add extra layers just to repeat identical material.
 
 ## Example requests you can ask an LLM
 

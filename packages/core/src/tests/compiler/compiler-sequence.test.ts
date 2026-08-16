@@ -96,6 +96,44 @@ describe('compile sequence-tests', () => {
         ]);
     });
 
+    it("coalesces repeated single-layer sequences without changing timing", () => {
+        const pattern = compile(`sequence(
+      melody("c4 d4")
+    ).repeat(2)`);
+
+        expect(pattern.length).toBe(4);
+        expect(pattern.loopLength).toBe(4);
+        expect(pattern.layers).toHaveLength(1);
+        expect(pattern.layers[0].events).toEqual([
+            { time: 0, dur: 1, type: "note", value: "c4" },
+            { time: 1, dur: 1, type: "note", value: "d4" },
+            { time: 2, dur: 1, type: "note", value: "c4" },
+            { time: 3, dur: 1, type: "note", value: "d4" },
+        ]);
+    });
+
+    it("keeps incompatible and multi-voice repeated sequences separate", () => {
+        const pattern = compile(`sequence(
+      melody("c4 d4").preset("chip-lead"),
+      melody("e4 f4").preset("deep-bass")
+    ).repeat(2)`);
+
+        expect(pattern.layers).toHaveLength(4);
+        expect(pattern.layers.map((layer) => layer.playback?.preset)).toEqual([
+            "chip-lead", "deep-bass", "chip-lead", "deep-bass",
+        ]);
+    });
+
+    it("preserves sequence offsets when coalescing", () => {
+        const pattern = compile(`sequence(
+      melody("c4 d4")
+    ).repeat(2).offset(1)`);
+
+        expect(pattern.length).toBe(5);
+        expect(pattern.layers).toHaveLength(1);
+        expect(pattern.layers[0].events.map((event) => event.time)).toEqual([1, 2, 3, 4]);
+    });
+
     it("loops sequences inside songs", () => {
         expect(
             compile(`song(

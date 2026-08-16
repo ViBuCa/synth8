@@ -337,6 +337,36 @@ const arpeggiateMelodySteps = (
     }));
   });
 
+const playbackConfigsEqual = (
+  left?: PlaybackConfig,
+  right?: PlaybackConfig
+): boolean => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+
+/**
+ * Repeated sequence instances may share one player layer when they are a
+ * single, equivalent, non-overlapping voice. Keeping this check local to
+ * sequence compilation avoids coalescing independent song voices, where a
+ * separate synth can be intentional.
+ */
+const canMergeRepeatedSequenceLayer = (
+  layer: Pattern["layers"][number],
+  repeatCount: number,
+  sequenceLength: number,
+  layers: Pattern["layers"]
+): boolean => {
+  if (repeatCount <= 1 || layers.length !== 1) return false;
+
+  if (!layers.every((candidate) => playbackConfigsEqual(candidate.playback, layer.playback))) {
+    return false;
+  }
+
+  // Do not merge a voice across repetition boundaries. This preserves the
+  // behavior of separate synths for unusual sustained/offset events.
+  return layer.events.every((event) => {
+    return event.time >= 0 && event.time + event.dur <= sequenceLength;
+  });
+};
+
 const compileAst = (ast: AstNode): Pattern => {
   switch (ast.kind) {
     case "BeatExpression": {
@@ -437,21 +467,44 @@ const compileAst = (ast: AstNode): Pattern => {
         sequenceLength += pattern.length;
       }
 
+      const repeatedLength = sequenceLength * ast.repeat;
       const repeatedLayers: Pattern["layers"] = [];
 
-      for (let i = 0; i < ast.repeat; i++) {
-        repeatedLayers.push(
-          ...sequenceLayers.map((layer) => ({
-            ...layer,
-            events: layer.events.map((event) => ({
-              ...event,
-              time: event.time + ast.offset + i * sequenceLength,
-            })),
-          }))
-        );
-      }
+      // A repeated one-layer sequence does not need one synth/effect chain per
+      // repetition. Merge only equivalent, non-overlapping instances; all
+      // multi-layer sequences remain expanded so independent voices retain
+      // their separate playback chains.
+      const canMerge = sequenceLayers.length === 1 && canMergeRepeatedSequenceLayer(
+        sequenceLayers[0],
+        ast.repeat,
+        sequenceLength,
+        sequenceLayers
+      );
 
-      const repeatedLength = sequenceLength * ast.repeat;
+      if (canMerge) {
+        const layer = sequenceLayers[0];
+        repeatedLayers.push({
+          ...layer,
+          events: Array.from({ length: ast.repeat }, (_, index) =>
+            layer.events.map((event) => ({
+              ...event,
+              time: event.time + ast.offset + index * sequenceLength,
+            }))
+          ).flat(),
+        });
+      } else {
+        for (let i = 0; i < ast.repeat; i++) {
+          repeatedLayers.push(
+            ...sequenceLayers.map((layer) => ({
+              ...layer,
+              events: layer.events.map((event) => ({
+                ...event,
+                time: event.time + ast.offset + i * sequenceLength,
+              })),
+            }))
+          );
+        }
+      }
 
       const events = repeatedLayers
         .flatMap((layer) => layer.events)

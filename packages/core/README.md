@@ -428,6 +428,18 @@ sequence(
 ).offset(4)
 ```
 
+When a sequence contains one playback layer, repeating it reuses that layer and
+shifts its events instead of creating a duplicate synth/effect chain for every
+repeat. This optimization is applied only when the repeated voice has
+compatible playback settings and its events do not cross repetition
+boundaries. Multi-layer sequences, intentionally overlapping voices, and other
+cases that cannot be proven safe remain separate.
+
+For best performance in games, compose with as few independent layers as the
+arrangement allows. Every layer can require its own synth, drum player, and effects, so
+unnecessary layers increase CPU and rendering cost—especially in mobile
+WebViews.
+
 ### Looping
 
 ```ts
