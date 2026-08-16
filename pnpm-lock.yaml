@@ -293,6 +293,9 @@ importers:
 
   packages/player:
     dependencies:
+      '@audio/encode-ogg':
+        specifier: ^1.2.2
+        version: 1.2.2
       '@vibuca/synth8-core':
         specifier: workspace:*
         version: link:../core
@@ -301,6 +304,10 @@ importers:
         version: 15.1.22
 
 packages:
+
+  '@audio/encode-ogg@1.2.2':
+    resolution: {integrity: sha512-yhJBrhzGzQ95HeyJGeCZNB+U9G4aNY8cazJh4Jqf3OyAwBpkpIPYqMJ4RioifurflZxm8YQd2Q4nmKTUzDWusg==}
+    engines: {node: '>=18'}
 
   '@babel/runtime@7.29.7':
     resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
@@ -723,6 +730,9 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@swc/helpers@0.5.23':
+    resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
 
   '@tonejs/midi@2.0.28':
     resolution: {integrity: sha512-RII6YpInPsOZ5t3Si/20QKpNqB1lZ2OCFJSOzJxz38YdY/3zqDr3uaml4JuCWkdixuPqP1/TBnXzhQ39csyoVg==}
@@ -1304,6 +1314,10 @@ packages:
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
+  wasm-media-encoders@0.7.0:
+    resolution: {integrity: sha512-Sp4wUasgxOK/IFfNhpon6LQQgYGwtpxyV4isjGIe1rvhnJL3w2KYr4f+CdqDNtGPDcgCDRY+uBanVfSx6Si0WQ==}
+    engines: {node: '>= 10'}
+
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
@@ -1313,6 +1327,10 @@ packages:
     hasBin: true
 
 snapshots:
+
+  '@audio/encode-ogg@1.2.2':
+    dependencies:
+      wasm-media-encoders: 0.7.0
 
   '@babel/runtime@7.29.7': {}
 
@@ -1543,6 +1561,10 @@ snapshots:
     optional: true
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@swc/helpers@0.5.23':
+    dependencies:
+      tslib: 2.8.1
 
   '@tonejs/midi@2.0.28':
     dependencies:
@@ -2059,6 +2081,10 @@ snapshots:
       - msw
 
   vscode-uri@3.1.0: {}
+
+  wasm-media-encoders@0.7.0:
+    dependencies:
+      '@swc/helpers': 0.5.23
 
   webpack-virtual-modules@0.6.2: {}
 

@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, pause, play, renderWav, resume, stop } from "@vibuca/synth8-player";
+import { createGameAudio, pause, play, renderOgg, renderWav, resume, stop } from "@vibuca/synth8-player";
 import type { GameAudio, PlayOptions, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player";
 import {
   parseMidi,
@@ -348,6 +348,7 @@ root.innerHTML = `
         <button id="resume">Resume</button>
         <button id="stop">Stop</button>
         <button id="export-wav">Export WAV</button>
+        <button id="export-ogg">Export OGG</button>
         <button id="share">Copy Share Link</button>
       </div>
 
@@ -426,6 +427,7 @@ const output = document.querySelector<HTMLPreElement>("#output")!;
 const playbackStatus = document.querySelector<HTMLDivElement>("#playback-status")!;
 const playButton = document.querySelector<HTMLButtonElement>("#play")!;
 const exportWavButton = document.querySelector<HTMLButtonElement>("#export-wav")!;
+const exportOggButton = document.querySelector<HTMLButtonElement>("#export-ogg")!;
 const gameMusicButton = document.querySelector<HTMLButtonElement>("#game-music")!;
 const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-music-stop")!;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
@@ -599,6 +601,36 @@ exportWavButton.addEventListener("click", async () => {
   } finally {
     exportWavButton.disabled = false;
     exportWavButton.textContent = previousText;
+  }
+});
+
+exportOggButton.addEventListener("click", async () => {
+  const previousText = exportOggButton.textContent ?? "Export OGG";
+
+  try {
+    exportOggButton.disabled = true;
+    exportOggButton.textContent = "Rendering...";
+    setPlaybackStatus("Rendering OGG Vorbis...", true);
+
+    const pattern = compile(sourceInput.value);
+    const bpm = Number(bpmInput.value);
+    const blob = await renderOgg(pattern, { bpm });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "synth8-export.ogg";
+    link.click();
+    URL.revokeObjectURL(url);
+
+    setPlaybackStatus("OGG exported.");
+    setOutput("success", "OGG Vorbis export rendered from the current pattern.");
+  } catch (error) {
+    setPlaybackStatus("OGG export failed.");
+    setOutput("error", error instanceof Error ? error.message : String(error));
+  } finally {
+    exportOggButton.disabled = false;
+    exportOggButton.textContent = previousText;
   }
 });
 

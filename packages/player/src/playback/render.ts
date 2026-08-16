@@ -293,3 +293,38 @@ export const renderWav = async (
     pattern: Pattern,
     options: RenderOptions = {}
 ): Promise<Blob> => encodeWav(await renderToAudioBuffer(pattern, options));
+
+export type OggRenderOptions = RenderOptions & {
+    /** Vorbis VBR quality from -1 (smallest) to 10 (highest). */
+    quality?: number;
+};
+
+/** Encode a rendered pattern as an Ogg Vorbis Blob. */
+export const renderOgg = async (
+    pattern: Pattern,
+    options: OggRenderOptions = {}
+): Promise<Blob> => {
+    const audioBuffer = await renderToAudioBuffer(pattern, options);
+    const { default: ogg } = await import("@audio/encode-ogg");
+    const channels = Array.from({ length: audioBuffer.numberOfChannels }, (_, channel) =>
+        audioBuffer.getChannelData(channel)
+    );
+    const encoder = await ogg({
+        sampleRate: audioBuffer.sampleRate,
+        channels: audioBuffer.numberOfChannels,
+        quality: options.quality,
+    });
+    try {
+        const pages = [encoder.encode(channels), encoder.flush()];
+        const length = pages.reduce((total, page) => total + page.byteLength, 0);
+        const output = new Uint8Array(length);
+        let offset = 0;
+        for (const page of pages) {
+            output.set(page, offset);
+            offset += page.byteLength;
+        }
+        return new Blob([output.buffer], { type: "audio/ogg; codecs=vorbis" });
+    } finally {
+        encoder.free();
+    }
+};

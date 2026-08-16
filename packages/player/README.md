@@ -155,7 +155,15 @@ const blob = await renderWav(pattern, { bpm: 120 });
 const url = URL.createObjectURL(blob);
 ```
 
-Tone.js provides offline rendering, but it does not provide built-in MP3 or OGG encoders for deterministic exports. WAV is encoded directly from the rendered audio buffer.
+For compressed browser-compatible export, use Ogg Vorbis:
+
+```ts
+import { renderOgg } from "@vibuca/synth8-player";
+
+const blob = await renderOgg(pattern, { bpm: 120, quality: 4 });
+```
+
+`quality` ranges from `-1` to `10`. Ogg encoding uses the MIT-licensed `@audio/encode-ogg` WebAssembly encoder. Tone.js provides the offline rendering, while WAV is encoded directly from the rendered audio buffer.
 
 In browser builds, the player runs offline rendering in a bundled module worker by default and transfers the rendered PCM data back to the live audio context. This keeps the expensive synthesis work off the game/UI thread. Environments without worker offline-audio support transparently fall back to the main-thread renderer. A custom `RenderWorker` may still be supplied through `RenderOptions.worker` when an application has its own worker setup.
 

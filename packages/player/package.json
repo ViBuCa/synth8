@@ -12,6 +12,7 @@
     }
   },
   "dependencies": {
+    "@audio/encode-ogg": "^1.2.2",
     "@vibuca/synth8-core": "workspace:*",
     "tone": "^15.1.22"
   },
