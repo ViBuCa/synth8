@@ -3,11 +3,26 @@ import type { Pattern } from "@vibuca/synth8-core";
 import { getLayers } from "./layers";
 import { scheduleLayers } from "./scheduler";
 
+export type RenderWorkerRequest = {
+    pattern: Pattern;
+    options: RenderOptions;
+};
+
+/** A worker adapter can run the Tone/offline renderer in a worker bundle.
+ * The adapter deliberately lives at the boundary so bundlers can provide a
+ * worker containing Tone without forcing Phaser to load one on the main thread.
+ */
+export type RenderWorker = {
+    render(request: RenderWorkerRequest): Promise<AudioBuffer>;
+};
+
 export type RenderOptions = {
     bpm?: number;
     cache?: boolean;
     channels?: number;
     sampleRate?: number;
+    /** Optional worker adapter; rendering stays on the main thread by default. */
+    worker?: RenderWorker;
 };
 
 export type RenderChunkOptions = RenderOptions & {
@@ -47,6 +62,12 @@ export const clearRenderCache = (): void => {
     renderCache.clear();
 };
 
+export const renderToAudioBufferInWorker = async (
+    pattern: Pattern,
+    worker: RenderWorker,
+    options: RenderOptions = {}
+): Promise<AudioBuffer> => worker.render({ pattern, options });
+
 export const renderToAudioBuffer = async (
     pattern: Pattern,
     options: RenderOptions = {}
@@ -67,6 +88,12 @@ export const renderToAudioBuffer = async (
             renderCache.set(cacheKey, cached);
             return cached;
         }
+    }
+
+    if (options.worker) {
+        const workerBuffer = await options.worker.render({ pattern, options });
+        if (cacheKey) rememberRender(cacheKey, workerBuffer);
+        return workerBuffer;
     }
 
     const secondsPerBeat = 60 / bpm;

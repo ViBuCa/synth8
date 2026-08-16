@@ -74,9 +74,8 @@ const prepareLive = (
 ): PreparedPlayback => {
     const transport = Tone.getTransport();
 
-    transport.stop();
-    transport.cancel();
-
+    // Preparation must not interrupt the currently active track. The old
+    // session is replaced when the returned playback is started.
     transport.bpm.value = bpm;
 
     const secondsPerBeat = 60 / bpm;
@@ -106,6 +105,9 @@ const prepareLive = (
     return {
         playbackMode: "live",
         start() {
+            stopSession();
+            transport.stop();
+            transport.cancel();
             setLiveSession();
             transport.start();
         },
@@ -129,8 +131,6 @@ const prepareRendered = async (
     const transport = Tone.getTransport();
     const buffer = await renderToAudioBuffer(pattern, { bpm });
 
-    transport.stop();
-    transport.cancel();
     transport.loop = false;
 
     const player = new Tone.Player(buffer);
@@ -140,11 +140,12 @@ const prepareRendered = async (
     player.loopEnd = safeLoopEnd(buffer, loopDuration);
     player.toDestination();
 
-    addActiveNode(player);
-
     return {
         playbackMode: "rendered",
         start() {
+            stopSession();
+            disposeActiveNodes();
+            addActiveNode(player);
             player.start();
             setRenderedSession(player, loopDuration);
         },
@@ -190,6 +191,7 @@ const prepareStreamed = async (
 ): Promise<PreparedPlayback> => {
     const chunkDuration = Math.max(0.5, options.streamChunkDuration ?? DEFAULT_STREAM_CHUNK_DURATION);
     const tailDuration = Math.max(0, options.streamTailDuration ?? DEFAULT_STREAM_TAIL_DURATION);
+    const prefetchChunks = Math.max(1, Math.floor(options.streamPrefetchChunks ?? 2));
     const loopDuration = pattern.length * (60 / bpm);
     const activePlayers: Tone.Player[] = [];
     const renderTimers: ReturnType<typeof setTimeout>[] = [];
@@ -199,6 +201,7 @@ const prepareStreamed = async (
     let streamGeneration = 0;
     let startedAt = 0;
     let pausedOffset = 0;
+    const prefetched = new Map<number, Promise<StreamChunk>>();
 
     const disposePlayers = (): void => {
         for (const timer of renderTimers.splice(0)) {
@@ -209,12 +212,33 @@ const prepareStreamed = async (
             player.stop();
             player.dispose();
         }
+        prefetched.clear();
     };
 
     const nextOffset = (offset: number, duration: number): number => {
         const next = offset + duration;
 
         return next >= loopDuration ? 0 : next;
+    };
+
+    const getChunk = (offset: number): Promise<StreamChunk> => {
+        const existing = prefetched.get(offset);
+        if (existing) return existing;
+        const pending = renderStreamChunk(pattern, bpm, offset, chunkDuration, tailDuration, loopDuration);
+        prefetched.set(offset, pending);
+        void pending.catch(() => prefetched.delete(offset));
+        return pending;
+    };
+
+    const prefetch = (offset: number, playDuration: number): void => {
+        let next = offset;
+        let length = playDuration;
+        for (let index = 0; index < prefetchChunks; index++) {
+            next = nextOffset(next, length);
+            if (next === offset || prefetched.has(next)) break;
+            void getChunk(next);
+            length = Math.min(chunkDuration, loopDuration - next);
+        }
     };
 
     const scheduleChunk = (
@@ -238,6 +262,7 @@ const prepareStreamed = async (
         }
 
         player.start(startTime);
+        prefetch(chunk.startOffset, chunk.playDuration);
 
         if (chunk.playDuration >= loopDuration) {
             return;
@@ -261,7 +286,8 @@ const prepareStreamed = async (
         startTime: number,
         generation: number
     ): Promise<void> => {
-        const chunk = await renderStreamChunk(pattern, bpm, offset, chunkDuration, tailDuration, loopDuration);
+        const chunk = await getChunk(offset);
+        prefetched.delete(offset);
 
         scheduleChunk(chunk, Math.max(startTime, Tone.now() + 0.05), generation);
     };
@@ -294,6 +320,7 @@ const prepareStreamed = async (
     const playback: PreparedPlayback = {
         playbackMode: "streamed",
         start() {
+            stopSession();
             disposePlayers();
             startFrom(0);
             setStreamedSession(playback);
@@ -340,9 +367,9 @@ export const prepare = async (
 
     await Tone.start();
     configureScheduling(options);
-    stopSession();
-    clearPlaybackSession();
-    disposeActiveNodes();
+    // Do not tear down the active session while preparing. This is important
+    // for menus that prepare the next track asynchronously. `start()` remains
+    // the commit point for replacement.
 
     const playbackMode = resolvePlaybackMode(pattern, options);
 

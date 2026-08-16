@@ -15,5 +15,7 @@ export type PlayOptions = {
     autoRenderedEventLimit?: number;
     streamChunkDuration?: number;
     streamTailDuration?: number;
+    /** Number of chunks rendered concurrently ahead of the playing chunk. */
+    streamPrefetchChunks?: number;
     onReady?: (playback: PreparedPlayback) => void | Promise<void>;
 };

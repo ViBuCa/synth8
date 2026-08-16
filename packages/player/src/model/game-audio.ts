@@ -12,6 +12,8 @@ export type GameMusicOptions = {
     playbackMode?: "rendered" | "streamed";
     streamChunkDuration?: number;
     streamTailDuration?: number;
+    /** Number of chunks rendered ahead while the current chunk is playing. */
+    streamPrefetchChunks?: number;
 };
 
 export type GameSfxOptions = {

@@ -177,6 +177,7 @@ export const createGameAudio = async (
             musicOptions.streamChunkDuration ?? DEFAULT_STREAM_CHUNK_DURATION
         );
         const tailDuration = Math.max(0, musicOptions.streamTailDuration ?? DEFAULT_STREAM_TAIL_DURATION);
+        const prefetchChunks = Math.max(1, Math.floor(musicOptions.streamPrefetchChunks ?? 2));
         const duration = pattern.length * (60 / bpm);
         const activePlayers = new Set<Tone.Player>();
         const renderTimers: ReturnType<typeof setTimeout>[] = [];
@@ -192,6 +193,7 @@ export const createGameAudio = async (
         let started = false;
         let paused = false;
         let generation = 0;
+        const prefetched = new Map<number, Promise<{ buffer: AudioBuffer; playDuration: number; start: number }>>();
 
         const clearTimers = (): void => {
             for (const timer of renderTimers.splice(0)) {
@@ -208,6 +210,7 @@ export const createGameAudio = async (
             }
 
             activePlayers.clear();
+            prefetched.clear();
         };
 
         const renderChunk = async (start: number) => {
@@ -231,12 +234,33 @@ export const createGameAudio = async (
             return next >= duration ? 0 : next;
         };
 
+        const getChunk = (start: number): Promise<{ buffer: AudioBuffer; playDuration: number; start: number }> => {
+            const existing = prefetched.get(start);
+            if (existing) return existing;
+            const pending = renderChunk(start);
+            prefetched.set(start, pending);
+            void pending.catch(() => prefetched.delete(start));
+            return pending;
+        };
+
+        const prefetch = (start: number, playDuration: number): void => {
+            let next = start;
+            let length = playDuration;
+            for (let index = 0; index < prefetchChunks; index++) {
+                next = nextOffset(next, length);
+                if (next === start || prefetched.has(next)) break;
+                void getChunk(next);
+                length = Math.min(chunkDuration, duration - next);
+            }
+        };
+
         const scheduleNext = async (
             start: number,
             startTime: number,
             activeGeneration: number
         ): Promise<void> => {
-            const chunk = await renderChunk(start);
+            const chunk = await getChunk(start);
+            prefetched.delete(start);
 
             if (!started || paused || generation !== activeGeneration) {
                 return;
@@ -254,6 +278,7 @@ export const createGameAudio = async (
             }
 
             player.start(startTime);
+            prefetch(chunk.start, chunk.playDuration);
 
             if (chunk.playDuration >= duration) {
                 return;
