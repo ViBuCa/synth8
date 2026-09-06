@@ -161,7 +161,10 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const attack = Math.max(0.001, envelope.attack ?? 0.01);
     const decay = Math.max(0, envelope.decay ?? 0.1);
     const sustain = Math.max(0, Math.min(1, envelope.sustain ?? 0.3));
-    const release = Math.max(0, envelope.release ?? 0.5);
+    // Keep the fallback release short enough that adjacent plain melody notes
+    // do not sound like separate delayed triggers. Explicit envelopes and
+    // presets retain their own release values.
+    const release = Math.max(0, envelope.release ?? 0.12);
     voice.panner.pan.setValueAtTime(pan, start);
     if (cutoff !== undefined) voice.filter.frequency.setValueAtTime(cutoff, start);
     if (playback.filter?.resonance !== undefined) voice.filter.Q.setValueAtTime(playback.filter.resonance * 20, start);
