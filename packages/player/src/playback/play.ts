@@ -1,6 +1,6 @@
 import * as Tone from 'tone';
 import type { PlayOptions, PreparedPlayback } from '../model';
-import { Synth8Scheduler } from '@vibuca/synth8-core';
+import { BackendScheduler } from './backend-scheduler';
 import type { Pattern } from '@vibuca/synth8-core';
 import { getLayers } from './layers';
 import { addActiveNode, addDisposable, disposeActiveNodes } from './lifecycle';
@@ -416,7 +416,7 @@ const prepareBackend = (
     if (!options.backend || !options.clock) {
         throw new Error("A backend and audio clock are required together.");
     }
-    const scheduler = new Synth8Scheduler(pattern, options.backend, options.clock, {
+    const scheduler = new BackendScheduler(pattern, options.backend, options.clock, {
         bpm,
         lookAhead: options.lookAhead,
         updateInterval: options.updateInterval,
