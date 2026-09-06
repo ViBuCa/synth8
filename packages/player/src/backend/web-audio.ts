@@ -155,10 +155,13 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const frequency = pitchToFrequency(event.pitch);
     const pan = Math.max(-1, Math.min(1, event.controls?.pan ?? playback.pan ?? 0));
     const cutoff = playback.filter?.cutoff ?? effects.lowpass;
-    const attack = Math.max(0.001, envelope.attack ?? 0.005);
-    const decay = Math.max(0, envelope.decay ?? 0.05);
-    const sustain = Math.max(0, Math.min(1, envelope.sustain ?? 0.75));
-    const release = Math.max(0, envelope.release ?? 0.05);
+    // Match Tone.Synth's default envelope more closely for layers without a
+    // preset: short attack, audible decay, lower sustain, and a real release
+    // tail instead of an abrupt gate.
+    const attack = Math.max(0.001, envelope.attack ?? 0.01);
+    const decay = Math.max(0, envelope.decay ?? 0.1);
+    const sustain = Math.max(0, Math.min(1, envelope.sustain ?? 0.3));
+    const release = Math.max(0, envelope.release ?? 0.5);
     voice.panner.pan.setValueAtTime(pan, start);
     if (cutoff !== undefined) voice.filter.frequency.setValueAtTime(cutoff, start);
     if (playback.filter?.resonance !== undefined) voice.filter.Q.setValueAtTime(playback.filter.resonance * 20, start);

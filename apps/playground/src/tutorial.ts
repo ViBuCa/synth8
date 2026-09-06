@@ -282,13 +282,11 @@ export function renderTutorial(root: HTMLElement) {
                 <span>BPM</span>
                 <input class="tutorial-bpm-input" type="number" min="40" max="240" value="${example.bpm ?? 120}" />
               </label>
-              <label class="tutorial-backend">
-                <span>Backend</span>
-                <select class="tutorial-backend-select">
-                  <option value="tone">Tone.js streamed</option>
-                  <option value="native">Native WebAudio</option>
-                </select>
-              </label>
+              <fieldset class="tutorial-backend">
+                <legend>Backend</legend>
+                <label><input class="tutorial-tone-check" type="checkbox" checked /> Tone.js streamed</label>
+                <label><input class="tutorial-native-check" type="checkbox" /> Native WebAudio</label>
+              </fieldset>
               <button id="tutorial-play" class="play" type="button">Play</button>
               <button id="tutorial-stop" class="stop" type="button">Stop</button>
             </div>
@@ -311,8 +309,18 @@ export function renderTutorial(root: HTMLElement) {
     const bpmInput = card.querySelector<HTMLInputElement>(".tutorial-bpm-input")!;
     const playButton = card.querySelector<HTMLButtonElement>("#tutorial-play")!;
     const stopButton = card.querySelector<HTMLButtonElement>("#tutorial-stop")!;
-    const backendSelect = card.querySelector<HTMLSelectElement>(".tutorial-backend-select")!;
+    const toneCheck = card.querySelector<HTMLInputElement>(".tutorial-tone-check")!;
+    const nativeCheck = card.querySelector<HTMLInputElement>(".tutorial-native-check")!;
     const status = card.querySelector<HTMLDivElement>(".tutorial-status")!;
+
+    const selectedBackend = (): "tone" | "native" => nativeCheck.checked ? "native" : "tone";
+    toneCheck.addEventListener("change", () => {
+      if (toneCheck.checked) nativeCheck.checked = false;
+    });
+    nativeCheck.addEventListener("change", () => {
+      if (nativeCheck.checked) toneCheck.checked = false;
+      if (!nativeCheck.checked && !toneCheck.checked) toneCheck.checked = true;
+    });
 
     playButton.addEventListener("click", async () => {
       try {
@@ -324,7 +332,7 @@ export function renderTutorial(root: HTMLElement) {
         const pattern = compile(editor.value);
         const bpm = Number(bpmInput.value);
 
-        if (backendSelect.value === "native") {
+        if (selectedBackend() === "native") {
           if (!window.AudioContext) throw new Error("This browser does not provide AudioContext.");
           nativeContext ??= new window.AudioContext();
           nativeBackend?.dispose();
@@ -340,7 +348,7 @@ export function renderTutorial(root: HTMLElement) {
           await play(pattern, { bpm, playbackMode: "streamed" });
         }
 
-        status.textContent = `Playing (${backendSelect.options[backendSelect.selectedIndex].text}).`;
+        status.textContent = `Playing (${selectedBackend() === "native" ? "Native WebAudio" : "Tone.js streamed"}).`;
       } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
       } finally {

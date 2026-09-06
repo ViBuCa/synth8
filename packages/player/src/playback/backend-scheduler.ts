@@ -21,12 +21,30 @@ export class BackendScheduler {
     this.updateInterval = Math.max(0.001, options.updateInterval ?? 0.05);
   }
 
+  private queryLoop(start: number, end: number): Synth8Event[] {
+    const length = (this.pattern as { length?: number }).length;
+    if (!length || length <= 0) return this.pattern.query(start, end);
+    const events: Synth8Event[] = [];
+    let cursor = start;
+    while (cursor < end) {
+      const cycle = Math.floor(cursor / length);
+      const offset = cycle * length;
+      const localStart = cursor - offset;
+      const localEnd = Math.min(length, localStart + end - cursor);
+      for (const event of this.pattern.query(localStart, localEnd)) {
+        events.push({ ...event, time: event.time + offset });
+      }
+      cursor = offset + localEnd;
+      if (cursor <= start) break;
+    }
+    return events;
+  }
+
   private tick(): void {
     const musicalNow = Math.max(0, (this.clock.currentTime - this.origin) * this.bpm / 60);
     const end = Math.max(this.scheduledUntil, musicalNow + this.lookAhead * this.bpm / 60);
     if (end <= this.scheduledUntil) return;
-    const events: Synth8Event[] = this.pattern.query(this.scheduledUntil, end);
-    this.backend.schedule(events);
+    this.backend.schedule(this.queryLoop(this.scheduledUntil, end));
     this.scheduledUntil = end;
   }
 
