@@ -24,6 +24,9 @@ type Voice = {
   panner: StereoPannerNode;
   delay?: DelayNode;
   delayGain?: GainNode;
+  delayFeedback?: GainNode;
+  chorusLfo?: OscillatorNode;
+  chorusDepth?: GainNode;
   distortion?: WaveShaperNode;
   vibrato?: OscillatorNode;
   vibratoGain?: GainNode;
@@ -115,6 +118,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
   }
 
   private scheduleDrum(event: Extract<Synth8Event, { kind: "drum" }>, time: number): void {
+    const playback = eventPlayback(event);
     const instrument = `drums:${event.drum}:${event.instrument ?? "default"}`;
     const pool = this.pools.get(instrument) ?? this.createPool(instrument, eventPlayback(event));
     const duration = Math.max(0.02, Math.min(0.25, event.duration * (60 / this.bpm)));
@@ -124,7 +128,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const frequencies: Record<string, number> = { kick: 90, snare: 180, hihat: 5000, openhat: 4000, clap: 900, crash: 3000 };
     voice.oscillator.frequency.setValueAtTime(frequencies[event.drum] ?? 110, start);
     voice.gain.gain.cancelScheduledValues(start);
-    voice.gain.gain.setValueAtTime(Math.min(1, event.velocity ?? 0.8), start);
+    voice.gain.gain.setValueAtTime(Math.min(1, (event.velocity ?? 0.8) * (playback.gain ?? 1)), start);
     voice.gain.gain.exponentialRampToValueAtTime(0.001, end);
     voice.startedAt = start;
     voice.endsAt = end;
@@ -145,7 +149,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const end = start + duration;
     const envelope = playback.envelope ?? {};
     const effects = playback.effects ?? {};
-    const gain = Math.max(0, Math.min(1, (event.controls?.gain ?? playback.gain ?? 1) * 0.8));
+    const gain = Math.max(0, Math.min(1, (event.velocity ?? 0.8) * (event.controls?.gain ?? 1) * (playback.gain ?? 1)));
     const frequency = pitchToFrequency(event.pitch);
     const pan = Math.max(-1, Math.min(1, event.controls?.pan ?? playback.pan ?? 0));
     const cutoff = playback.filter?.cutoff ?? effects.lowpass;
@@ -209,10 +213,17 @@ export class WebAudioBackend implements Synth8AudioBackend {
       const wet = effects.echo ?? effects.reverb ?? effects.room ?? effects.chorus;
       const delay = wet !== undefined || effects.delay !== undefined ? this.context.createDelay(2) : undefined;
       const delayGain = delay ? this.context.createGain() : undefined;
+      const delayFeedback = delay && (effects.echo !== undefined || effects.reverb !== undefined || effects.room !== undefined)
+        ? this.context.createGain()
+        : undefined;
       if (delay) {
         delay.delayTime.value = effects.delay ?? (effects.reverb !== undefined || effects.room !== undefined ? 0.32 : 0.18);
-        delayGain!.gain.value = wet ?? 0.15;
+        delayGain!.gain.value = Math.min(0.8, wet ?? 0.15);
         gain.connect(delay).connect(delayGain!).connect(this.output);
+        if (delayFeedback) {
+          delayFeedback.gain.value = Math.min(0.85, effects.echo ?? effects.reverb ?? effects.room ?? 0.2);
+          delay.connect(delayFeedback).connect(delay);
+        }
       }
       const source = distortion ? gain.connect(distortion) : gain;
       source.connect(panner).connect(this.output);
@@ -238,8 +249,16 @@ export class WebAudioBackend implements Synth8AudioBackend {
         vibrato.connect(vibratoGain).connect(oscillator.frequency);
         vibrato.start();
       }
+      const chorusLfo = effects.chorus !== undefined ? this.context.createOscillator() : undefined;
+      const chorusDepth = chorusLfo && delay ? this.context.createGain() : undefined;
+      if (chorusLfo && chorusDepth && delay) {
+        chorusLfo.frequency.value = 0.8;
+        chorusDepth.gain.value = (effects.chorus ?? 0) * 0.008;
+        chorusLfo.connect(chorusDepth).connect(delay.delayTime);
+        chorusLfo.start();
+      }
       oscillator.start();
-      pool.push({ oscillator, gain, filter, panner, delay, delayGain, distortion, vibrato, vibratoGain, noise, startedAt: 0, endsAt: 0, active: false });
+      pool.push({ oscillator, gain, filter, panner, delay, delayGain, delayFeedback, chorusLfo, chorusDepth, distortion, vibrato, vibratoGain, noise, startedAt: 0, endsAt: 0, active: false });
       this.stats.voicesCreated += 1;
     }
     this.pools.set(instrument, pool);
@@ -289,6 +308,9 @@ export class WebAudioBackend implements Synth8AudioBackend {
         voice.panner.disconnect();
         voice.delay?.disconnect();
         voice.delayGain?.disconnect();
+        voice.delayFeedback?.disconnect();
+        voice.chorusLfo?.disconnect();
+        voice.chorusDepth?.disconnect();
         voice.distortion?.disconnect();
         voice.vibrato?.disconnect();
         voice.vibratoGain?.disconnect();
