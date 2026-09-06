@@ -35,6 +35,25 @@ const initialSource = `song(
 
 const examples = {
   "Full Song": initialSource,
+  "Performance Stress": `song(
+  melody("c2/16 c3/16 g2/16 c3/16").preset("metal-bass").repeat(64),
+  melody("c4/16 eb4/16 g4/16 bb4/16 c5/16 bb4/16 g4/16 eb4/16")
+    .preset("metal-lead")
+    .repeat(64),
+  melody("c5+eb5+g5/8 bb4+d5+g5/8 c5+eb5+g5/8 bb4+d5+g5/8")
+    .preset("arena-chords")
+    .gain(0.45)
+    .repeat(32),
+  melody("c6/16 d6/16 eb6/16 g6/16 bb5/16 g6/16 eb6/16 d6/16")
+    .preset("arcade-pluck")
+    .repeat(64),
+  beat("kick+hihat snare+hihat kick+hihat snare+hihat").repeat(64),
+  beat("hihat hihat hihat hihat hihat hihat hihat hihat")
+    .fast(2)
+    .gain(0.25)
+    .repeat(64),
+  beat("kick _ kick snare kick _ snare _").bank("909").repeat(64)
+)`,
   "Drum Loop": `song(
   beat("kick _ snare _").loop(),
   beat("_ hihat _ hihat").fast(2).loop()
@@ -204,7 +223,7 @@ function decodeSource(encoded: string): string {
 const params = new URLSearchParams(window.location.search);
 
 let startupSource = initialSource;
-let startupBpm = 120;
+let startupBpm = 180;
 let startupPlaybackMode: NonNullable<PlayOptions["playbackMode"]> = "auto";
 
 try {
