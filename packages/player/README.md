@@ -269,7 +269,7 @@ Live mode is useful when you need immediate synthesis behavior or want to inspec
 
 ### Streamed playback
 
-Streamed playback renders a short chunk first, starts it, and then keeps rendering later chunks in the background:
+Streamed playback renders a short chunk first, starts it, and then keeps rendering later chunks in the background. The default initial chunk is 2 seconds and one additional chunk is prefetched as a look-ahead buffer. Auto mode also selects streamed playback for tracks longer than 8 seconds, even when their event count is low, avoiding a long upfront render:
 
 ```ts
 await play(pattern, {
@@ -284,7 +284,7 @@ This is useful for long songs where rendering the full loop upfront would take t
 
 ### Scheduling options
 
-`lookAhead` and `updateInterval` tune Tone.js scheduling for live playback and any transport scheduling that still relies on JavaScript timers.
+`lookAhead` and `updateInterval` tune Tone.js scheduling for live playback and any transport scheduling that still relies on JavaScript timers. `streamPrefetchChunks` controls the number of rendered chunks kept ahead during streamed playback.
 
 ```ts
 await play(pattern, {

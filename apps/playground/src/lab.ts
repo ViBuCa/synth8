@@ -758,7 +758,12 @@ document.querySelectorAll<HTMLButtonElement>(".example-button").forEach((button)
     }
 
     sourceInput.value = examples[name as keyof typeof examples];
-    output.textContent = "";
+    try {
+      const pattern = compile(sourceInput.value);
+      setOutput("success", `Loaded ${name}: ${pattern.events.length} events, ${pattern.layers.length} layers. Press Play to hear it.`);
+    } catch (error) {
+      setOutput("error", error instanceof Error ? error.message : String(error));
+    }
   });
 });
 

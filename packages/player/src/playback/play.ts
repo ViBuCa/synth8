@@ -10,7 +10,9 @@ import { recordTonePlaybackMetric } from './metrics';
 
 const DEFAULT_LOOK_AHEAD = 0.25;
 const RENDERED_EVENT_LIMIT = 512;
-const DEFAULT_STREAM_CHUNK_DURATION = 5;
+// Keep the first rendered chunk short so streamed/auto playback can start
+// quickly. Later chunks are rendered ahead while the current chunk plays.
+const DEFAULT_STREAM_CHUNK_DURATION = 2;
 const DEFAULT_STREAM_TAIL_DURATION = 0.25;
 
 const safeLoopEnd = (buffer: AudioBuffer, requestedLoopEnd: number): number => {
@@ -23,7 +25,7 @@ const safeLoopEnd = (buffer: AudioBuffer, requestedLoopEnd: number): number => {
     return Math.min(requestedLoopEnd, bufferDuration);
 };
 
-const resolvePlaybackMode = (pattern: Pattern, options: PlayOptions): PreparedPlayback["playbackMode"] => {
+const resolvePlaybackMode = (pattern: Pattern, options: PlayOptions, bpm: number): PreparedPlayback["playbackMode"] => {
     if (
         options.playbackMode === "rendered" ||
         options.playbackMode === "live" ||
@@ -33,6 +35,12 @@ const resolvePlaybackMode = (pattern: Pattern, options: PlayOptions): PreparedPl
     }
 
     const renderedEventLimit = options.autoRenderedEventLimit ?? RENDERED_EVENT_LIMIT;
+    const trackDuration = pattern.length * (60 / bpm);
+
+    // Avoid a long upfront offline render for tracks that are small in event
+    // count but long in wall-clock duration. They use the same chunked
+    // look-ahead path as dense tracks.
+    if (trackDuration > 8) return "streamed";
 
     // Dense patterns can overwhelm the live scheduler in a browser. Stream the
     // song in short rendered chunks instead of handing hundreds of callbacks
@@ -229,7 +237,9 @@ const prepareStreamed = async (
 ): Promise<PreparedPlayback> => {
     const chunkDuration = Math.max(0.5, options.streamChunkDuration ?? DEFAULT_STREAM_CHUNK_DURATION);
     const tailDuration = Math.max(0, options.streamTailDuration ?? DEFAULT_STREAM_TAIL_DURATION);
-    const prefetchChunks = Math.max(0, Math.floor(options.streamPrefetchChunks ?? 0));
+    // One chunk is rendered ahead by default. This is the look-ahead buffer;
+    // callers can set streamPrefetchChunks to zero when memory is constrained.
+    const prefetchChunks = Math.max(0, Math.floor(options.streamPrefetchChunks ?? 1));
     const loopDuration = pattern.length * (60 / bpm);
     const activePlayers: Tone.Player[] = [];
     const renderTimers: ReturnType<typeof setTimeout>[] = [];
@@ -416,7 +426,7 @@ export const prepare = async (
     // for menus that prepare the next track asynchronously. `start()` remains
     // the commit point for replacement.
 
-    const playbackMode = resolvePlaybackMode(pattern, options);
+    const playbackMode = resolvePlaybackMode(pattern, options, bpm);
 
     if (playbackMode === "live") {
         return prepareLive(pattern, bpm, options);
