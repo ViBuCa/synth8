@@ -1,5 +1,6 @@
 import { compile } from "@vibuca/synth8-core";
-import { play, stop } from "@vibuca/synth8-player";
+import { prepare, play, stop, WebAudioBackend } from "@vibuca/synth8-player";
+import type { PreparedPlayback } from "@vibuca/synth8-player";
 
 type TutorialExample = {
   title: string;
@@ -7,6 +8,15 @@ type TutorialExample = {
   details: string;
   source: string;
   bpm?: number;
+};
+
+let nativeContext: AudioContext | undefined;
+let nativeBackend: WebAudioBackend | undefined;
+let nativePlayback: PreparedPlayback | undefined;
+
+const stopAllPlayback = (): void => {
+  stop();
+  nativePlayback?.stop();
 };
 
 const tutorialExamples: TutorialExample[] = [
@@ -272,6 +282,13 @@ export function renderTutorial(root: HTMLElement) {
                 <span>BPM</span>
                 <input class="tutorial-bpm-input" type="number" min="40" max="240" value="${example.bpm ?? 120}" />
               </label>
+              <label class="tutorial-backend">
+                <span>Backend</span>
+                <select class="tutorial-backend-select">
+                  <option value="tone">Tone.js streamed</option>
+                  <option value="native">Native WebAudio</option>
+                </select>
+              </label>
               <button id="tutorial-play" class="play" type="button">Play</button>
               <button id="tutorial-stop" class="stop" type="button">Stop</button>
             </div>
@@ -294,6 +311,7 @@ export function renderTutorial(root: HTMLElement) {
     const bpmInput = card.querySelector<HTMLInputElement>(".tutorial-bpm-input")!;
     const playButton = card.querySelector<HTMLButtonElement>("#tutorial-play")!;
     const stopButton = card.querySelector<HTMLButtonElement>("#tutorial-stop")!;
+    const backendSelect = card.querySelector<HTMLSelectElement>(".tutorial-backend-select")!;
     const status = card.querySelector<HTMLDivElement>(".tutorial-status")!;
 
     playButton.addEventListener("click", async () => {
@@ -301,17 +319,28 @@ export function renderTutorial(root: HTMLElement) {
         playButton.disabled = true;
         status.textContent = "Preparing...";
         status.classList.add("is-busy");
-        stop();
+        stopAllPlayback();
 
         const pattern = compile(editor.value);
         const bpm = Number(bpmInput.value);
 
-        await play(pattern, {
-          bpm,
-          playbackMode: "streamed",
-        });
+        if (backendSelect.value === "native") {
+          if (!window.AudioContext) throw new Error("This browser does not provide AudioContext.");
+          nativeContext ??= new window.AudioContext();
+          nativeBackend?.dispose();
+          nativeBackend = new WebAudioBackend({ context: nativeContext, bpm, maxVoices: 8 });
+          nativePlayback = await prepare(pattern, {
+            bpm,
+            backend: nativeBackend,
+            clock: nativeContext,
+            playbackMode: "live",
+          });
+          nativePlayback.start();
+        } else {
+          await play(pattern, { bpm, playbackMode: "streamed" });
+        }
 
-        status.textContent = "Playing.";
+        status.textContent = `Playing (${backendSelect.options[backendSelect.selectedIndex].text}).`;
       } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
       } finally {
@@ -321,7 +350,7 @@ export function renderTutorial(root: HTMLElement) {
     });
 
     stopButton.addEventListener("click", () => {
-      stop();
+      stopAllPlayback();
       status.textContent = "Stopped.";
     });
   });
