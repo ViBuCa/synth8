@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, pause, play, renderOgg, renderWav, resume, stop } from "@vibuca/synth8-player";
+import { createGameAudio, getTonePlaybackMetrics, pause, play, renderOgg, renderWav, resetTonePlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
 import type { GameAudio, PlayOptions, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player";
 import {
   parseMidi,
@@ -349,6 +349,7 @@ root.innerHTML = `
         <button id="stop">Stop</button>
         <button id="export-wav">Export WAV</button>
         <button id="export-ogg">Export OGG</button>
+        <button id="benchmark">Measure Core</button>
         <button id="share">Copy Share Link</button>
       </div>
 
@@ -428,6 +429,7 @@ const playbackStatus = document.querySelector<HTMLDivElement>("#playback-status"
 const playButton = document.querySelector<HTMLButtonElement>("#play")!;
 const exportWavButton = document.querySelector<HTMLButtonElement>("#export-wav")!;
 const exportOggButton = document.querySelector<HTMLButtonElement>("#export-ogg")!;
+const benchmarkButton = document.querySelector<HTMLButtonElement>("#benchmark")!;
 const gameMusicButton = document.querySelector<HTMLButtonElement>("#game-music")!;
 const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-music-stop")!;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
@@ -541,6 +543,7 @@ playButton.addEventListener("click", async () => {
     const bpm = Number(bpmInput.value);
     const playbackMode = getPlaybackMode();
 
+    resetTonePlaybackMetrics();
     setOutput("json", JSON.stringify(pattern, null, 2));
 
     await play(pattern, { bpm, playbackMode });
@@ -553,6 +556,37 @@ playButton.addEventListener("click", async () => {
   } finally {
     playButton.disabled = false;
     playButton.textContent = previousPlayText;
+  }
+});
+
+benchmarkButton.addEventListener("click", () => {
+  try {
+    const compileStart = performance.now();
+    const pattern = compile(sourceInput.value);
+    const compileMs = performance.now() - compileStart;
+    const duration = Math.max(pattern.length, pattern.loopLength, 1);
+    const windowSize = 0.05;
+    const queryStart = performance.now();
+    let queries = 0;
+    let events = 0;
+    for (let start = 0; start < duration; start += windowSize) {
+      events += pattern.query(start, Math.min(duration, start + windowSize)).length;
+      queries += 1;
+    }
+    const queryMs = performance.now() - queryStart;
+    const metrics = getTonePlaybackMetrics();
+    setOutput("json", JSON.stringify({
+      compileMs: Number(compileMs.toFixed(3)),
+      queryMs: Number(queryMs.toFixed(3)),
+      queryWindows: queries,
+      events,
+      eventsPerBeat: Number((events / duration).toFixed(2)),
+      layers: pattern.layers.length,
+      tone: metrics,
+      note: "Tone counters describe the last playback preparation; run Play first for backend metrics."
+    }, null, 2));
+  } catch (error) {
+    setOutput("error", error instanceof Error ? error.message : String(error));
   }
 });
 

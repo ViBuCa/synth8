@@ -6,6 +6,7 @@ import { addActiveNode, addDisposable, disposeActiveNodes } from './lifecycle';
 import { clearPlaybackSession, pauseSession, resumeSession, setLiveSession, setRenderedSession, setStreamedSession, stopSession } from './session';
 import { createScheduledLayers, eventCount, scheduleLayerEvents, scheduleLayers } from './scheduler';
 import { normalizeAudioBuffer, renderChunkToAudioBuffer, renderToAudioBuffer } from './render';
+import { recordTonePlaybackMetric } from './metrics';
 
 const DEFAULT_LOOK_AHEAD = 0.25;
 const RENDERED_EVENT_LIMIT = 512;
@@ -107,6 +108,7 @@ const prepareLive = (
     let cycle = 0;
     let cycleTime = 0;
     const scheduleWindow = (_time: number): void => {
+        recordTonePlaybackMetric("scheduleCallbackCount");
         const candidates: Array<{ runtime: ReturnType<typeof createScheduledLayers>[number]; event: (typeof runtimes)[number]["layer"]["events"][number]; eventIndex: number; layerIndex: number; eventTime: number }> = [];
         for (let layerIndex = 0; layerIndex < runtimes.length; layerIndex++) {
             const runtime = runtimes[layerIndex];

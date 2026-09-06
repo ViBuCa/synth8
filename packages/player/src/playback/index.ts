@@ -6,3 +6,4 @@ export * from './resume';
 export * from './stop';
 export * from './synth'
 export * from './render';
+export * from './metrics';

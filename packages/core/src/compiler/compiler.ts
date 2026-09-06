@@ -1,4 +1,5 @@
-import type { AstNode, Articulation, Event, Pattern, BeatStep, MelodyStep, Waveform, PlaybackConfig, ArpeggioMode } from "../model";
+import type { AstNode, Articulation, Event, Pattern, PatternData, BeatStep, MelodyStep, Waveform, PlaybackConfig, ArpeggioMode } from "../model";
+import { queryPattern } from "../model/pattern";
 import { parse } from "../parser/parser";
 import { loopEvents, repeatArray } from "./repeat-helper";
 import { transposeNote } from "./transpose-helper";
@@ -367,7 +368,7 @@ const canMergeRepeatedSequenceLayer = (
   });
 };
 
-const compileAst = (ast: AstNode): Pattern => {
+const compileAst = (ast: AstNode): PatternData => {
   switch (ast.kind) {
     case "BeatExpression": {
       for (const step of ast.steps) {
@@ -526,5 +527,13 @@ const compileAst = (ast: AstNode): Pattern => {
 };
 
 export const compile = (source: string): Pattern => {
-  return compileAst(parse(source));
+  const pattern = compileAst(parse(source));
+  // Keep this non-enumerable so the addition does not change the established
+  // compiled-data shape or snapshots used by existing integrations.
+  Object.defineProperty(pattern, "query", {
+    enumerable: false,
+    value: (startTime: number, endTime: number) =>
+      queryPattern(pattern, startTime, endTime),
+  });
+  return pattern as Pattern;
 };

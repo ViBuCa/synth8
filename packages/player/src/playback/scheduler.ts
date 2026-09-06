@@ -5,6 +5,7 @@ import { createSynth } from "./synth";
 import { getLayers } from "./layers";
 import { resolvePlaybackPreset } from "./presets";
 import { createEffectNodes } from "./effects";
+import { recordTonePlaybackMetric } from "./metrics";
 
 const DEFAULT_SOUND: Waveform = "sine";
 type TransportLike = Pick<ReturnType<typeof Tone.getTransport>, "schedule">;
@@ -31,6 +32,7 @@ export const createScheduledLayers = (
         synth: ScheduledLayer["synth"], drums: ScheduledLayer["drums"], effectNodes: Tone.ToneAudioNode[]) => void,
     output?: Tone.ToneAudioNode
 ): ScheduledLayer[] => layers.map((layer) => {
+    recordTonePlaybackMetric("layerCount");
     const playback = resolvePlaybackPreset(layer.playback);
     const noteEvents = layer.events.filter((event) => event.type === "note");
     const drumEvents = layer.events.filter((event) => event.type === "drum");
@@ -43,10 +45,13 @@ export const createScheduledLayers = (
     chainEnd.connect(panner);
     if (output) panner.connect(output); else panner.toDestination();
     const synth = noteEvents.length > 0 ? createSynth(sound, playback?.envelope, playback?.pitch).connect(gainNode) : undefined;
+    if (synth) recordTonePlaybackMetric("synthCount");
     const drums = drumEvents.length > 0
         ? (playback?.bank ? createDrums(drumEvents.map((event) => event.value), playback.bank) : createDrums(drumEvents.map((event) => event.value)))
         : undefined;
     drums?.connect(gainNode);
+    if (drums) recordTonePlaybackMetric("drumVoiceCount", drumEvents.length);
+    recordTonePlaybackMetric("effectNodeCount", effectNodes.length);
     registerActiveLayer(gainNode, panner, synth, drums, effectNodes);
     return { layer, secondsPerBeat, gainNode, panner, synth, drums, effectNodes, sound };
 });
@@ -90,6 +95,7 @@ export const scheduleLayerEvents = (
             drumKeys.set(runtime, keys);
         }
         scheduleLayerEvent(runtime, event, time);
+        recordTonePlaybackMetric("scheduledEventCount");
     }
 };
 
@@ -119,5 +125,6 @@ export const scheduleLayers = (
         transport.schedule((time) => {
             scheduleLayerEvents(group, time);
         }, start * secondsPerBeat);
+        recordTonePlaybackMetric("scheduleCallbackCount");
     }
 };
