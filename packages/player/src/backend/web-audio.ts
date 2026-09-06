@@ -57,6 +57,35 @@ const distortionCurve = (amount: number): Float32Array<ArrayBuffer> => {
   return curve;
 };
 
+type DrumProfile = { noise: boolean; frequency: number; decay: number; release: number; pitchDecay?: number; octaves?: number; gain?: number };
+
+const drumProfile = (name: string, bank?: string): DrumProfile => {
+  const arcade = bank === "arcade" || bank === "chip";
+  const is808 = bank === "808";
+  const is909 = bank === "909";
+  if (name === "kick") return {
+    noise: false,
+    frequency: is909 ? 41 : 32.7,
+    decay: arcade ? 0.09 : is909 ? 0.32 : is808 ? 0.55 : 0.2,
+    release: is808 ? 0.18 : is909 ? 0.08 : 0.02,
+    pitchDecay: arcade ? 0.015 : is909 ? 0.025 : is808 ? 0.035 : 0.02,
+    octaves: arcade ? 5 : is909 ? 4 : is808 ? 6 : 4,
+  };
+  if (["snare", "clap", "hihat", "openhat", "crash", "ride", "tambourine", "shaker"].includes(name)) {
+    return {
+      noise: true,
+      frequency: name === "hihat" || name === "openhat" ? 4500 : 900,
+      decay: name === "hihat" ? (arcade ? 0.035 : is909 ? 0.06 : is808 ? 0.05 : 0.08)
+        : name === "openhat" ? (arcade ? 0.18 : is909 ? 0.32 : is808 ? 0.55 : 0.35)
+          : name === "crash" ? 0.9 : name === "ride" ? 0.45 : name === "shaker" ? 0.05 : is808 ? 0.28 : 0.15,
+      release: name === "hihat" ? (arcade ? 0.005 : 0.02) : is808 ? 0.04 : 0.02,
+      gain: name === "hihat" ? 6 : 1,
+    };
+  }
+  const tomFrequency = name === "lowtom" ? 65 : name === "hitom" ? 130 : 95;
+  return { noise: false, frequency: tomFrequency, decay: 0.18, release: 0.05, pitchDecay: 0.02, octaves: 2 };
+};
+
 const pitchToFrequency = (pitch: string): number => {
   const match = /^([a-gA-G])([#b]?)(-?\d+)$/.exec(pitch.trim());
   if (!match) return 440;
@@ -121,19 +150,29 @@ export class WebAudioBackend implements Synth8AudioBackend {
 
   private scheduleDrum(event: Extract<Synth8Event, { kind: "drum" }>, time: number): void {
     const playback = eventPlayback(event);
+    const profile = drumProfile(event.drum, playback.bank);
     const instrument = `drums:${event.drum}:${event.instrument ?? "default"}`;
-    const pool = this.pools.get(instrument) ?? this.createPool(instrument, eventPlayback(event));
-    const duration = Math.max(0.02, Math.min(0.25, event.duration * (60 / this.bpm)));
+    const pool = this.pools.get(instrument) ?? this.createPool(instrument, playback);
+    const duration = Math.max(0.02, Math.min(1, event.duration * (60 / this.bpm), profile.decay));
     const voice = this.acquire(pool, time);
     const start = Math.max(time, this.context.currentTime);
     const end = start + duration;
-    const frequencies: Record<string, number> = { kick: 90, snare: 180, hihat: 5000, openhat: 4000, clap: 900, crash: 3000 };
-    voice.oscillator.frequency.setValueAtTime(frequencies[event.drum] ?? 110, start);
+    const peak = Math.min(1, (event.velocity ?? 0.8) * (playback.gain ?? 1) * (profile.gain ?? 1));
+    const frequency = profile.frequency;
+    voice.oscillator.frequency.cancelScheduledValues(start);
+    voice.oscillator.frequency.setValueAtTime(
+      profile.octaves ? frequency * 2 ** profile.octaves : frequency,
+      start,
+    );
+    if (profile.pitchDecay) {
+      voice.oscillator.frequency.exponentialRampToValueAtTime(frequency, start + profile.pitchDecay);
+    }
     voice.gain.gain.cancelScheduledValues(start);
-    voice.gain.gain.setValueAtTime(Math.min(1, (event.velocity ?? 0.8) * (playback.gain ?? 1)), start);
-    voice.gain.gain.exponentialRampToValueAtTime(0.001, end);
+    voice.gain.gain.setValueAtTime(0.001, start);
+    voice.gain.gain.linearRampToValueAtTime(peak, start + 0.001);
+    voice.gain.gain.exponentialRampToValueAtTime(0.001, start + Math.max(duration, profile.decay) + profile.release);
     voice.startedAt = start;
-    voice.endsAt = end;
+    voice.endsAt = start + Math.max(duration, profile.decay) + profile.release;
     voice.active = true;
     this.stats.eventsScheduled += 1;
     this.stats.activeVoices += 1;
