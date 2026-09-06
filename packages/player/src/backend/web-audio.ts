@@ -229,6 +229,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
       } else {
         oscillator.connect(filter);
       }
+      filter.connect(gain);
       const vibrato = playback.pitch?.vibratoRate !== undefined ? this.context.createOscillator() : undefined;
       const vibratoGain = vibrato ? this.context.createGain() : undefined;
       if (vibrato && vibratoGain) {
