@@ -27,6 +27,8 @@ type Voice = {
   delayFeedback?: GainNode;
   chorusLfo?: OscillatorNode;
   chorusDepth?: GainNode;
+  convolver?: ConvolverNode;
+  reverbGain?: GainNode;
   distortion?: WaveShaperNode;
   vibrato?: OscillatorNode;
   vibratoGain?: GainNode;
@@ -227,6 +229,22 @@ export class WebAudioBackend implements Synth8AudioBackend {
       }
       const source = distortion ? gain.connect(distortion) : gain;
       source.connect(panner).connect(this.output);
+      const reverbAmount = effects.reverb ?? effects.room;
+      const convolver = reverbAmount !== undefined ? this.context.createConvolver() : undefined;
+      const reverbGain = convolver ? this.context.createGain() : undefined;
+      if (convolver && reverbGain) {
+        const impulseLength = Math.floor(this.context.sampleRate * (0.35 + (reverbAmount ?? 0) * 1.65));
+        const impulse = this.context.createBuffer(2, impulseLength, this.context.sampleRate);
+        for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+          const data = impulse.getChannelData(channel);
+          for (let sample = 0; sample < data.length; sample++) {
+            data[sample] = (Math.random() * 2 - 1) * (1 - sample / data.length) ** (1.5 + (1 - (reverbAmount ?? 0)) * 2);
+          }
+        }
+        convolver.buffer = impulse;
+        reverbGain.gain.value = Math.min(0.65, reverbAmount ?? 0);
+        gain.connect(convolver).connect(reverbGain).connect(this.output);
+      }
       let noise: AudioBufferSourceNode | undefined;
       if (noiseDrum) {
         const buffer = this.context.createBuffer(1, this.context.sampleRate, this.context.sampleRate);
@@ -258,7 +276,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
         chorusLfo.start();
       }
       oscillator.start();
-      pool.push({ oscillator, gain, filter, panner, delay, delayGain, delayFeedback, chorusLfo, chorusDepth, distortion, vibrato, vibratoGain, noise, startedAt: 0, endsAt: 0, active: false });
+      pool.push({ oscillator, gain, filter, panner, delay, delayGain, delayFeedback, chorusLfo, chorusDepth, convolver, reverbGain, distortion, vibrato, vibratoGain, noise, startedAt: 0, endsAt: 0, active: false });
       this.stats.voicesCreated += 1;
     }
     this.pools.set(instrument, pool);
@@ -311,6 +329,8 @@ export class WebAudioBackend implements Synth8AudioBackend {
         voice.delayFeedback?.disconnect();
         voice.chorusLfo?.disconnect();
         voice.chorusDepth?.disconnect();
+        voice.convolver?.disconnect();
+        voice.reverbGain?.disconnect();
         voice.distortion?.disconnect();
         voice.vibrato?.disconnect();
         voice.vibratoGain?.disconnect();
