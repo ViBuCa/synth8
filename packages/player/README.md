@@ -225,8 +225,12 @@ filter, gain, and panner nodes in bounded voice pools; note and drum events
 schedule automation on those nodes instead of creating an audio graph per
 note.
 
-It is intentionally not a Tone.js replacement and does not yet implement every
-Synth8 effect or preset. Use it directly with the core scheduler:
+It is intentionally not a Tone.js replacement. It currently covers the main
+Synth8 instrument path: preset waveform resolution, ADSR envelopes, velocity,
+gain, pan, cutoff/resonance, filter envelopes, vibrato, distortion, delay,
+echo, and lightweight delay-based room/reverb/chorus approximations. Noise,
+pulse, wavetable, and some effects are intentionally approximated with native
+oscillators. Use it directly with the core scheduler:
 
 ```ts
 import { compile, Synth8Scheduler } from "@vibuca/synth8-core";
@@ -247,9 +251,11 @@ scheduler.start();
 ```
 
 This path is experimental and exists to measure a smaller backend against the
-existing Tone backend. It currently supports basic oscillator notes, bounded
-voice reuse/stealing, gain, pan routing, and simple synthesized drums. The
-backend exposes `getStats()` for created, reused, and stolen voices.
+existing Tone backend. It uses bounded persistent voices and effects nodes;
+events automate those resources rather than creating a graph per note. The
+backend exposes `getStats()` for created, reused, and stolen voices. Sound will
+not be sample-identical to Tone.js, but the same Synth8 semantic controls are
+used so the two implementations can be compared meaningfully.
 
 It can also be selected through the normal preparation API:
 

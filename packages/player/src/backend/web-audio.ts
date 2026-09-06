@@ -1,4 +1,5 @@
-import type { Synth8AudioBackend, Synth8Event } from "@vibuca/synth8-core";
+import type { PlaybackConfig, Synth8AudioBackend, Synth8Event } from "@vibuca/synth8-core";
+import { resolvePlaybackPreset } from "../playback/presets";
 
 export type WebAudioBackendOptions = {
   context: AudioContext;
@@ -21,6 +22,11 @@ type Voice = {
   gain: GainNode;
   filter: BiquadFilterNode;
   panner: StereoPannerNode;
+  delay?: DelayNode;
+  delayGain?: GainNode;
+  distortion?: WaveShaperNode;
+  vibrato?: OscillatorNode;
+  vibratoGain?: GainNode;
   startedAt: number;
   endsAt: number;
   active: boolean;
@@ -28,7 +34,21 @@ type Voice = {
 
 const waveform = (instrument?: string): OscillatorType => {
   if (instrument === "triangle" || instrument === "square" || instrument === "sawtooth") return instrument;
+  if (instrument?.startsWith("pulse") || instrument === "noise" || instrument === "wavetable") return "square";
   return "sine";
+};
+
+const eventPlayback = (event: Synth8Event): PlaybackConfig =>
+  resolvePlaybackPreset((event.parameters ?? {}) as PlaybackConfig) ?? {};
+
+const distortionCurve = (amount: number): Float32Array<ArrayBuffer> => {
+  const curve: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(256 * Float32Array.BYTES_PER_ELEMENT));
+  const drive = 1 + amount * 40;
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i * 2) / (curve.length - 1) - 1;
+    curve[i] = Math.tanh(x * drive);
+  }
+  return curve;
 };
 
 const pitchToFrequency = (pitch: string): number => {
@@ -114,28 +134,49 @@ export class WebAudioBackend implements Synth8AudioBackend {
   }
 
   private scheduleNote(event: Extract<Synth8Event, { kind: "note" }>, time: number): void {
+    const playback = eventPlayback(event);
     const instrument = event.instrument ?? "default";
-    const pool = this.pools.get(instrument) ?? this.createPool(instrument);
+    const pool = this.pools.get(instrument) ?? this.createPool(instrument, playback);
     const duration = Math.max(0.005, event.duration * (60 / this.bpm));
     const voice = this.acquire(pool, time);
     const now = this.context.currentTime;
     const start = Math.max(time, now);
     const end = start + duration;
-    const gain = Math.max(0, Math.min(1, event.controls?.gain ?? 0.8));
+    const envelope = playback.envelope ?? {};
+    const effects = playback.effects ?? {};
+    const gain = Math.max(0, Math.min(1, (event.controls?.gain ?? playback.gain ?? 1) * 0.8));
     const frequency = pitchToFrequency(event.pitch);
-    const pan = Math.max(-1, Math.min(1, event.controls?.pan ?? 0));
-    const cutoff = typeof event.parameters?.filter === "object" && event.parameters.filter
-      ? (event.parameters.filter as { cutoff?: number }).cutoff
-      : undefined;
+    const pan = Math.max(-1, Math.min(1, event.controls?.pan ?? playback.pan ?? 0));
+    const cutoff = playback.filter?.cutoff ?? effects.lowpass;
+    const attack = Math.max(0.001, envelope.attack ?? 0.005);
+    const decay = Math.max(0, envelope.decay ?? 0.05);
+    const sustain = Math.max(0, Math.min(1, envelope.sustain ?? 0.75));
+    const release = Math.max(0, envelope.release ?? 0.05);
     voice.panner.pan.setValueAtTime(pan, start);
     if (cutoff !== undefined) voice.filter.frequency.setValueAtTime(cutoff, start);
+    if (playback.filter?.resonance !== undefined) voice.filter.Q.setValueAtTime(playback.filter.resonance * 20, start);
+    if (voice.distortion && effects.distortion !== undefined) voice.distortion.curve = distortionCurve(effects.distortion);
+    if (voice.vibrato && voice.vibratoGain && playback.pitch?.vibratoRate !== undefined) {
+      voice.vibrato.frequency.setValueAtTime(playback.pitch.vibratoRate, start);
+      voice.vibratoGain.gain.setValueAtTime(frequency * (playback.pitch.vibratoDepth ?? 0) * 0.08, start);
+    }
+    if (playback.filter?.envelope) {
+      const filterEnvelope = playback.filter.envelope;
+      voice.filter.frequency.setValueAtTime(filterEnvelope.start, start);
+      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.peak, start + filterEnvelope.attack);
+      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.sustain, start + filterEnvelope.attack + filterEnvelope.decay);
+      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.sustain, end);
+      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.start, end + filterEnvelope.release);
+    }
 
     voice.oscillator.frequency.cancelScheduledValues(start);
     voice.oscillator.frequency.setValueAtTime(frequency, start);
     voice.gain.gain.cancelScheduledValues(start);
     voice.gain.gain.setValueAtTime(0, start);
-    voice.gain.gain.linearRampToValueAtTime(gain, start + 0.005);
-    voice.gain.gain.linearRampToValueAtTime(0, end);
+    voice.gain.gain.linearRampToValueAtTime(gain, start + attack);
+    voice.gain.gain.linearRampToValueAtTime(gain * sustain, start + attack + decay);
+    voice.gain.gain.setValueAtTime(gain * sustain, Math.max(start + attack + decay, end - release));
+    voice.gain.gain.linearRampToValueAtTime(0, end + release);
     voice.startedAt = start;
     voice.endsAt = end;
     voice.active = true;
@@ -144,20 +185,43 @@ export class WebAudioBackend implements Synth8AudioBackend {
     this.stats.maxActiveVoices = Math.max(this.stats.maxActiveVoices, this.stats.activeVoices);
   }
 
-  private createPool(instrument: string): Voice[] {
+  private createPool(instrument: string, playback: PlaybackConfig = {}): Voice[] {
     const pool: Voice[] = [];
     for (let index = 0; index < this.maxVoices; index += 1) {
       const oscillator = this.context.createOscillator();
-      oscillator.type = waveform(instrument);
+      oscillator.type = waveform(playback.sound ?? instrument);
       const filter = this.context.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 20000;
+      filter.type = playback.effects?.highpass !== undefined && playback.effects?.lowpass === undefined
+        ? "highpass"
+        : "lowpass";
+      filter.frequency.value = playback.effects?.lowpass ?? playback.effects?.highpass ?? 20000;
       const gain = this.context.createGain();
       gain.gain.value = 0;
       const panner = this.context.createStereoPanner();
-      oscillator.connect(filter).connect(gain).connect(panner).connect(this.output);
+      const effects = playback.effects ?? {};
+      const distortion = effects.distortion !== undefined ? this.context.createWaveShaper() : undefined;
+      if (distortion) distortion.curve = distortionCurve(effects.distortion ?? 0);
+      const wet = effects.echo ?? effects.reverb ?? effects.room ?? effects.chorus;
+      const delay = wet !== undefined || effects.delay !== undefined ? this.context.createDelay(2) : undefined;
+      const delayGain = delay ? this.context.createGain() : undefined;
+      if (delay) {
+        delay.delayTime.value = effects.delay ?? (effects.reverb !== undefined || effects.room !== undefined ? 0.32 : 0.18);
+        delayGain!.gain.value = wet ?? 0.15;
+        gain.connect(delay).connect(delayGain!).connect(this.output);
+      }
+      const source = distortion ? gain.connect(distortion) : gain;
+      source.connect(panner).connect(this.output);
+      oscillator.connect(filter).connect(gain);
+      const vibrato = playback.pitch?.vibratoRate !== undefined ? this.context.createOscillator() : undefined;
+      const vibratoGain = vibrato ? this.context.createGain() : undefined;
+      if (vibrato && vibratoGain) {
+        vibrato.frequency.value = playback.pitch?.vibratoRate ?? 5;
+        vibratoGain.gain.value = 0;
+        vibrato.connect(vibratoGain).connect(oscillator.frequency);
+        vibrato.start();
+      }
       oscillator.start();
-      pool.push({ oscillator, gain, filter, panner, startedAt: 0, endsAt: 0, active: false });
+      pool.push({ oscillator, gain, filter, panner, delay, delayGain, distortion, vibrato, vibratoGain, startedAt: 0, endsAt: 0, active: false });
       this.stats.voicesCreated += 1;
     }
     this.pools.set(instrument, pool);
@@ -205,6 +269,11 @@ export class WebAudioBackend implements Synth8AudioBackend {
         voice.filter.disconnect();
         voice.gain.disconnect();
         voice.panner.disconnect();
+        voice.delay?.disconnect();
+        voice.delayGain?.disconnect();
+        voice.distortion?.disconnect();
+        voice.vibrato?.disconnect();
+        voice.vibratoGain?.disconnect();
       }
     }
     this.pools.clear();
