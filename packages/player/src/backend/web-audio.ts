@@ -27,6 +27,7 @@ type Voice = {
   distortion?: WaveShaperNode;
   vibrato?: OscillatorNode;
   vibratoGain?: GainNode;
+  noise?: AudioBufferSourceNode;
   startedAt: number;
   endsAt: number;
   active: boolean;
@@ -114,14 +115,14 @@ export class WebAudioBackend implements Synth8AudioBackend {
   }
 
   private scheduleDrum(event: Extract<Synth8Event, { kind: "drum" }>, time: number): void {
-    const instrument = event.instrument ?? "drums";
-    const pool = this.pools.get(instrument) ?? this.createPool(instrument);
+    const instrument = `drums:${event.drum}:${event.instrument ?? "default"}`;
+    const pool = this.pools.get(instrument) ?? this.createPool(instrument, eventPlayback(event));
     const duration = Math.max(0.02, Math.min(0.25, event.duration * (60 / this.bpm)));
     const voice = this.acquire(pool, time);
     const start = Math.max(time, this.context.currentTime);
     const end = start + duration;
     const frequencies: Record<string, number> = { kick: 90, snare: 180, hihat: 5000, openhat: 4000, clap: 900, crash: 3000 };
-    voice.oscillator.frequency.setValueAtTime(frequencies[event.drum] ?? 220, start);
+    voice.oscillator.frequency.setValueAtTime(frequencies[event.drum] ?? 110, start);
     voice.gain.gain.cancelScheduledValues(start);
     voice.gain.gain.setValueAtTime(Math.min(1, event.velocity ?? 0.8), start);
     voice.gain.gain.exponentialRampToValueAtTime(0.001, end);
@@ -178,7 +179,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
     voice.gain.gain.setValueAtTime(gain * sustain, Math.max(start + attack + decay, end - release));
     voice.gain.gain.linearRampToValueAtTime(0, end + release);
     voice.startedAt = start;
-    voice.endsAt = end;
+    voice.endsAt = end + release;
     voice.active = true;
     this.stats.eventsScheduled += 1;
     this.stats.activeVoices = pool.reduce((count, item) => count + (item.active ? 1 : 0), 0);
@@ -189,12 +190,16 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const pool: Voice[] = [];
     for (let index = 0; index < this.maxVoices; index += 1) {
       const oscillator = this.context.createOscillator();
+      const drumName = instrument.startsWith("drums:") ? instrument.split(":")[1] : undefined;
+      const noiseDrum = drumName !== undefined && !["kick", "tom", "lowtom", "midtom", "hitom"].includes(drumName);
       oscillator.type = waveform(playback.sound ?? instrument);
       const filter = this.context.createBiquadFilter();
-      filter.type = playback.effects?.highpass !== undefined && playback.effects?.lowpass === undefined
+      filter.type = noiseDrum || (playback.effects?.highpass !== undefined && playback.effects?.lowpass === undefined)
         ? "highpass"
         : "lowpass";
-      filter.frequency.value = playback.effects?.lowpass ?? playback.effects?.highpass ?? 20000;
+      filter.frequency.value = noiseDrum
+        ? (drumName === "hihat" || drumName === "openhat" ? 4500 : drumName === "crash" || drumName === "ride" ? 2800 : 900)
+        : playback.effects?.lowpass ?? playback.effects?.highpass ?? 20000;
       const gain = this.context.createGain();
       gain.gain.value = 0;
       const panner = this.context.createStereoPanner();
@@ -211,7 +216,19 @@ export class WebAudioBackend implements Synth8AudioBackend {
       }
       const source = distortion ? gain.connect(distortion) : gain;
       source.connect(panner).connect(this.output);
-      oscillator.connect(filter).connect(gain);
+      let noise: AudioBufferSourceNode | undefined;
+      if (noiseDrum) {
+        const buffer = this.context.createBuffer(1, this.context.sampleRate, this.context.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let sample = 0; sample < data.length; sample++) data[sample] = Math.random() * 2 - 1;
+        noise = this.context.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+        noise.connect(filter);
+        noise.start();
+      } else {
+        oscillator.connect(filter);
+      }
       const vibrato = playback.pitch?.vibratoRate !== undefined ? this.context.createOscillator() : undefined;
       const vibratoGain = vibrato ? this.context.createGain() : undefined;
       if (vibrato && vibratoGain) {
@@ -221,7 +238,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
         vibrato.start();
       }
       oscillator.start();
-      pool.push({ oscillator, gain, filter, panner, delay, delayGain, distortion, vibrato, vibratoGain, startedAt: 0, endsAt: 0, active: false });
+      pool.push({ oscillator, gain, filter, panner, delay, delayGain, distortion, vibrato, vibratoGain, noise, startedAt: 0, endsAt: 0, active: false });
       this.stats.voicesCreated += 1;
     }
     this.pools.set(instrument, pool);
@@ -274,6 +291,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
         voice.distortion?.disconnect();
         voice.vibrato?.disconnect();
         voice.vibratoGain?.disconnect();
+        voice.noise?.disconnect();
       }
     }
     this.pools.clear();
