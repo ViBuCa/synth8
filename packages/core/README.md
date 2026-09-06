@@ -461,9 +461,57 @@ Looping does not modify the Event model. Events remain simple timing and musical
 - value
 - optional velocity
 
-## Output
+## Backend-independent event output
 
-`compile()` returns:
+`compile()` returns the existing compiled data shape plus a non-enumerable
+`query(startTime, endTime)` method. Times are measured in beats, and the end
+of the query window is exclusive:
+
+```ts
+const track = compile(`song(
+  melody("c4+e4+g4").preset("warm-pad"),
+  beat("kick _ snare _")
+)`);
+
+const events = track.query(0, 1);
+```
+
+The query result contains plain, serializable Synth8 events and does not
+initialize Tone.js or an AudioContext:
+
+```ts
+type Synth8Event =
+  | {
+      kind: "note";
+      time: number;
+      duration: number;
+      pitch: string;
+      velocity?: number;
+      instrument?: string;
+      controls?: { gain?: number; pan?: number };
+      parameters?: Record<string, unknown>;
+    }
+  | {
+      kind: "drum";
+      time: number;
+      duration: number;
+      drum: string;
+      velocity?: number;
+      instrument?: string;
+      controls?: { gain?: number; pan?: number };
+      parameters?: Record<string, unknown>;
+    };
+```
+
+`query()` handles rests, chords, repeats, sequences, song layers, offsets,
+transposition, rates, and loops. Repeating the same query is deterministic;
+adjacent windows do not duplicate events at their shared boundary.
+
+For custom realtime hosts, `Synth8AudioBackend` accepts event batches and
+`Synth8Scheduler` provides a clock-based look-ahead scheduler. Tone.js is one
+possible player backend, not part of the core model.
+
+`compile()` also returns the compatibility fields used by the player:
 
 ```ts
 type Pattern = {
@@ -472,6 +520,7 @@ type Pattern = {
   events: Event[];
   loop: boolean;
   layers: PatternLayer[];
+  query(startTime: number, endTime: number): Synth8Event[];
 };
 
 type PatternLayer = {
@@ -480,7 +529,18 @@ type PatternLayer = {
 };
 
 type PlaybackConfig = {
-  sound?: "sine" | "triangle" | "square" | "sawtooth";
+  preset?: string;
+  bank?: string;
+  sound?: string;
+  gain?: number;
+  pan?: number;
+  envelope?: { attack?: number; decay?: number; sustain?: number; release?: number };
+  pitch?: { vibratoRate?: number; vibratoDepth?: number; vibratoDelay?: number; portamento?: number };
+  filter?: { cutoff?: number; resonance?: number; envelope?: object };
+  effects?: {
+    delay?: number; echo?: number; room?: number; reverb?: number;
+    lowpass?: number; highpass?: number; distortion?: number; chorus?: number;
+  };
 };
 ```
 

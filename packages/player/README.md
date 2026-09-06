@@ -199,7 +199,8 @@ In rendered mode, playback restarts from the offset captured by `pause()`. In li
 
 Synth8 events use beat-based timing.
 
-Playback speed is controlled via the bpm option passed to play().
+Playback speed is controlled via the `bpm` option passed to `play()` or
+`prepare()`.
 
 Example:
 ```ts
@@ -207,6 +208,14 @@ play(pattern, { bpm: 90 });
 play(pattern, { bpm: 120 });
 play(pattern, { bpm: 160 });
 ```
+
+The current prepared playback API does not provide a seamless runtime tempo
+setter. Changing `bpm` during a game requires preparing a new playback instance
+with the new tempo and switching to it. This is straightforward for adaptive
+music in streamed or live mode, but rendered mode must render a new buffer.
+Do not mutate `Tone.Transport` directly: rendered and streamed playback have
+their own clocks and would drift from it. A future tempo API should change
+tempo at a musical boundary and coordinate all backends.
 
 ## Playback modes
 
@@ -216,7 +225,7 @@ Quick guide:
 
 | Mode | Best for | Tradeoff |
 | ---- | -------- | -------- |
-| `auto` | General use and playgrounds | Chooses for you based on event count |
+| `auto` | General use and playgrounds | Uses rendered playback for short tracks, streamed look-ahead playback for dense or long tracks |
 | `rendered` | Stable game music and mobile/WebView playback | Requires an upfront render before sound starts |
 | `live` | Immediate feedback, debugging, interactive experiments | More sensitive to JavaScript/main-thread timing |
 | `streamed` | Long loops that are too expensive to render upfront | Chunk rendering can fall behind on very heavy songs |

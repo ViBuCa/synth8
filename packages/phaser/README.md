@@ -101,6 +101,25 @@ await this.synth8.playMusic(
 this.synth8.stopMusic();
 ```
 
+## Runtime tempo changes
+
+`bpm` is selected when a track is prepared. The current prepared playback API
+does not change tempo seamlessly after playback has started. For an in-game
+tempo change, prepare the track again with the new BPM and switch at a musical
+boundary:
+
+```ts
+const next = await this.synth8.playMusic(source, {
+  bpm: 150,
+  playbackMode: "streamed",
+});
+```
+
+Streamed mode can begin after its first short chunk while later chunks render;
+rendered mode must render a new complete buffer. Do not modify Tone.Transport
+directly, because rendered and streamed playback use their own clocks. A
+future tempo API will coordinate tempo changes across all backends.
+
 ## Pause and resume music
 
 ```ts

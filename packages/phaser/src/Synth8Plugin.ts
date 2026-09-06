@@ -61,6 +61,7 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
   async play(source: string, options: PlayOptions = {}): Promise<PreparedPlayback> {
     const playback = await prepare(compile(source), options);
     playback.start();
+    this.playback = playback;
     return playback;
   }
   pause(): void { this.playback?.pause(); }
