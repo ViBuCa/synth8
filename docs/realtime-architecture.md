@@ -53,8 +53,12 @@ Tone.Transport receives one callback per event timestamp. Rendered mode avoids
 continuous event scheduling and is already the safer production choice for
 static game music. The new query/scheduler boundary makes it possible to test
 whether query cost is material before choosing among Transport replacement,
-voice pooling, or a native Web Audio backend. Do not infer that Tone or core is
-the bottleneck until the counters above are collected.
+voice pooling, or a native Web Audio backend. An experimental bounded-pool
+`WebAudioBackend` now exists in the player for this comparison. It keeps
+oscillator/filter/gain/panner graphs alive per voice and applies event timing
+through WebAudio automation rather than creating nodes per note. It is not yet
+feature-complete and is not the default backend. Do not infer that Tone or core
+is the bottleneck until the counters above are collected.
 
 For static soundtrack playback, OGG remains preferable. The event path is most
 promising for adaptive music and short SFX, where a small query window and a

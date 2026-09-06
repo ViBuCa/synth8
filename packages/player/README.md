@@ -217,6 +217,40 @@ Do not mutate `Tone.Transport` directly: rendered and streamed playback have
 their own clocks and would drift from it. A future tempo API should change
 tempo at a musical boundary and coordinate all backends.
 
+## Native WebAudio backend (experimental)
+
+The player exports a small purpose-built `WebAudioBackend` for experiments
+with the backend-independent event layer. It uses persistent oscillator,
+filter, gain, and panner nodes in bounded voice pools; note and drum events
+schedule automation on those nodes instead of creating an audio graph per
+note.
+
+It is intentionally not a Tone.js replacement and does not yet implement every
+Synth8 effect or preset. Use it directly with the core scheduler:
+
+```ts
+import { compile, Synth8Scheduler } from "@vibuca/synth8-core";
+import { WebAudioBackend } from "@vibuca/synth8-player";
+
+const pattern = compile('song(melody("c4 e4 g4"), beat("kick _ snare _"))');
+const backend = new WebAudioBackend({
+  context: audioContext,
+  bpm: 120,
+  maxVoices: 8,
+});
+const scheduler = new Synth8Scheduler(pattern, backend, audioContext, {
+  bpm: 120,
+  lookAhead: 0.1,
+  updateInterval: 0.05,
+});
+scheduler.start();
+```
+
+This path is experimental and exists to measure a smaller backend against the
+existing Tone backend. It currently supports basic oscillator notes, bounded
+voice reuse/stealing, gain, pan routing, and simple synthesized drums. The
+backend exposes `getStats()` for created, reused, and stolen voices.
+
 ## Playback modes
 
 The player supports four playback mode choices.
