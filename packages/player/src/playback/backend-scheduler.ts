@@ -26,7 +26,8 @@ export class BackendScheduler {
     if (!length || length <= 0) return this.pattern.query(start, end);
     const events: Synth8Event[] = [];
     let cursor = start;
-    while (cursor < end) {
+    let iterations = 0;
+    while (cursor < end && iterations++ < 1024) {
       const cycle = Math.floor(cursor / length);
       const offset = cycle * length;
       const localStart = cursor - offset;
@@ -34,8 +35,11 @@ export class BackendScheduler {
       for (const event of this.pattern.query(localStart, localEnd)) {
         events.push({ ...event, time: event.time + offset });
       }
-      cursor = offset + localEnd;
-      if (cursor <= start) break;
+      const nextCursor = offset + localEnd;
+      // Protect the realtime timer from a floating-point boundary that does
+      // not advance the cursor. A scheduler must fail closed, not spin.
+      if (nextCursor <= cursor) break;
+      cursor = nextCursor;
     }
     return events;
   }
