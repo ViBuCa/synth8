@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, getTonePlaybackMetrics, pause, play, renderOgg, renderWav, resetTonePlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
+import { createGameAudio, getTonePlaybackMetrics, pause, play, prepare, renderOgg, renderWav, resetTonePlaybackMetrics, resume, stop, WebAudioBackend } from "@vibuca/synth8-player";
 import type { GameAudio, PlayOptions, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player";
 import {
   parseMidi,
@@ -340,6 +340,10 @@ root.innerHTML = `
           />
           Streamed
         </label>
+        <label class="radio-option">
+          <input type="radio" name="playback-mode" value="native" />
+          Native WebAudio (experimental)
+        </label>
       </fieldset>
 
       <div class="control-row">
@@ -444,6 +448,9 @@ const tabPanels = Array.from(document.querySelectorAll<HTMLElement>(".demo-panel
 
 let gameAudio: GameAudio | undefined;
 let gameMusic: PreparedPlayback | undefined;
+let nativePlayback: PreparedPlayback | undefined;
+let nativeContext: AudioContext | undefined;
+let nativeBackend: WebAudioBackend | undefined;
 const preparedSfx = new Map<GameSfxName, PreparedSfx>();
 
 function selectTab(tab: DemoTab) {
@@ -519,12 +526,12 @@ async function getPreparedSfx(name: GameSfxName): Promise<PreparedSfx> {
   return sfx;
 }
 
-function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> {
+function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> | "native" {
   const selected = document.querySelector<HTMLInputElement>(
     'input[name="playback-mode"]:checked'
   )?.value;
 
-  if (selected === "rendered" || selected === "live" || selected === "streamed") {
+  if (selected === "rendered" || selected === "live" || selected === "streamed" || selected === "native") {
     return selected;
   }
 
@@ -546,7 +553,22 @@ playButton.addEventListener("click", async () => {
     resetTonePlaybackMetrics();
     setOutput("json", JSON.stringify(pattern, null, 2));
 
-    await play(pattern, { bpm, playbackMode });
+    if (playbackMode === "native") {
+      if (!window.AudioContext) throw new Error("This browser does not provide AudioContext.");
+      nativeContext ??= new window.AudioContext();
+      nativePlayback?.stop();
+      nativeBackend?.dispose();
+      nativeBackend = new WebAudioBackend({ context: nativeContext, bpm, maxVoices: 8 });
+      nativePlayback = await prepare(pattern, {
+        bpm,
+        backend: nativeBackend,
+        clock: nativeContext,
+        playbackMode: "live",
+      });
+      nativePlayback.start();
+    } else {
+      await play(pattern, { bpm, playbackMode });
+    }
 
     setPlaybackStatus(`Playing (${playbackMode}).`);
     output.className = "output output-success";
@@ -591,6 +613,7 @@ benchmarkButton.addEventListener("click", () => {
 });
 
 document.querySelector<HTMLButtonElement>("#stop")!.addEventListener("click", () => {
+  nativePlayback?.stop();
   stop();
   setPlaybackStatus("Stopped.");
   setOutput("info", "Stopped.");
