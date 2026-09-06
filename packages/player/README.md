@@ -251,6 +251,20 @@ existing Tone backend. It currently supports basic oscillator notes, bounded
 voice reuse/stealing, gain, pan routing, and simple synthesized drums. The
 backend exposes `getStats()` for created, reused, and stolen voices.
 
+It can also be selected through the normal preparation API:
+
+```ts
+const playback = await prepare(pattern, {
+  backend,
+  clock: audioContext,
+  bpm: 120,
+});
+playback.start();
+```
+
+This is the experimental path; omitting `backend` preserves the existing Tone
+behavior.
+
 ## Playback modes
 
 The player supports four playback mode choices.

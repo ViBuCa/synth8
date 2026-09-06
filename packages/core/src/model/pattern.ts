@@ -28,6 +28,17 @@ export type Pattern = PatternData & Synth8Pattern;
  * makes repeated windows deterministic and makes adjacent windows safe to
  * schedule independently.
  */
+const lowerBound = (events: Event[], time: number): number => {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (events[middle].time < time) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+};
+
 export const queryPattern = (
   pattern: PatternData,
   startTime: number,
@@ -40,19 +51,24 @@ export const queryPattern = (
   for (const layer of pattern.layers) {
     const sourceEvents = layer.events;
     if (sourceEvents.length === 0) continue;
-    const cycles = pattern.loop && loopLength > 0
-      ? Math.max(0, Math.ceil((endTime - pattern.length) / loopLength) + 1)
-      : 1;
+    const firstCycle = pattern.loop && loopLength > 0
+      ? Math.floor(startTime / loopLength)
+      : 0;
+    const lastCycle = pattern.loop && loopLength > 0
+      ? Math.ceil(endTime / loopLength) - 1
+      : 0;
 
-    for (let cycle = pattern.loop && loopLength > 0
-      ? Math.floor(startTime / loopLength) - 1
-      : 0; cycle < cycles + (pattern.loop ? 1 : 0); cycle++) {
+    for (let cycle = firstCycle; cycle <= lastCycle; cycle++) {
       const offset = pattern.loop && loopLength > 0 ? cycle * loopLength : 0;
-      for (const event of sourceEvents) {
+      const localStart = Math.max(0, startTime - offset);
+      const localEnd = endTime - offset;
+      const firstEvent = lowerBound(sourceEvents, localStart);
+      for (let index = firstEvent; index < sourceEvents.length; index++) {
+        const event = sourceEvents[index];
+        if (event.time >= localEnd) break;
         const time = event.time + offset;
-        if (time >= startTime && time < endTime && (!pattern.loop || time < endTime)) {
-          const converted = toSynth8Event({ ...event, time }, layer.playback);
-          result.push(converted);
+        if (time >= startTime && time < endTime) {
+          result.push(toSynth8Event({ ...event, time }, layer.playback));
         }
       }
     }

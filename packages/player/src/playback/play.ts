@@ -1,5 +1,6 @@
 import * as Tone from 'tone';
 import type { PlayOptions, PreparedPlayback } from '../model';
+import { Synth8Scheduler } from '@vibuca/synth8-core';
 import type { Pattern } from '@vibuca/synth8-core';
 import { getLayers } from './layers';
 import { addActiveNode, addDisposable, disposeActiveNodes } from './lifecycle';
@@ -407,11 +408,38 @@ const prepareStreamed = async (
     return playback;
 };
 
+const prepareBackend = (
+    pattern: Pattern,
+    options: PlayOptions,
+    bpm: number
+): PreparedPlayback => {
+    if (!options.backend || !options.clock) {
+        throw new Error("A backend and audio clock are required together.");
+    }
+    const scheduler = new Synth8Scheduler(pattern, options.backend, options.clock, {
+        bpm,
+        lookAhead: options.lookAhead,
+        updateInterval: options.updateInterval,
+    });
+    return {
+        playbackMode: "live",
+        start: () => scheduler.start(),
+        pause: () => scheduler.pause(),
+        resume: () => scheduler.resume(),
+        stop: () => scheduler.stop(),
+        dispose: () => scheduler.stop(),
+    };
+};
+
 export const prepare = async (
     pattern: Pattern,
     options: PlayOptions = {}
 ): Promise<PreparedPlayback> => {
     const bpm = options.bpm ?? 120;
+
+    if (options.backend || options.clock) {
+        return prepareBackend(pattern, options, bpm);
+    }
 
     // Mobile WebViews may reject resume() until a gesture. Preparation should
     // still be usable from a loading scene; start() will be retried by Tone

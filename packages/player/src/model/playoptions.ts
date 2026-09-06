@@ -7,7 +7,12 @@ export type PreparedPlayback = {
     dispose(): void;
 };
 
+import type { AudioClock, Synth8AudioBackend } from "@vibuca/synth8-core";
+
 export type PlayOptions = {
+    /** Optional non-Tone backend. Both backend and clock must be supplied. */
+    backend?: Synth8AudioBackend;
+    clock?: AudioClock;
     bpm?: number;
     lookAhead?: number;
     updateInterval?: number;

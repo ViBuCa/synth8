@@ -17,6 +17,19 @@ describe("backend-independent pattern query", () => {
     expect(events.find((event) => event.kind === "drum")).toMatchObject({ drum: "kick" });
   });
 
+  it("queries dense tracks from a window index instead of rescanning the song", () => {
+    const pattern = compile(`song(
+      melody("c4/16 e4/16 g4/16 b4/16").repeat(64),
+      melody("c3/16 g2/16").repeat(64),
+      beat("kick+hihat snare+hihat").repeat(64)
+    )`);
+    let count = 0;
+    for (let start = 0; start < pattern.length; start += 0.05) {
+      count += pattern.query(start, Math.min(pattern.length, start + 0.05)).length;
+    }
+    expect(count).toBe(pattern.events.length);
+  });
+
   it("queries loop windows without duplicating a boundary", () => {
     const pattern = compile('melody("c4 d4").loop()');
     const first = pattern.query?.(0, 1) ?? [];
