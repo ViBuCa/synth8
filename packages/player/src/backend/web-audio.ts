@@ -76,8 +76,11 @@ const drumProfile = (name: string, bank?: string): DrumProfile => {
     frequency: is909 ? 41 : 32.7,
     decay: arcade ? 0.09 : is909 ? 0.32 : is808 ? 0.55 : 0.2,
     release: is808 ? 0.18 : is909 ? 0.08 : 0.02,
+    // Keep the native sweep in a drum-like range. Starting an 808 kick at
+    // 64x its final frequency produces an audible laser/chirp before the
+    // bass body arrives; Tone's MembraneSynth is much less pronounced here.
     pitchDecay: arcade ? 0.015 : is909 ? 0.025 : is808 ? 0.035 : 0.02,
-    octaves: arcade ? 5 : is909 ? 4 : is808 ? 6 : 4,
+    octaves: arcade ? 5 : is909 ? 4 : is808 ? 3 : 4,
   };
   if (["snare", "clap", "hihat", "openhat", "crash", "ride", "tambourine", "shaker"].includes(name)) {
     return {
