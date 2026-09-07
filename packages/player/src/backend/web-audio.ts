@@ -205,6 +205,16 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const frequency = pitchToFrequency(event.pitch);
     const pan = Math.max(-1, Math.min(1, event.controls?.pan ?? playback.pan ?? 0));
     const cutoff = playback.filter?.cutoff ?? effects.lowpass;
+    // Native oscillator waveforms are not band-limited in every browser. At
+    // the top of the range, the harmonics of saw/square/pulse fold back into
+    // the audible band and can sound scratchy. Tone's oscillator path is a
+    // little smoother, so apply a gentle pitch-aware ceiling unless the user
+    // supplied an explicit filter cutoff.
+    const sound = playback.sound ?? instrument;
+    const antiAliasCutoff = cutoff === undefined &&
+      (sound === "sawtooth" || sound === "square" || sound.startsWith("pulse"))
+      ? Math.min(18000, Math.max(6000, frequency * 8))
+      : undefined;
     // Match Tone.Synth's default envelope more closely for layers without a
     // preset: short attack, audible decay, lower sustain, and a real release
     // tail instead of an abrupt gate.
@@ -217,6 +227,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const release = Math.max(0, envelope.release ?? 0.12);
     voice.panner.pan.setValueAtTime(pan, start);
     if (cutoff !== undefined) voice.filter.frequency.setValueAtTime(cutoff, start);
+    else if (antiAliasCutoff !== undefined) voice.filter.frequency.setValueAtTime(antiAliasCutoff, start);
     if (playback.filter?.resonance !== undefined) voice.filter.Q.setValueAtTime(playback.filter.resonance * 20, start);
     if (voice.distortion && effects.distortion !== undefined) voice.distortion.curve = distortionCurve(effects.distortion);
     if (voice.vibrato && voice.vibratoGain && playback.pitch?.vibratoRate !== undefined) {
