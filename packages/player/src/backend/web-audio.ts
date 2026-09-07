@@ -44,8 +44,16 @@ const waveform = (instrument?: string): OscillatorType => {
   return "sine";
 };
 
-const eventPlayback = (event: Synth8Event): PlaybackConfig =>
-  resolvePlaybackPreset((event.parameters ?? {}) as PlaybackConfig) ?? {};
+const eventPlayback = (event: Synth8Event): PlaybackConfig => {
+  const parameters = (event.parameters ?? {}) as PlaybackConfig;
+  // `instrument` is also populated by core for compact events. Keep this
+  // fallback so native playback still recognizes noise when events come from
+  // callers that omit the expanded parameters object.
+  const playback = parameters.sound === undefined && event.instrument === "noise"
+    ? { ...parameters, sound: "noise" as const }
+    : parameters;
+  return resolvePlaybackPreset(playback) ?? {};
+};
 
 const distortionCurve = (amount: number): Float32Array<ArrayBuffer> => {
   const curve: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(256 * Float32Array.BYTES_PER_ELEMENT));
@@ -152,7 +160,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const playback = eventPlayback(event);
     const profile = drumProfile(event.drum, playback.bank);
     const instrument = `drums:${event.drum}:${event.instrument ?? "default"}`;
-    const pool = this.pools.get(instrument) ?? this.createPool(instrument, playback);
+    const pool = this.pools.get(instrument) ?? this.createPool(instrument, playback, profile);
     const duration = Math.max(0.02, Math.min(1, event.duration * (60 / this.bpm), profile.decay));
     const voice = this.acquire(pool, time);
     const start = Math.max(time, this.context.currentTime);
@@ -237,12 +245,17 @@ export class WebAudioBackend implements Synth8AudioBackend {
     this.stats.maxActiveVoices = Math.max(this.stats.maxActiveVoices, this.stats.activeVoices);
   }
 
-  private createPool(instrument: string, playback: PlaybackConfig = {}): Voice[] {
+  private createPool(instrument: string, playback: PlaybackConfig = {}, drumProfileOverride?: DrumProfile): Voice[] {
     const pool: Voice[] = [];
+    const drumName = instrument.startsWith("drums:") ? instrument.split(":")[1] : undefined;
+    const drum = drumName === undefined ? undefined : drumProfileOverride ?? drumProfile(drumName, playback.bank);
+    // Noise used to fall through to the square oscillator here. Apart from
+    // making .sound("noise") sound like a cheap node, that also made the
+    // native drum banks disagree with Tone for noise-based drums.
+    const noiseDrum = drum?.noise === true;
+    const noiseSource = playback.sound === "noise" || noiseDrum;
     for (let index = 0; index < this.maxVoices; index += 1) {
       const oscillator = this.context.createOscillator();
-      const drumName = instrument.startsWith("drums:") ? instrument.split(":")[1] : undefined;
-      const noiseDrum = drumName !== undefined && !["kick", "tom", "lowtom", "midtom", "hitom"].includes(drumName);
       oscillator.type = waveform(playback.sound ?? instrument);
       const filter = this.context.createBiquadFilter();
       filter.type = noiseDrum || (playback.effects?.highpass !== undefined && playback.effects?.lowpass === undefined)
@@ -291,7 +304,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
         gain.connect(convolver).connect(reverbGain).connect(this.output);
       }
       let noise: AudioBufferSourceNode | undefined;
-      if (noiseDrum) {
+      if (noiseSource) {
         const buffer = this.context.createBuffer(1, this.context.sampleRate, this.context.sampleRate);
         const data = buffer.getChannelData(0);
         for (let sample = 0; sample < data.length; sample++) data[sample] = Math.random() * 2 - 1;
