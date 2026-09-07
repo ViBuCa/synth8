@@ -50,15 +50,15 @@ Unlike many live-coding environments, Synth8 is designed from the ground up for 
 ### Playback Layers
 
 * Multiple independent layers
-* Per-layer waveform selection
-* Support for gain, panning
-* Future support for effects and instrument banks
+* Per-layer waveform selection, including pulse sources and unpitched noise
+* Support for gain, panning, envelopes, effects and instrument banks
+* Named drum banks (`default`, `808`, `909`, `arcade`, and `chip`)
 
 ### Audio Playback
 
 * Tone.js based playback engine
-* Drum synthesizers
-* Polyphonic note playback
+* Drum synthesizers and selectable drum banks
+* Polyphonic note playback, including white-noise voices
 * Auto playback mode that avoids expensive pre-renders for dense songs
 * Rendered loop playback for stable small/medium loops
 * Optional live scheduling mode for interactive playback

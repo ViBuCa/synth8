@@ -228,9 +228,10 @@ note.
 It is intentionally not a Tone.js replacement. It currently covers the main
 Synth8 instrument path: preset waveform resolution, ADSR envelopes, velocity,
 gain, pan, cutoff/resonance, filter envelopes, vibrato, distortion, delay,
-echo, and lightweight delay-based room/reverb/chorus approximations. Noise,
-pulse, wavetable, and some effects are intentionally approximated with native
-oscillators. Use it directly with the core scheduler:
+echo, and lightweight delay-based room/reverb/chorus approximations. Noise
+uses a native white-noise buffer, while pulse, wavetable, and some effects are
+approximated with native oscillators and effects nodes. Use it directly with
+the core scheduler:
 
 ```ts
 import { compile, Synth8Scheduler } from "@vibuca/synth8-core";
@@ -440,6 +441,15 @@ beat("kick _ snare _").bank("808")
 beat("kick _ snare _").bank("909")
 beat("_ hihat _ hihat").fast(2).bank("arcade")
 beat("kick+hihat _ snare _").bank("chip")
+
+// Compare all available drum banks one after another
+sequence(
+  beat("kick _ snare _").bank("default"),
+  beat("kick _ snare _").bank("808"),
+  beat("kick _ snare _").bank("909"),
+  beat("kick _ snare _").bank("arcade"),
+  beat("kick _ snare _").bank("chip")
+)
 ```
 
 Supported banks:
@@ -481,7 +491,7 @@ melody("bb4{accent} f5{slide} bb5{bend:+2}/2")
   .resonance(0.2)
 ```
 
-Vibrato uses Hz and normalized depth (`0`–`1`); bend values are semitones. Supported note articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. Staccato and mute shorten the gate while preserving event timing. Pulse sources (`pulse12`, `pulse25`, `pulse50`, `pulse75`) use fixed duty cycles, and `noise` uses Tone's noise instrument so note pitch is ignored. The minimal `wavetable` source currently uses the basic oscillator fallback. Filter envelopes are serialized in playback configuration, but only static cutoff/resonance are currently automated by the player.
+Vibrato uses Hz and normalized depth (`0`–`1`); bend values are semitones. Supported note articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. Staccato and mute shorten the gate while preserving event timing. Pulse sources (`pulse12`, `pulse25`, `pulse50`, `pulse75`) use fixed duty cycles, and `noise` uses an unpitched white-noise source so note pitch is ignored. Tone playback uses Tone's noise instrument; the experimental native backend uses a persistent Web Audio noise buffer. The minimal `wavetable` source currently uses the basic oscillator fallback. Filter envelopes are serialized in playback configuration, but only static cutoff/resonance are currently automated by the player.
 
 ## Event Structure
 The player consumes compiled events:

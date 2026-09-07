@@ -113,7 +113,7 @@ const tutorialExamples: TutorialExample[] = [
   {
     title: "Drum Banks",
     body: "Use bank() to switch the overall drum-kit character.",
-    details: "Banks: default, 808, arcade. 808 is rounder and longer; arcade is shorter and clickier.",
+    details: "Banks: default, 808, 909, arcade, and chip. 808 is rounder and longer; 909 is tighter and punchier; arcade is shorter and clickier; chip is very short and square-like.",
     source: `song(
   beat("kick _ snare _")
     .bank("808"),

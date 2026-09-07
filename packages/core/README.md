@@ -237,7 +237,7 @@ noise
 wavetable
 ```
 
-Pulse variants are normalized retro pulse sources (12.5%, 25%, 50%, and 75% duty). `noise` is currently rendered through the pitched synth voice as a percussive approximation; note pitch is not musically meaningful. `wavetable` is reserved for the minimal built-in wavetable source and currently falls back to the basic synth oscillator in live playback.
+Pulse variants are normalized retro pulse sources (12.5%, 25%, 50%, and 75% duty). `noise` is an unpitched white-noise source; note pitch is ignored and the note envelope controls its duration. `wavetable` is reserved for the minimal built-in wavetable source and currently falls back to the basic synth oscillator in live playback.
 
 ### Pitch expression, filters, and articulation
 
@@ -320,6 +320,15 @@ beat("kick _ snare _").bank("808")
 beat("kick _ snare _").bank("909")
 beat("_ hihat _ hihat").fast(2).bank("arcade")
 beat("kick+hihat _ snare _").bank("chip")
+
+// Compare every drum bank in sequence
+sequence(
+  beat("kick _ snare _").bank("default"),
+  beat("kick _ snare _").bank("808"),
+  beat("kick _ snare _").bank("909"),
+  beat("kick _ snare _").bank("arcade"),
+  beat("kick _ snare _").bank("chip")
+)
 ```
 
 Supported banks:
