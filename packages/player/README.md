@@ -467,6 +467,30 @@ chip
 
 `808` is a rounder, longer synthesized drum-machine style. `909` is tighter and punchier. `arcade` is shorter and clickier for retro game-style drums. `chip` is very short and square-wave-like for tiny retro hits.
 
+### Drum bank specifications and attribution
+
+The drum banks are synthesized definitions, not samples. They are designed to
+match the existing Tone.js drum implementation where practical and to remain
+usable in the native WebAudio backend. Tone.js is MIT licensed and is used as
+the behavioral reference for the following parts:
+
+| Bank or sound | Native definition | Reference |
+| --- | --- | --- |
+| `kick` | Sine or square oscillator with exponential pitch drop and an amplitude envelope | Tone `MembraneSynth` parameters in `drum-synths.ts` |
+| `snare`, `clap`, hats and cymbals | White noise, short envelope and bank-specific high-pass shaping | Tone `NoiseSynth` parameters in `drum-synths.ts` |
+| `808` kick | Long, low sine body with a slower pitch drop | Tone `MembraneSynth` 808 branch |
+| `909` kick | Shorter, punchier sine body | Tone `MembraneSynth` 909 branch |
+| `arcade` kick | Short square pitch sweep | Tone `MembraneSynth` arcade branch |
+| `chip` kick and rim | Short square pitch sweep | Tone `MembraneSynth` chip/rim approximation |
+| `chip` cowbell | Two square oscillators at 540 Hz and 800 Hz with a short envelope | Tone cowbell implementation |
+
+The bank names are Synth8-level presets rather than claims of circuit-level
+emulation of an original 808, 909, NES, Game Boy, or other hardware system.
+The native implementation uses Web Audio oscillators, noise buffers, filters,
+and envelopes to reproduce these definitions. It is not sample-identical to
+Tone.js, but the source parameters and topology are intentionally documented
+so the two implementations can be compared and improved.
+
 Layer effects are applied after layer gain and before pan/output:
 
 ```ts

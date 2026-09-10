@@ -21,6 +21,7 @@ export type WebAudioBackendStats = {
 
 type Voice = {
   oscillator: OscillatorNode;
+  oscillator2?: OscillatorNode;
   gain: GainNode;
   filter: BiquadFilterNode;
   panner: StereoPannerNode;
@@ -68,7 +69,17 @@ const distortionCurve = (amount: number): Float32Array<ArrayBuffer> => {
   return curve;
 };
 
-type DrumProfile = { noise: boolean; frequency: number; decay: number; release: number; pitchDecay?: number; octaves?: number; gain?: number };
+type DrumProfile = {
+  noise: boolean;
+  frequency: number;
+  decay: number;
+  release: number;
+  pitchDecay?: number;
+  octaves?: number;
+  secondFrequency?: number;
+  oscillator?: OscillatorType;
+  gain?: number;
+};
 
 const drumProfile = (name: string, bank?: string): DrumProfile => {
   const arcade = bank === "arcade" || bank === "chip";
@@ -95,6 +106,16 @@ const drumProfile = (name: string, bank?: string): DrumProfile => {
       release: name === "hihat" ? (arcade ? 0.005 : 0.02) : is808 ? 0.04 : 0.02,
       gain: name === "hihat" ? 6 : 1,
     };
+  }
+  if (bank === "chip" && name === "rim") {
+    // Tone's chip rim is a short MembraneSynth hit at C5. Keep its square
+    // oscillator and steep pitch drop rather than using the generic tom
+    // fallback.
+    return { noise: false, frequency: 523.25, decay: 0.05, release: 0.01, pitchDecay: 0.005, octaves: 2, oscillator: "square" };
+  }
+  if (bank === "chip" && name === "cowbell") {
+    // Matches the two square oscillators used by the Tone drum bank.
+    return { noise: false, frequency: 540, secondFrequency: 800, decay: 0.18, release: 0.03, oscillator: "square", gain: 0.7 };
   }
   const tomFrequency = name === "lowtom" ? 65 : name === "hitom" ? 130 : 95;
   return { noise: false, frequency: tomFrequency, decay: 0.18, release: 0.05, pitchDecay: 0.02, octaves: 2 };
@@ -188,6 +209,10 @@ export class WebAudioBackend implements Synth8AudioBackend {
     if (profile.pitchDecay) {
       voice.oscillator.frequency.exponentialRampToValueAtTime(frequency, start + profile.pitchDecay);
     }
+    if (voice.oscillator2 && profile.secondFrequency !== undefined) {
+      voice.oscillator2.frequency.cancelScheduledValues(start);
+      voice.oscillator2.frequency.setValueAtTime(profile.secondFrequency, start);
+    }
     voice.gain.gain.cancelScheduledValues(start);
     voice.gain.gain.setValueAtTime(0.001, start);
     voice.gain.gain.linearRampToValueAtTime(peak, start + 0.001);
@@ -280,9 +305,14 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const noiseSource = playback.sound === "noise" || noiseDrum;
     for (let index = 0; index < this.maxVoices; index += 1) {
       const oscillator = this.context.createOscillator();
-      oscillator.type = playback.bank === "chip" && !noiseDrum
+      oscillator.type = drum?.oscillator ?? (playback.bank === "chip" && !noiseDrum
         ? "square"
-        : waveform(playback.sound ?? instrument);
+        : waveform(playback.sound ?? instrument));
+      const oscillator2 = drum?.secondFrequency === undefined ? undefined : this.context.createOscillator();
+      if (oscillator2 && drum?.secondFrequency !== undefined) {
+        oscillator2.type = drum.oscillator ?? "square";
+        oscillator2.frequency.value = drum.secondFrequency;
+      }
       const filter = this.context.createBiquadFilter();
       filter.type = noiseDrum || (playback.effects?.highpass !== undefined && playback.effects?.lowpass === undefined)
         ? "highpass"
@@ -348,6 +378,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
         noise.start();
       } else {
         oscillator.connect(filter);
+        oscillator2?.connect(filter);
       }
       filter.connect(gain);
       const vibrato = playback.pitch?.vibratoRate !== undefined ? this.context.createOscillator() : undefined;
@@ -367,7 +398,8 @@ export class WebAudioBackend implements Synth8AudioBackend {
         chorusLfo.start();
       }
       oscillator.start();
-      pool.push({ oscillator, gain, filter, panner, delay, delayGain, delayFeedback, chorusLfo, chorusDepth, convolver, reverbGain, distortion, vibrato, vibratoGain, noise, startedAt: 0, endsAt: 0, active: false });
+      oscillator2?.start();
+      pool.push({ oscillator, oscillator2, gain, filter, panner, delay, delayGain, delayFeedback, chorusLfo, chorusDepth, convolver, reverbGain, distortion, vibrato, vibratoGain, noise, startedAt: 0, endsAt: 0, active: false });
       this.stats.voicesCreated += 1;
     }
     this.pools.set(instrument, pool);
@@ -412,6 +444,8 @@ export class WebAudioBackend implements Synth8AudioBackend {
       for (const voice of pool) {
         voice.oscillator.stop();
         voice.oscillator.disconnect();
+        voice.oscillator2?.stop();
+        voice.oscillator2?.disconnect();
         voice.filter.disconnect();
         voice.gain.disconnect();
         voice.panner.disconnect();

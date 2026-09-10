@@ -349,7 +349,7 @@ chip
 
 `chip` is very short and square-wave-like for tiny retro hits.
 
-Banks are stored on the compiled layer playback config. They do not modify individual events.
+Banks are stored on the compiled layer playback config. They do not modify individual events. The player README documents the native synthesis definitions and Tone.js attribution for each bank; these are synthesized presets, not claims of exact original hardware emulation.
 
 ### Effects
 
