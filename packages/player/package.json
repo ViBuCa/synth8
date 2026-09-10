@@ -1,6 +1,6 @@
 {
   "name": "@vibuca/synth8-player",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
