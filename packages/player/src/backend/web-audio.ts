@@ -2,7 +2,7 @@ import type { PlaybackConfig, Synth8AudioBackend, Synth8Event } from "@vibuca/sy
 import { resolvePlaybackPreset } from "../playback/presets";
 
 export type WebAudioBackendOptions = {
-  context: AudioContext;
+  context: BaseAudioContext;
   bpm?: number;
   maxVoices?: number;
   output?: AudioNode;
@@ -136,7 +136,7 @@ const pitchToFrequency = (pitch: string): number => {
  * implements a small feature set first rather than reproducing Tone.js.
  */
 export class WebAudioBackend implements Synth8AudioBackend {
-  private readonly context: AudioContext;
+  private readonly context: BaseAudioContext;
   private readonly output: AudioNode;
   private readonly outputGain: GainNode;
   private readonly bpm: number;
@@ -165,7 +165,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
   start(): void {
     this.origin = this.context.currentTime;
     this.running = true;
-    void this.context.resume?.();
+    if ("resume" in this.context) void (this.context as AudioContext).resume();
   }
 
   stop(): void {

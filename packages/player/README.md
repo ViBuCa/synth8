@@ -272,8 +272,25 @@ const playback = await prepare(pattern, {
 playback.start();
 ```
 
-This is the experimental path; omitting `backend` preserves the existing Tone
-behavior.
+Native offline rendering is also available independently of the playback
+lifecycle. It uses `OfflineAudioContext` and the same native event backend as
+live playback, which makes it the foundation for removing the remaining Tone
+rendering path:
+
+```ts
+import { renderNative } from "@vibuca/synth8-player";
+
+const buffer = await renderNative(pattern, {
+  bpm: 120,
+  channels: 2,
+  sampleRate: 44100,
+  tail: 0.25,
+});
+```
+
+`renderNativeChunk()` provides the same operation for a rebased time window.
+The native renderer is currently opt-in; the existing Tone-based rendered and
+streamed player paths remain until the migration is complete.
 
 ## Playback modes
 
