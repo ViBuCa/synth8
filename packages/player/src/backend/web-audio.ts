@@ -60,9 +60,10 @@ const eventPlayback = (event: Synth8Event): PlaybackConfig => {
 const distortionCurve = (amount: number): Float32Array<ArrayBuffer> => {
   const curve: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(256 * Float32Array.BYTES_PER_ELEMENT));
   const drive = 1 + amount * 40;
+  const level = 1 - amount * 0.3;
   for (let i = 0; i < curve.length; i++) {
     const x = (i * 2) / (curve.length - 1) - 1;
-    curve[i] = Math.tanh(x * drive);
+    curve[i] = Math.tanh(x * drive) * level;
   }
   return curve;
 };
@@ -279,7 +280,9 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const noiseSource = playback.sound === "noise" || noiseDrum;
     for (let index = 0; index < this.maxVoices; index += 1) {
       const oscillator = this.context.createOscillator();
-      oscillator.type = waveform(playback.sound ?? instrument);
+      oscillator.type = playback.bank === "chip" && !noiseDrum
+        ? "square"
+        : waveform(playback.sound ?? instrument);
       const filter = this.context.createBiquadFilter();
       filter.type = noiseDrum || (playback.effects?.highpass !== undefined && playback.effects?.lowpass === undefined)
         ? "highpass"
@@ -300,8 +303,15 @@ export class WebAudioBackend implements Synth8AudioBackend {
         ? this.context.createGain()
         : undefined;
       if (delay) {
-        delay.delayTime.value = effects.delay ?? (effects.reverb !== undefined || effects.room !== undefined ? 0.32 : 0.18);
-        delayGain!.gain.value = Math.min(0.8, wet ?? 0.15);
+        // Chorus needs a millisecond-scale modulated delay. The old shared
+        // echo-sized delay made native chorus sound like a short repeat
+        // instead of the airy widening produced by Tone.Chorus.
+        delay.delayTime.value = effects.delay ?? (effects.chorus !== undefined
+          ? 0.02
+          : effects.reverb !== undefined || effects.room !== undefined ? 0.32 : 0.18);
+        delayGain!.gain.value = Math.min(0.8, effects.chorus !== undefined
+          ? (effects.chorus ?? 0) * 0.75
+          : wet ?? 0.15);
         gain.connect(delay).connect(delayGain!).connect(this.output);
         if (delayFeedback) {
           delayFeedback.gain.value = Math.min(0.85, effects.echo ?? effects.reverb ?? effects.room ?? 0.2);
