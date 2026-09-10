@@ -10,8 +10,10 @@ export type PreparedPlayback = {
 import type { AudioClock, Synth8AudioBackend } from "@vibuca/synth8-core";
 
 export type PlayOptions = {
-    /** Optional non-Tone backend. Both backend and clock must be supplied. */
+    /** Optional backend for live playback. */
     backend?: Synth8AudioBackend;
+    /** Destination for live playback (defaults to the AudioContext destination). */
+    output?: AudioNode;
     clock?: AudioClock;
     bpm?: number;
     lookAhead?: number;

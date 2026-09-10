@@ -5,8 +5,6 @@ export default defineConfig({
   plugins: [dts()],
   worker: {
     rollupOptions: {
-      // The worker is shipped as a separate module, but Tone must be bundled
-      // into it: consumers do not resolve package imports inside worker URLs.
       external: ["@vibuca/synth8-core"]
     }
   },
@@ -17,7 +15,7 @@ export default defineConfig({
       fileName: "index"
     },
     rollupOptions: {
-      external: ["tone", "@vibuca/synth8-core"]
+      external: ["@vibuca/synth8-core"]
     }
   }
 });

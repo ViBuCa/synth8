@@ -1,330 +1,96 @@
-import * as Tone from "tone";
 import type { Pattern } from "@vibuca/synth8-core";
-import { getLayers } from "./layers";
-import { scheduleLayers } from "./scheduler";
-import { runRender } from "./render-queue";
-import type { WorkerRenderResponse } from "./render-worker";
-
-export type RenderWorkerRequest = {
-    pattern: Pattern;
-    options: RenderOptions;
-    chunk?: { start: number; duration: number; tail?: number };
-};
-
-/** A worker adapter can run the Tone/offline renderer in a worker bundle. */
-export type RenderWorker = {
-    render(request: RenderWorkerRequest): Promise<AudioBuffer>;
-};
+import { renderNative, renderNativeChunk } from "../backend/native-render";
 
 export type RenderOptions = {
-    bpm?: number;
-    cache?: boolean;
-    channels?: number;
-    sampleRate?: number;
-    /** Optional worker adapter. Browsers use the built-in renderer worker by default. */
-    worker?: RenderWorker;
+  bpm?: number;
+  cache?: boolean;
+  channels?: number;
+  sampleRate?: number;
 };
 
 export type RenderChunkOptions = RenderOptions & {
-    start: number;
-    duration: number;
-    tail?: number;
+  start: number;
+  duration: number;
+  tail?: number;
 };
 
-const DEFAULT_BPM = 120;
-const MAX_RENDER_CACHE_ENTRIES = 8;
+const cache = new Map<string, AudioBuffer>();
+const keyFor = (pattern: Pattern, options: RenderOptions): string => JSON.stringify({
+  pattern,
+  bpm: options.bpm ?? 120,
+  channels: options.channels ?? 2,
+  sampleRate: options.sampleRate ?? 44100,
+});
 
-const renderCache = new Map<string, AudioBuffer>();
-
-const renderCacheKey = (
-    pattern: Pattern,
-    bpm: number,
-    channels: number,
-    sampleRate: number
-): string => JSON.stringify({ bpm, channels, sampleRate, pattern });
-
-const rememberRender = (key: string, buffer: AudioBuffer): void => {
-    renderCache.delete(key);
-    renderCache.set(key, buffer);
-
-    while (renderCache.size > MAX_RENDER_CACHE_ENTRIES) {
-        const oldestKey = renderCache.keys().next().value;
-
-        if (oldestKey === undefined) {
-            break;
-        }
-
-        renderCache.delete(oldestKey);
-    }
-};
-
-export const clearRenderCache = (): void => {
-    renderCache.clear();
-};
-
-export const renderToAudioBufferInWorker = async (
-    pattern: Pattern,
-    worker: RenderWorker,
-    options: RenderOptions = {}
-): Promise<AudioBuffer> => runRender(() => worker.render({ pattern, options }));
-
-const audioBufferFromWorker = (response: WorkerRenderResponse): AudioBuffer => {
-    const rawContext = (Tone.getContext() as unknown as { rawContext?: AudioContext }).rawContext;
-    if (!rawContext?.createBuffer) throw new Error("The current audio context cannot create a rendered buffer.");
-    const buffer = rawContext.createBuffer(response.channels, response.length, response.sampleRate);
-    response.data.forEach((channel, index) =>
-        buffer.copyToChannel(channel as unknown as Float32Array<ArrayBuffer>, index)
-    );
-    return buffer;
-};
-
-let builtInWorker: RenderWorker | undefined;
-let workerId = 0;
-
-const getBuiltInWorker = (): RenderWorker | undefined => {
-    if (typeof Worker === "undefined" || typeof URL === "undefined") return undefined;
-    if (builtInWorker) return builtInWorker;
-    const worker = new Worker(new URL("./render-worker.ts", import.meta.url), { type: "module" });
-    const pending = new Map<number, { resolve: (buffer: AudioBuffer) => void; reject: (error: Error) => void }>();
-    worker.onmessage = (event: MessageEvent<WorkerRenderResponse>) => {
-        const request = pending.get(event.data.id);
-        if (!request) return;
-        pending.delete(event.data.id);
-        if (event.data.error) request.reject(new Error(event.data.error));
-        else request.resolve(audioBufferFromWorker(event.data));
-    };
-    worker.onerror = (event) => {
-        const error = new Error(event.message || "Synth8 rendering worker failed.");
-        for (const request of pending.values()) request.reject(error);
-        pending.clear();
-        worker.terminate();
-        builtInWorker = undefined;
-    };
-    builtInWorker = { render: (request) => new Promise((resolve, reject) => {
-        const id = ++workerId;
-        pending.set(id, { resolve, reject });
-        worker.postMessage({ id, pattern: request.pattern, bpm: request.options.bpm ?? DEFAULT_BPM,
-            channels: request.options.channels ?? 2, sampleRate: request.options.sampleRate ?? Tone.getContext().sampleRate,
-            ...request.chunk });
-    }) };
-    return builtInWorker;
-};
+export const clearRenderCache = (): void => cache.clear();
 
 export const renderToAudioBuffer = async (
-    pattern: Pattern,
-    options: RenderOptions = {}
-): Promise<AudioBuffer> => runRender(async () => {
-    const bpm = options.bpm ?? DEFAULT_BPM;
-    const channels = options.channels ?? 2;
-    const sampleRate = options.sampleRate ?? Tone.getContext().sampleRate;
-    const useCache = options.cache ?? true;
-    const cacheKey = useCache
-        ? renderCacheKey(pattern, bpm, channels, sampleRate)
-        : undefined;
-
-    if (cacheKey) {
-        const cached = renderCache.get(cacheKey);
-
-        if (cached) {
-            renderCache.delete(cacheKey);
-            renderCache.set(cacheKey, cached);
-            return cached;
-        }
-    }
-
-    const worker = options.worker ?? getBuiltInWorker();
-    if (worker) {
-        try {
-            const workerBuffer = await worker.render({ pattern, options });
-            if (cacheKey) rememberRender(cacheKey, workerBuffer);
-            return workerBuffer;
-        } catch (error) {
-            if (options.worker) throw error;
-        }
-    }
-
-    const secondsPerBeat = 60 / bpm;
-    const duration = pattern.length * secondsPerBeat;
-    const layers = getLayers(pattern);
-    const buffer = await Tone.Offline(({ transport }) => {
-        const output = new Tone.Gain(1);
-
-        output.toDestination();
-        transport.bpm.value = bpm;
-        scheduleLayers(layers, secondsPerBeat, () => undefined, transport, output);
-        transport.start(0);
-    }, duration, channels, sampleRate);
-    const audioBuffer = buffer.get();
-
-    if (!audioBuffer) {
-        throw new Error("Rendered audio buffer is empty.");
-    }
-
-    if (cacheKey) {
-        rememberRender(cacheKey, audioBuffer);
-    }
-
-    return audioBuffer;
-});
-
-export const renderChunkToAudioBuffer = async (
-    pattern: Pattern,
-    options: RenderChunkOptions
-): Promise<AudioBuffer> => runRender(async () => {
-    const worker = options.worker ?? getBuiltInWorker();
-    if (worker) {
-        try {
-            return await worker.render({ pattern, options, chunk: { start: options.start, duration: options.duration, tail: options.tail } });
-        } catch (error) {
-            if (options.worker) throw error;
-        }
-    }
-    const bpm = options.bpm ?? DEFAULT_BPM;
-    const channels = options.channels ?? 2;
-    const sampleRate = options.sampleRate ?? Tone.getContext().sampleRate;
-    const secondsPerBeat = 60 / bpm;
-    const renderDuration = options.duration + (options.tail ?? 0);
-    const startBeat = options.start / secondsPerBeat;
-    const endBeat = (options.start + options.duration) / secondsPerBeat;
-    const layers = getLayers(pattern).map((layer) => ({
-        playback: layer.playback,
-        events: layer.events
-            .filter((event) => event.time >= startBeat && event.time < endBeat)
-            .map((event) => ({
-                ...event,
-                time: event.time - startBeat,
-            })),
-    }));
-    const buffer = await Tone.Offline(({ transport }) => {
-        const output = new Tone.Gain(1);
-
-        output.toDestination();
-        transport.bpm.value = bpm;
-        scheduleLayers(layers, secondsPerBeat, () => undefined, transport, output);
-        transport.start(0);
-    }, renderDuration, channels, sampleRate);
-    const audioBuffer = buffer.get();
-
-    if (!audioBuffer) {
-        throw new Error("Rendered audio chunk is empty.");
-    }
-
-    return audioBuffer;
-});
-
-/** Copy a rendered buffer into the live context before handing it to a Player. */
-export const normalizeAudioBuffer = (buffer: AudioBuffer): AudioBuffer => {
-    const context = Tone.getContext() as unknown as { rawContext?: AudioContext };
-    const rawContext = context.rawContext;
-    if (!rawContext?.createBuffer) return buffer;
-
-    const normalized = rawContext.createBuffer(
-        buffer.numberOfChannels,
-        buffer.length,
-        buffer.sampleRate
-    );
-    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-        normalized.copyToChannel(buffer.getChannelData(channel), channel);
-    }
-    return normalized;
+  pattern: Pattern,
+  options: RenderOptions = {},
+): Promise<AudioBuffer> => {
+  const key = options.cache === false ? undefined : keyFor(pattern, options);
+  if (key) {
+    const existing = cache.get(key);
+    if (existing) return existing;
+  }
+  const buffer = await renderNative(pattern, options);
+  if (key) {
+    cache.set(key, buffer);
+    while (cache.size > 8) cache.delete(cache.keys().next().value!);
+  }
+  return buffer;
 };
 
+export const renderChunkToAudioBuffer = (
+  pattern: Pattern,
+  options: RenderChunkOptions,
+): Promise<AudioBuffer> => renderNativeChunk(pattern, options.start, options.duration, options);
+
+export const normalizeAudioBuffer = (buffer: AudioBuffer): AudioBuffer => buffer;
+
 const writeString = (view: DataView, offset: number, value: string): void => {
-    for (let index = 0; index < value.length; index++) {
-        view.setUint8(offset + index, value.charCodeAt(index));
-    }
+  for (let index = 0; index < value.length; index += 1) view.setUint8(offset + index, value.charCodeAt(index));
 };
 
 export const encodeWav = (audioBuffer: AudioBuffer): Blob => {
-    const channels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const bytesPerSample = 2;
-    const blockAlign = channels * bytesPerSample;
-    const dataSize = audioBuffer.length * blockAlign;
-    const buffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(buffer);
+  const channels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const blockAlign = channels * 2;
+  const dataSize = audioBuffer.length * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  writeString(view, 0, "RIFF"); view.setUint32(4, 36 + dataSize, true);
+  writeString(view, 8, "WAVE"); writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, channels, true); view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true); view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true); writeString(view, 36, "data"); view.setUint32(40, dataSize, true);
+  let offset = 44;
+  for (let sample = 0; sample < audioBuffer.length; sample += 1) {
+    for (let channel = 0; channel < channels; channel += 1) {
+      const value = Math.max(-1, Math.min(1, audioBuffer.getChannelData(channel)[sample]));
+      view.setInt16(offset, value < 0 ? value * 0x8000 : value * 0x7fff, true);
+      offset += 2;
+    }
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+};
+
+export const renderWav = async (pattern: Pattern, options: RenderOptions = {}): Promise<Blob> =>
+  encodeWav(await renderToAudioBuffer(pattern, options));
+
+export type OggRenderOptions = RenderOptions & { quality?: number };
+
+export const renderOgg = async (pattern: Pattern, options: OggRenderOptions = {}): Promise<Blob> => {
+  const audioBuffer = await renderToAudioBuffer(pattern, options);
+  const { default: ogg } = await import("@audio/encode-ogg");
+  const channels = Array.from({ length: audioBuffer.numberOfChannels }, (_, channel) => audioBuffer.getChannelData(channel));
+  const encoder = await ogg({ sampleRate: audioBuffer.sampleRate, channels: audioBuffer.numberOfChannels, quality: options.quality });
+  try {
+    const pages = [encoder.encode(channels), encoder.flush()];
+    const output = new Uint8Array(pages.reduce((total, page) => total + page.byteLength, 0));
     let offset = 0;
-
-    writeString(view, offset, "RIFF");
-    offset += 4;
-    view.setUint32(offset, 36 + dataSize, true);
-    offset += 4;
-    writeString(view, offset, "WAVE");
-    offset += 4;
-    writeString(view, offset, "fmt ");
-    offset += 4;
-    view.setUint32(offset, 16, true);
-    offset += 4;
-    view.setUint16(offset, 1, true);
-    offset += 2;
-    view.setUint16(offset, channels, true);
-    offset += 2;
-    view.setUint32(offset, sampleRate, true);
-    offset += 4;
-    view.setUint32(offset, sampleRate * blockAlign, true);
-    offset += 4;
-    view.setUint16(offset, blockAlign, true);
-    offset += 2;
-    view.setUint16(offset, bytesPerSample * 8, true);
-    offset += 2;
-    writeString(view, offset, "data");
-    offset += 4;
-    view.setUint32(offset, dataSize, true);
-    offset += 4;
-
-    const channelData = Array.from({ length: channels }, (_, channel) =>
-        audioBuffer.getChannelData(channel)
-    );
-
-    for (let sample = 0; sample < audioBuffer.length; sample++) {
-        for (let channel = 0; channel < channels; channel++) {
-            const value = Math.max(-1, Math.min(1, channelData[channel][sample]));
-            const pcm = value < 0 ? value * 0x8000 : value * 0x7fff;
-
-            view.setInt16(offset, pcm, true);
-            offset += bytesPerSample;
-        }
-    }
-
-    return new Blob([buffer], { type: "audio/wav" });
-};
-
-export const renderWav = async (
-    pattern: Pattern,
-    options: RenderOptions = {}
-): Promise<Blob> => encodeWav(await renderToAudioBuffer(pattern, options));
-
-export type OggRenderOptions = RenderOptions & {
-    /** Vorbis VBR quality from -1 (smallest) to 10 (highest). */
-    quality?: number;
-};
-
-/** Encode a rendered pattern as an Ogg Vorbis Blob. */
-export const renderOgg = async (
-    pattern: Pattern,
-    options: OggRenderOptions = {}
-): Promise<Blob> => {
-    const audioBuffer = await renderToAudioBuffer(pattern, options);
-    const { default: ogg } = await import("@audio/encode-ogg");
-    const channels = Array.from({ length: audioBuffer.numberOfChannels }, (_, channel) =>
-        audioBuffer.getChannelData(channel)
-    );
-    const encoder = await ogg({
-        sampleRate: audioBuffer.sampleRate,
-        channels: audioBuffer.numberOfChannels,
-        quality: options.quality,
-    });
-    try {
-        const pages = [encoder.encode(channels), encoder.flush()];
-        const length = pages.reduce((total, page) => total + page.byteLength, 0);
-        const output = new Uint8Array(length);
-        let offset = 0;
-        for (const page of pages) {
-            output.set(page, offset);
-            offset += page.byteLength;
-        }
-        return new Blob([output.buffer], { type: "audio/ogg; codecs=vorbis" });
-    } finally {
-        encoder.free();
-    }
+    for (const page of pages) { output.set(page, offset); offset += page.byteLength; }
+    return new Blob([output.buffer], { type: "audio/ogg; codecs=vorbis" });
+  } finally { encoder.free(); }
 };

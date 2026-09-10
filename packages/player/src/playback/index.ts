@@ -1,9 +1,4 @@
-export * from './layers';
-export * from './lifecycle';
-export * from './pause';
 export * from './play';
-export * from './resume';
-export * from './stop';
-export * from './synth'
 export * from './render';
+// Kept as compatibility counters for existing diagnostics; no Tone dependency.
 export * from './metrics';
