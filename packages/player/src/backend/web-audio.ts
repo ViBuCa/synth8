@@ -6,6 +6,8 @@ export type WebAudioBackendOptions = {
   bpm?: number;
   maxVoices?: number;
   output?: AudioNode;
+  /** Output calibration against Tone.js' default destination level. */
+  masterGain?: number;
 };
 
 export type WebAudioBackendStats = {
@@ -114,6 +116,7 @@ const pitchToFrequency = (pitch: string): number => {
 export class WebAudioBackend implements Synth8AudioBackend {
   private readonly context: AudioContext;
   private readonly output: AudioNode;
+  private readonly outputGain: GainNode;
   private readonly bpm: number;
   private readonly maxVoices: number;
   private readonly pools = new Map<string, Voice[]>();
@@ -126,7 +129,13 @@ export class WebAudioBackend implements Synth8AudioBackend {
 
   constructor(options: WebAudioBackendOptions) {
     this.context = options.context;
-    this.output = options.output ?? options.context.destination;
+    this.outputGain = options.context.createGain();
+    // Native oscillators and parallel effect sends otherwise measure hotter
+    // than Tone's default destination, especially when many layers overlap.
+    // Keep the value configurable for applications that have their own mixer.
+    this.outputGain.gain.value = Math.max(0, Math.min(1, options.masterGain ?? 0.75));
+    this.outputGain.connect(options.output ?? options.context.destination);
+    this.output = this.outputGain;
     this.bpm = options.bpm ?? 120;
     this.maxVoices = Math.max(1, Math.floor(options.maxVoices ?? 8));
   }
@@ -410,5 +419,6 @@ export class WebAudioBackend implements Synth8AudioBackend {
       }
     }
     this.pools.clear();
+    this.outputGain.disconnect();
   }
 }

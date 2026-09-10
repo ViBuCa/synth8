@@ -242,6 +242,9 @@ const backend = new WebAudioBackend({
   context: audioContext,
   bpm: 120,
   maxVoices: 8,
+  // Native output is calibrated to Tone.js by default.
+  // Set masterGain explicitly when using your own mixer.
+  masterGain: 0.75,
 });
 const scheduler = new Synth8Scheduler(pattern, backend, audioContext, {
   bpm: 120,
