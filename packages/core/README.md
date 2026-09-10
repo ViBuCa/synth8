@@ -258,7 +258,7 @@ Vibrato rate is Hz, depth is normalized from `0` to `1`, and delay/portamento ar
 melody("bb4{accent} f5{staccato} bb5{bend:+2} bb5{mute}/2")
 ```
 
-Supported articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. Staccato and mute shorten playback without changing rhythmic timing; accent is velocity-limited to avoid clipping. Filter envelopes use `.filterEnvelope(start, peak, attack, decay, sustain, release)` and are stored in the compiled layer configuration. Vibrato delay and filter-envelope automation are retained in compiled data; live and rendered Tone playback currently apply the static portion only.
+Supported articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. Staccato and mute shorten playback without changing rhythmic timing; accent is velocity-limited to avoid clipping. Filter envelopes use `.filterEnvelope(start, peak, attack, decay, sustain, release)` and are stored in the compiled layer configuration. Vibrato delay and filter-envelope automation are retained in compiled data; native live and rendered playback currently apply the static portion only.
 
 ### Envelope
 
@@ -349,7 +349,7 @@ chip
 
 `chip` is very short and square-wave-like for tiny retro hits.
 
-Banks are stored on the compiled layer playback config. They do not modify individual events. The player README documents the native synthesis definitions and Tone.js attribution for each bank; these are synthesized presets, not claims of exact original hardware emulation.
+Banks are stored on the compiled layer playback config. They do not modify individual events. The player README documents the native synthesis definitions for each bank; these are synthesized presets, not claims of exact original hardware emulation.
 
 ### Effects
 
@@ -486,7 +486,7 @@ const events = track.query(0, 1);
 ```
 
 The query result contains plain, serializable Synth8 events and does not
-initialize Tone.js or an AudioContext:
+initialize an AudioContext:
 
 ```ts
 type Synth8Event =
@@ -517,8 +517,8 @@ transposition, rates, and loops. Repeating the same query is deterministic;
 adjacent windows do not duplicate events at their shared boundary.
 
 For custom realtime hosts, `Synth8AudioBackend` accepts event batches and
-`Synth8Scheduler` provides a clock-based look-ahead scheduler. Tone.js is one
-possible player backend, not part of the core model.
+`Synth8Scheduler` provides a clock-based look-ahead scheduler. Native Web Audio
+is one player backend, but audio engines are not part of the core model.
 
 `compile()` also returns the compatibility fields used by the player:
 
