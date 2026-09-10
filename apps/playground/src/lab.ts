@@ -1,6 +1,6 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, getTonePlaybackMetrics, pause, play, prepare, renderOgg, renderWav, resetTonePlaybackMetrics, resume, stop, WebAudioBackend } from "@vibuca/synth8-player";
-import type { GameAudio, PlayOptions, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player";
+import { createGameAudio, getPlaybackMetrics, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
+import type { GameAudio, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player"
 import {
   parseMidi,
   midiToSynth8Source,
@@ -224,7 +224,7 @@ const params = new URLSearchParams(window.location.search);
 
 let startupSource = initialSource;
 let startupBpm = 180;
-let startupPlaybackMode: NonNullable<PlayOptions["playbackMode"]> = "auto";
+let startupPlaybackMode: "rendered" | "live" = "rendered";
 
 try {
   const code = params.get("code");
@@ -239,12 +239,7 @@ try {
   }
 
   const playbackMode = params.get("playback");
-  if (
-    playbackMode === "auto" ||
-    playbackMode === "rendered" ||
-    playbackMode === "live" ||
-    playbackMode === "streamed"
-  ) {
+  if (playbackMode === "rendered" || playbackMode === "live") {
     startupPlaybackMode = playbackMode;
   }
 } catch {
@@ -327,15 +322,6 @@ root.innerHTML = `
           <input
             type="radio"
             name="playback-mode"
-            value="auto"
-            ${startupPlaybackMode === "auto" ? "checked" : ""}
-          />
-          Auto
-        </label>
-        <label class="radio-option">
-          <input
-            type="radio"
-            name="playback-mode"
             value="rendered"
             ${startupPlaybackMode === "rendered" ? "checked" : ""}
           />
@@ -349,19 +335,6 @@ root.innerHTML = `
             ${startupPlaybackMode === "live" ? "checked" : ""}
           />
           Live
-        </label>
-        <label class="radio-option">
-          <input
-            type="radio"
-            name="playback-mode"
-            value="streamed"
-            ${startupPlaybackMode === "streamed" ? "checked" : ""}
-          />
-          Streamed
-        </label>
-        <label class="radio-option">
-          <input type="radio" name="playback-mode" value="native" />
-          Native WebAudio (experimental)
         </label>
       </fieldset>
 
@@ -467,9 +440,6 @@ const tabPanels = Array.from(document.querySelectorAll<HTMLElement>(".demo-panel
 
 let gameAudio: GameAudio | undefined;
 let gameMusic: PreparedPlayback | undefined;
-let nativePlayback: PreparedPlayback | undefined;
-let nativeContext: AudioContext | undefined;
-let nativeBackend: WebAudioBackend | undefined;
 const preparedSfx = new Map<GameSfxName, PreparedSfx>();
 
 function selectTab(tab: DemoTab) {
@@ -545,16 +515,13 @@ async function getPreparedSfx(name: GameSfxName): Promise<PreparedSfx> {
   return sfx;
 }
 
-function getPlaybackMode(): NonNullable<PlayOptions["playbackMode"]> | "native" {
+function getPlaybackMode(): "rendered" | "live" {
   const selected = document.querySelector<HTMLInputElement>(
     'input[name="playback-mode"]:checked'
   )?.value;
 
-  if (selected === "rendered" || selected === "live" || selected === "streamed" || selected === "native") {
-    return selected;
-  }
-
-  return "auto";
+  if (selected === "rendered" || selected === "live") return selected;
+  return "rendered";
 }
 
 playButton.addEventListener("click", async () => {
@@ -569,25 +536,9 @@ playButton.addEventListener("click", async () => {
     const bpm = Number(bpmInput.value);
     const playbackMode = getPlaybackMode();
 
-    resetTonePlaybackMetrics();
+    resetPlaybackMetrics();
     setOutput("json", JSON.stringify(pattern, null, 2));
-
-    if (playbackMode === "native") {
-      if (!window.AudioContext) throw new Error("This browser does not provide AudioContext.");
-      nativeContext ??= new window.AudioContext();
-      nativePlayback?.stop();
-      nativeBackend?.dispose();
-      nativeBackend = new WebAudioBackend({ context: nativeContext, bpm, maxVoices: 8 });
-      nativePlayback = await prepare(pattern, {
-        bpm,
-        backend: nativeBackend,
-        clock: nativeContext,
-        playbackMode: "live",
-      });
-      nativePlayback.start();
-    } else {
-      await play(pattern, { bpm, playbackMode });
-    }
+    await play(pattern, { bpm, playbackMode });
 
     setPlaybackStatus(`Playing (${playbackMode}).`);
     output.className = "output output-success";
@@ -615,7 +566,7 @@ benchmarkButton.addEventListener("click", () => {
       queries += 1;
     }
     const queryMs = performance.now() - queryStart;
-    const metrics = getTonePlaybackMetrics();
+    const metrics = getPlaybackMetrics();
     setOutput("json", JSON.stringify({
       compileMs: Number(compileMs.toFixed(3)),
       queryMs: Number(queryMs.toFixed(3)),
@@ -623,8 +574,8 @@ benchmarkButton.addEventListener("click", () => {
       events,
       eventsPerBeat: Number((events / duration).toFixed(2)),
       layers: pattern.layers.length,
-      tone: metrics,
-      note: "Tone counters describe the last playback preparation; run Play first for backend metrics."
+      playback: metrics,
+      note: "Playback counters describe the last preparation; run Play first for backend metrics."
     }, null, 2));
   } catch (error) {
     setOutput("error", error instanceof Error ? error.message : String(error));
@@ -632,7 +583,6 @@ benchmarkButton.addEventListener("click", () => {
 });
 
 document.querySelector<HTMLButtonElement>("#stop")!.addEventListener("click", () => {
-  nativePlayback?.stop();
   stop();
   setPlaybackStatus("Stopped.");
   setOutput("info", "Stopped.");
@@ -716,7 +666,7 @@ gameMusicButton.addEventListener("click", async () => {
   try {
     gameMusicButton.disabled = true;
     gameMusicButton.textContent = "Preparing...";
-    setGameAudioStatus("Preparing streamed game music...", true);
+    setGameAudioStatus("Preparing native game music...", true);
 
     const audio = await getGameAudio();
     const pattern = compile(sourceInput.value);

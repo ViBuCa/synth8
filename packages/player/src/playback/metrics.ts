@@ -1,4 +1,4 @@
-export type TonePlaybackMetrics = {
+export type PlaybackMetrics = {
   layerCount: number;
   synthCount: number;
   drumVoiceCount: number;
@@ -7,7 +7,7 @@ export type TonePlaybackMetrics = {
   scheduleCallbackCount: number;
 };
 
-const metrics: TonePlaybackMetrics = {
+const metrics: PlaybackMetrics = {
   layerCount: 0,
   synthCount: 0,
   drumVoiceCount: 0,
@@ -16,15 +16,12 @@ const metrics: TonePlaybackMetrics = {
   scheduleCallbackCount: 0,
 };
 
-export const resetTonePlaybackMetrics = (): void => {
-  for (const key of Object.keys(metrics) as Array<keyof TonePlaybackMetrics>) metrics[key] = 0;
+export const resetPlaybackMetrics = (): void => {
+  for (const key of Object.keys(metrics) as Array<keyof PlaybackMetrics>) metrics[key] = 0;
 };
 
-export const getTonePlaybackMetrics = (): TonePlaybackMetrics => ({ ...metrics });
+export const getPlaybackMetrics = (): PlaybackMetrics => ({ ...metrics });
 
-export const recordTonePlaybackMetric = <K extends keyof TonePlaybackMetrics>(
-  key: K,
-  amount = 1,
-): void => {
+export const recordPlaybackMetric = <K extends keyof PlaybackMetrics>(key: K, amount = 1): void => {
   metrics[key] += amount;
 };

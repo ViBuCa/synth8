@@ -59,7 +59,7 @@ loading scene), then preload or play them by key:
 
 ```ts
 this.synth8.registerTrack("menu", `song(melody("c4 e4 g4").loop())`, {
-  bpm: 120, playbackMode: "rendered", // "live" | "streamed" | "rendered"
+  bpm: 120, playbackMode: "rendered", // "live" | "rendered"
 });
 await this.synth8.preload("menu");
 await this.synth8.playTrack("menu");
@@ -111,14 +111,13 @@ boundary:
 ```ts
 const next = await this.synth8.playMusic(source, {
   bpm: 150,
-  playbackMode: "streamed",
+  playbackMode: "rendered",
 });
 ```
 
-Streamed mode can begin after its first short chunk while later chunks render;
-rendered mode must render a new complete buffer. Do not modify Tone.Transport
-directly, because rendered and streamed playback use their own clocks. A
-future tempo API will coordinate tempo changes across all backends.
+Rendered mode prepares a complete native Web Audio buffer before starting.
+Live mode uses the native event scheduler. Do not access the underlying audio
+nodes directly; the plugin owns their lifecycle.
 
 ## Pause and resume music
 

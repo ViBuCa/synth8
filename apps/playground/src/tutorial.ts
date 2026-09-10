@@ -1,6 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { prepare, play, stop, WebAudioBackend } from "@vibuca/synth8-player";
-import type { PreparedPlayback } from "@vibuca/synth8-player";
+import { play, stop } from "@vibuca/synth8-player";
 
 type TutorialExample = {
   title: string;
@@ -10,13 +9,8 @@ type TutorialExample = {
   bpm?: number;
 };
 
-let nativeContext: AudioContext | undefined;
-let nativeBackend: WebAudioBackend | undefined;
-let nativePlayback: PreparedPlayback | undefined;
-
 const stopAllPlayback = (): void => {
   stop();
-  nativePlayback?.stop();
 };
 
 const tutorialExamples: TutorialExample[] = [
@@ -284,8 +278,7 @@ export function renderTutorial(root: HTMLElement) {
               </label>
               <fieldset class="tutorial-backend">
                 <legend>Backend</legend>
-                <label><input class="tutorial-tone-check" type="checkbox" checked /> Tone.js streamed</label>
-                <label><input class="tutorial-native-check" type="checkbox" /> Native WebAudio</label>
+                <span>Native Web Audio</span>
               </fieldset>
               <button id="tutorial-play" class="play" type="button">Play</button>
               <button id="tutorial-stop" class="stop" type="button">Stop</button>
@@ -309,18 +302,7 @@ export function renderTutorial(root: HTMLElement) {
     const bpmInput = card.querySelector<HTMLInputElement>(".tutorial-bpm-input")!;
     const playButton = card.querySelector<HTMLButtonElement>("#tutorial-play")!;
     const stopButton = card.querySelector<HTMLButtonElement>("#tutorial-stop")!;
-    const toneCheck = card.querySelector<HTMLInputElement>(".tutorial-tone-check")!;
-    const nativeCheck = card.querySelector<HTMLInputElement>(".tutorial-native-check")!;
     const status = card.querySelector<HTMLDivElement>(".tutorial-status")!;
-
-    const selectedBackend = (): "tone" | "native" => nativeCheck.checked ? "native" : "tone";
-    toneCheck.addEventListener("change", () => {
-      if (toneCheck.checked) nativeCheck.checked = false;
-    });
-    nativeCheck.addEventListener("change", () => {
-      if (nativeCheck.checked) toneCheck.checked = false;
-      if (!nativeCheck.checked && !toneCheck.checked) toneCheck.checked = true;
-    });
 
     playButton.addEventListener("click", async () => {
       try {
@@ -332,23 +314,8 @@ export function renderTutorial(root: HTMLElement) {
         const pattern = compile(editor.value);
         const bpm = Number(bpmInput.value);
 
-        if (selectedBackend() === "native") {
-          if (!window.AudioContext) throw new Error("This browser does not provide AudioContext.");
-          nativeContext ??= new window.AudioContext();
-          nativeBackend?.dispose();
-          nativeBackend = new WebAudioBackend({ context: nativeContext, bpm, maxVoices: 8 });
-          nativePlayback = await prepare(pattern, {
-            bpm,
-            backend: nativeBackend,
-            clock: nativeContext,
-            playbackMode: "live",
-          });
-          nativePlayback.start();
-        } else {
-          await play(pattern, { bpm, playbackMode: "streamed" });
-        }
-
-        status.textContent = `Playing (${selectedBackend() === "native" ? "Native WebAudio" : "Tone.js streamed"}).`;
+        await play(pattern, { bpm, playbackMode: "rendered" });
+        status.textContent = "Playing (Native Web Audio).";
       } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
       } finally {

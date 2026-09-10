@@ -56,12 +56,11 @@ Unlike many live-coding environments, Synth8 is designed from the ground up for 
 
 ### Audio Playback
 
-* Tone.js based playback engine
-* Drum synthesizers and selectable drum banks
+* Native Web Audio playback engine
+* Drum synthesis and selectable drum banks
 * Polyphonic note playback, including white-noise voices
-* Auto playback mode that avoids expensive pre-renders for dense songs
-* Rendered loop playback for stable small/medium loops
-* Optional live scheduling mode for interactive playback
+* Native rendered loop playback
+* Optional native live scheduling mode for interactive playback
 * Prepare/start flow for game loading screens
 * Pause, resume and stop controls
 
@@ -96,7 +95,7 @@ resume();
 stop();
 ```
 
-By default, playback uses `playbackMode: "auto"`. Small and medium patterns are pre-rendered into a looping audio buffer. Dense patterns use live playback to avoid long loading pauses.
+By default, playback uses native rendered mode and prepares a looping audio buffer. Use live mode when immediate event scheduling is more appropriate.
 
 For game loading screens, prepare music first and start it when the level begins:
 
@@ -109,13 +108,13 @@ music.start();
 startLevel();
 ```
 
-For more immediate live synthesis, pass `playbackMode: "live"`:
+For native live synthesis, pass `playbackMode: "live":
 
 ```ts
 await play(pattern, { bpm: 120, playbackMode: "live" });
 ```
 
-The playground includes a playback mode switch so auto, rendered and live playback can be compared in the browser.
+The playground lets you compare native rendered and native live playback in the browser.
 
 ## LLM Composer Guide
 
@@ -126,7 +125,7 @@ If you want an LLM to compose Synth8 music for you, copy the prompt/reference in
 | Package                    | Description                           |
 | -------------------------- | ------------------------------------- |
 | @vibuca/synth8-core        | Parser, AST and compiler              |
-| @vibuca/synth8-player      | Tone.js playback engine               |
+| @vibuca/synth8-player      | Native Web Audio playback and rendering |
 | @vibuca/synth8-import-midi | Midi importer for synth8              |
 | Playground                 | Browser-based development environment |
 
@@ -151,7 +150,7 @@ Implemented:
 * Drum banks
 * Layer effects
 * Gain
-* Tone.js player
+* Native Web Audio player
 * Drum synthesizers
 * Test suite
 * Panning
