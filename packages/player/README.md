@@ -289,8 +289,21 @@ const buffer = await renderNative(pattern, {
 ```
 
 `renderNativeChunk()` provides the same operation for a rebased time window.
-The native renderer is currently opt-in; the existing Tone-based rendered and
-streamed player paths remain until the migration is complete.
+A rendered native buffer can be played and looped without Tone as well:
+
+```ts
+import { prepareNativeRendered } from "@vibuca/synth8-player";
+
+const playback = await prepareNativeRendered(pattern, {
+  context: audioContext,
+  bpm: 120,
+});
+playback.start();
+```
+
+The native renderer and buffer lifecycle are currently opt-in; the existing
+Tone-based rendered and streamed player paths remain until the migration is
+complete.
 
 ## Playback modes
 
