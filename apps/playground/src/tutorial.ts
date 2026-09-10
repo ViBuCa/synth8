@@ -276,10 +276,6 @@ export function renderTutorial(root: HTMLElement) {
                 <span>BPM</span>
                 <input class="tutorial-bpm-input" type="number" min="40" max="240" value="${example.bpm ?? 120}" />
               </label>
-              <fieldset class="tutorial-backend">
-                <legend>Backend</legend>
-                <span>Native Web Audio</span>
-              </fieldset>
               <button id="tutorial-play" class="play" type="button">Play</button>
               <button id="tutorial-stop" class="stop" type="button">Stop</button>
             </div>
