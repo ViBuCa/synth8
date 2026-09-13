@@ -225,6 +225,9 @@ importers:
       '@vibuca/synth8-core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@vibuca/synth8-editor':
+        specifier: workspace:*
+        version: link:../../packages/editor
       '@vibuca/synth8-import-midi':
         specifier: workspace:*
         version: link:../../packages/import-midi
@@ -258,6 +261,15 @@ importers:
         version: 8.2.1(esbuild@0.27.7)
 
   packages/core: {}
+
+  packages/editor:
+    dependencies:
+      '@vibuca/synth8-core':
+        specifier: workspace:*
+        version: link:../core
+      '@vibuca/synth8-player':
+        specifier: workspace:*
+        version: link:../player
 
   packages/import-midi:
     dependencies:

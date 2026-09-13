@@ -1,6 +1,6 @@
 import './style.css';
 
-type View = "home" | "lab" | "tutorial";
+type View = "home" | "lab" | "editor" | "tutorial";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -28,6 +28,7 @@ function renderShell(view: View, content: string) {
         <button class="brand-button" type="button" data-view="home">Synth8</button>
         <nav class="main-nav" aria-label="Main">
           <button class="nav-button ${view === "lab" ? "is-active" : ""}" type="button" data-view="lab">Laboratory</button>
+          <button class="nav-button ${view === "editor" ? "is-active" : ""}" type="button" data-view="editor">Editor (preview)</button>
           <button class="nav-button ${view === "tutorial" ? "is-active" : ""}" type="button" data-view="tutorial">Tutorial</button>
         </nav>
       </header>
@@ -52,6 +53,7 @@ function renderHome(error?: string) {
       </div>
       <div class="landing-actions">
         <button class="landing-action primary" type="button" data-view="lab">Open Laboratory</button>
+        <button class="landing-action" type="button" data-view="editor">Try the Editor</button>
         <button class="landing-action" type="button" data-view="tutorial">Start Tutorial</button>
       </div>
       ${error ? `<pre class="output output-error">${escapeHtml(error)}</pre>` : ""}
@@ -82,6 +84,13 @@ async function navigate(view: View) {
       return;
     }
 
+    if (view === "editor") {
+      const { mountSynth8Editor } = await import("@vibuca/synth8-editor");
+      renderShell("editor", `<h1> Synth8 Editor</h1><p class="lead">A first clickable piano-roll experiment.</p><div id="editor-mount"></div>`);
+      mountSynth8Editor(document.querySelector("#editor-mount")!, { bpm: 120 });
+      return;
+    }
+
     if (view === "tutorial") {
       const { renderTutorial } = await import("./tutorial");
       renderTutorial(app);
@@ -101,7 +110,7 @@ app.addEventListener("click", (event) => {
 
   const nextView = button.dataset.view;
 
-  if (nextView === "home" || nextView === "lab" || nextView === "tutorial") {
+  if (nextView === "home" || nextView === "lab" || nextView === "editor" || nextView === "tutorial") {
     void navigate(nextView);
   }
 });

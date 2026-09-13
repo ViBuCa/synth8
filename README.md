@@ -126,7 +126,8 @@ If you want an LLM to compose Synth8 music for you, copy the prompt/reference in
 | -------------------------- | ------------------------------------- |
 | @vibuca/synth8-core        | Parser, AST and compiler              |
 | @vibuca/synth8-player      | Native Web Audio playback and rendering |
-| @vibuca/synth8-import-midi | Midi importer for synth8              |
+| @vibuca/synth8-import-midi | MIDI importer for Synth8              |
+| @vibuca/synth8-editor      | Small browser piano-roll editor       |
 | Playground                 | Browser-based development environment |
 
 ## Current Status
@@ -157,9 +158,10 @@ Implemented:
 * Instrument banks
 * Effects
 * MIDI export
+* First browser piano-roll editor preview
 
 Planned:
 
-* Editor package
+* Full editor package
 * Phaser examples
 * Procedural composition helpers

@@ -6,7 +6,8 @@
   "dependencies": {
     "@vibuca/synth8-core": "workspace:*",
     "@vibuca/synth8-player": "workspace:*",
-    "@vibuca/synth8-import-midi": "workspace:*"
+    "@vibuca/synth8-import-midi": "workspace:*",
+    "@vibuca/synth8-editor": "workspace:*"
   },
   "scripts": {
     "dev": "vite",

@@ -1,0 +1,22 @@
+{
+  "name": "@vibuca/synth8-editor",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@vibuca/synth8-core": "workspace:*",
+    "@vibuca/synth8-player": "workspace:*"
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "files": ["dist", "README.md", "LICENSE"]
+}

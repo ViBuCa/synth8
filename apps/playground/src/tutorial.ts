@@ -250,6 +250,7 @@ export function renderTutorial(root: HTMLElement) {
         <button class="brand-button" type="button" data-view="home">Synth8</button>
         <nav class="main-nav" aria-label="Main">
           <button class="nav-button" type="button" data-view="lab">Laboratory</button>
+          <button class="nav-button" type="button" data-view="editor">Editor (preview)</button>
           <button class="nav-button is-active" type="button" data-view="tutorial">Tutorial</button>
         </nav>
       </header>

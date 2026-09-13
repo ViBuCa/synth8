@@ -5,6 +5,7 @@ import {
   parseMidi,
   midiToSynth8Source,
 } from "@vibuca/synth8-import-midi";
+import { downloadSynth8Source, getSynth8FileMetadata, readSynth8Source } from "@vibuca/synth8-editor";
 
 export function renderLab(root: HTMLElement) {
 type OutputKind = "info" | "success" | "error" | "json";
@@ -252,6 +253,7 @@ root.innerHTML = `
       <button class="brand-button" type="button" data-view="home">Synth8</button>
       <nav class="main-nav" aria-label="Main">
         <button class="nav-button is-active" type="button" data-view="lab">Laboratory</button>
+        <button class="nav-button" type="button" data-view="editor">Editor (preview)</button>
         <button class="nav-button" type="button" data-view="tutorial">Tutorial</button>
       </nav>
     </header>
@@ -284,6 +286,11 @@ root.innerHTML = `
     .join("")}
     </div>
     <textarea id="source" rows="6">${startupSource}</textarea>
+    <div class="examples" aria-label="Song file operations">
+      <button id="export-song" type="button">Export .synth8</button>
+      <label for="import-song">Import .synth8</label>
+      <input id="import-song" type="file" accept=".synth8,.txt,text/plain" />
+    </div>
 
     <label for="bpm">BPM</label>
     <input id="bpm" type="number" value="${startupBpm}" min="40" max="240" />
@@ -793,6 +800,25 @@ document.querySelector<HTMLButtonElement>("#share")!.addEventListener("click", a
   await navigator.clipboard.writeText(url.toString());
 
   output.textContent = "Share link copied to clipboard.";
+});
+
+document.querySelector<HTMLButtonElement>("#export-song")!.addEventListener("click", () => {
+  const pattern = compile(sourceInput.value);
+  const length = Math.max(pattern.length, ...pattern.events.map((event) => event.time + event.dur));
+  downloadSynth8Source(sourceInput.value, "song.synth8", { bpm: Number(bpmInput.value), length });
+});
+
+document.querySelector<HTMLInputElement>("#import-song")!.addEventListener("change", async (event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  try {
+    sourceInput.value = await readSynth8Source(file);
+    const metadata = getSynth8FileMetadata(sourceInput.value);
+    if (metadata.bpm !== undefined) bpmInput.value = String(metadata.bpm);
+    setOutput("success", `Imported ${file.name}.`);
+  } catch (error) {
+    setOutput("error", error instanceof Error ? error.message : String(error));
+  }
 });
 
 const midiInput =
