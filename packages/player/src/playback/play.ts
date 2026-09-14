@@ -46,8 +46,12 @@ export const prepare = async (pattern: Pattern, options: PlayOptions = {}): Prom
 };
 
 export const play = async (pattern: Pattern, options: PlayOptions = {}): Promise<void> => {
+  // Tear down the previous graph before doing expensive offline rendering.
+  // Otherwise replaying a song briefly keeps both audio graphs alive and can
+  // exhaust browser audio resources on large compositions.
+  activePlayback?.dispose();
+  activePlayback = undefined;
   const playback = await prepare(pattern, options);
-  activePlayback?.stop();
   activePlayback = playback;
   await options.onReady?.(playback);
   playback.start();
@@ -55,4 +59,4 @@ export const play = async (pattern: Pattern, options: PlayOptions = {}): Promise
 
 export const pause = (): void => activePlayback?.pause();
 export const resume = (): void => activePlayback?.resume();
-export const stop = (): void => { activePlayback?.stop(); activePlayback = undefined; };
+export const stop = (): void => { activePlayback?.dispose(); activePlayback = undefined; };

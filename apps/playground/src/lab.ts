@@ -5,7 +5,7 @@ import {
   parseMidi,
   midiToSynth8Source,
 } from "@vibuca/synth8-import-midi";
-import { downloadSynth8Source, getSynth8FileMetadata, readSynth8Source } from "@vibuca/synth8-editor";
+import { DEFAULT_SONG_SOURCE, downloadSynth8Source, getSynth8FileMetadata, readSynth8Source } from "@vibuca/synth8-editor";
 
 export function renderLab(root: HTMLElement) {
 type OutputKind = "info" | "success" | "error" | "json";
@@ -223,8 +223,8 @@ function decodeSource(encoded: string): string {
 
 const params = new URLSearchParams(window.location.search);
 
-let startupSource = initialSource;
-let startupBpm = 180;
+let startupSource = DEFAULT_SONG_SOURCE;
+let startupBpm = 90;
 let startupPlaybackMode: "rendered" | "live" = "rendered";
 
 try {
