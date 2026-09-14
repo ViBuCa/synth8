@@ -46,8 +46,9 @@ function installStyle() {
     .s8-transport-play { border-color:#50fa7b !important; } .s8-transport-pause { border-color:#f1fa8c !important; }
     .s8-transport-resume { border-color:#8be9fd !important; } .s8-transport-stop { border-color:#ff5555 !important; }
     .s8-value { color:#f1fa8c; font-variant-numeric:tabular-nums; }
-    .s8-global-controls { align-items:stretch; }
-    .s8-global-controls > .s8-control-group:first-child { flex-direction:column; align-items:stretch; min-width:92px; }
+    .s8-global-controls { flex-direction:column; align-items:stretch; }
+    .s8-global-controls > .s8-control-group:first-child { flex-direction:row; align-items:center; min-width:0; }
+    .s8-global-controls > .s8-control-group:first-child .s8-control-group-title { width:auto; margin-right:4px; }
     .s8-global-controls > .s8-control-group:first-child .s8-control-group-title { width:auto; }
     .s8-instrument-controls { align-items:stretch; gap:12px; }
     .s8-control-section { display:flex; flex-direction:column; gap:7px; padding:6px 10px; border-left:1px solid #44475a; }
@@ -164,6 +165,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   let activeDrumTrack = 0;
   let positionSeconds = 0;
   let positionTimer: number | undefined;
+  let isPlaying = false;
+  let isPaused = false;
 
   const container = document.createElement("section");
   container.className = "s8-editor";
@@ -181,7 +184,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     if (grid) grid.style.setProperty("--playhead", `${position / Math.max(0.001, length) * Math.max(0, grid.scrollWidth - 52)}px`);
   };
   const stopPosition = () => { if (positionTimer !== undefined) window.clearInterval(positionTimer); positionTimer = undefined; };
-  const startPosition = () => { stopPosition(); positionTimer = window.setInterval(() => { positionSeconds += 0.1; if (positionSeconds >= songLengthSeconds()) positionSeconds = loopEnabled ? loopStart * 60 / bpm : songLengthSeconds(); updatePositionView(); }, 100); };
+  const startPosition = () => { stopPosition(); positionTimer = window.setInterval(() => { positionSeconds += 0.1; if (positionSeconds >= songLengthSeconds()) { if (loopEnabled) positionSeconds = loopStart * 60 / bpm; else { positionSeconds = songLengthSeconds(); isPlaying = false; isPaused = false; stopPosition(); } } updatePositionView(); render(); }, 100); };
 
   const melodySource = (melody: Melody) => {
     const melodyNotes = melody.notes;
@@ -248,7 +251,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     }
     melodies = importedMelodies.length ? importedMelodies : [{ name: "Melody 1", notes: [], sound: "square", gain: 0.8, pan: 0, echo: 0, reverb: 0, cutoff: 20000, resonance: 0, envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.2 } }];
     drumTracks = importedDrums.length ? importedDrums : [{ name: "Drums 1", hits: [], bank: "default", gain: 0.8, pan: 0, echo: 0, reverb: 0 }];
-    activeMelody = 0; activeDrumTrack = 0; notes = melodies[0].notes; columns = Math.max(1, Math.min(128, Math.ceil(metadata.length ?? end)));
+    activeMelody = 0; activeDrumTrack = 0; notes = melodies[0].notes; columns = Math.max(1, Math.min(128, Math.ceil(end)));
     history = [snapshot()]; historyIndex = 0;
     render();
   };
@@ -259,8 +262,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     const pitches = visiblePitches(topOctave);
     const generated = source();
     container.innerHTML = `<h2>Sketch Editor</h2><p>Choose a track type below. Click to add/remove. Drag melody notes to move them; drag their right edge to resize.</p>
-      <div class="s8-editor-toolbar s8-editor-tabs"><button data-tab="melody" class="${editorTab === "melody" ? "is-active" : ""}">Melodies</button><button data-tab="drums" class="${editorTab === "drums" ? "is-active" : ""}">Drums</button></div>
-      <div class="s8-editor-toolbar s8-global-controls"><div class="s8-control-group"><span class="s8-control-group-title">Transport</span><button class="s8-icon-button s8-transport-play" data-action="play" title="Start the song"><span class="s8-icon">▶</span>Play</button><button class="s8-icon-button s8-transport-pause" data-action="pause" title="Temporarily pause the song"><span class="s8-icon">Ⅱ</span>Pause</button><button class="s8-icon-button s8-transport-resume" data-action="resume" title="Continue the paused song"><span class="s8-icon">▶|</span>Resume</button><button class="s8-icon-button s8-transport-stop" data-action="stop" title="Stop and reset the song"><span class="s8-icon">■</span>Stop</button><button data-action="clear" title="Clear the active track"><span class="s8-icon">⌫</span>Clear track</button><button data-action="undo" title="Undo">↶ Undo</button><button data-action="redo" title="Redo">↷ Redo</button></div><div class="s8-control-group s8-song-controls"><span class="s8-control-group-title">Song</span><div class="s8-song-metrics"><span class="s8-value" data-current-beat>Beat 1</span><span>Position <strong class="s8-value" data-position>0.0s</strong></span><span>Duration <strong class="s8-value" data-song-length>${(columns * 60 / bpm).toFixed(1)}s</strong></span></div><div class="s8-song-timing"><label>BPM <input data-bpm type="number" min="40" max="240" value="${bpm}" style="width:60px"></label><label>Length <input data-columns type="number" min="1" max="128" value="${columns}" style="width:60px"> beats</label></div><div class="s8-song-loop"><label><input data-loop type="checkbox" ${loopEnabled ? "checked" : ""}> Loop playback</label><label>From <input data-loop-start type="number" min="0" max="${columns}" value="${loopStart}" style="width:48px"></label><label>To <input data-loop-end type="number" min="1" max="${columns}" value="${loopEnd}" style="width:48px"></label></div><label>Master volume <input data-master-gain type="range" min="0" max="1" step="0.05" value="${masterGain}"></label></div></div>
+      <div class="s8-editor-toolbar s8-editor-tabs"><button data-tab="melody" class="${editorTab === "melody" ? "is-active" : ""}">Melodies</button><button data-tab="drums" class="${editorTab === "drums" ? "is-active" : ""}">Drums</button><button data-action="clear" title="Clear the active track">Clear track</button><button data-action="undo" title="Undo" ${historyIndex <= 0 ? "disabled" : ""}>↶ Undo</button><button data-action="redo" title="Redo" ${historyIndex + 1 >= history.length ? "disabled" : ""}>↷ Redo</button></div>
+      <div class="s8-editor-toolbar s8-global-controls"><div class="s8-control-group"><span class="s8-control-group-title">Transport</span><button class="s8-icon-button s8-transport-play" data-action="play" title="Start the song" ${isPlaying ? "disabled" : ""}><span class="s8-icon">▶</span>Play</button><button class="s8-icon-button s8-transport-pause" data-action="pause-resume" title="Pause or resume the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">${isPaused ? "▶" : "Ⅱ"}</span>${isPaused ? "Resume" : "Pause"}</button><button class="s8-icon-button s8-transport-stop" data-action="stop" title="Stop and reset the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">■</span>Stop</button></div><div class="s8-control-group s8-song-controls"><span class="s8-control-group-title">Song</span><div class="s8-song-metrics"><span class="s8-value" data-current-beat>Beat 1</span><span>Position <strong class="s8-value" data-position>0.0s</strong></span><span>Duration <strong class="s8-value" data-song-length>${(columns * 60 / bpm).toFixed(1)}s</strong></span></div><div class="s8-song-timing"><label>BPM <input data-bpm type="number" min="40" max="240" value="${bpm}" style="width:60px"></label><label>Length <input data-columns type="number" min="1" max="128" value="${columns}" style="width:60px"> beats</label></div><div class="s8-song-loop"><label><input data-loop type="checkbox" ${loopEnabled ? "checked" : ""}> Loop playback</label><label>From <input data-loop-start type="number" min="0" max="${columns}" value="${loopStart}" style="width:48px"></label><label>To <input data-loop-end type="number" min="1" max="${columns}" value="${loopEnd}" style="width:48px"></label></div><label>Master volume <input data-master-gain type="range" min="0" max="1" step="0.05" value="${masterGain}"></label></div></div>
       <div class="melody-section" ${editorTab === "melody" ? "" : "hidden"}><div class="s8-editor-toolbar s8-editor-melodies"><strong>Melodies:</strong>${melodies.map((melody, index) => `<button data-melody="${index}" class="${index === activeMelody ? "is-active" : ""}">${melody.name}</button>`).join("")}<button data-action="new-melody">+ New melody</button><button data-action="duplicate-melody">Duplicate</button><button data-action="delete-melody">Delete</button><label>Name <input data-melody-name value="${melodies[activeMelody].name.replace(/"/g, "&quot;")}" style="width:110px"></label></div>
       <div class="s8-pitch-toolbar"><div class="s8-octave-stepper"><button data-action="octave-up" ${topOctave >= 8 ? "disabled" : ""} title="Show higher pitches">▲ Higher</button><strong>${noteName(pitches[pitches.length - 1])}–${noteName(pitches[0])}</strong><button data-action="octave-down" ${topOctave <= 1 ? "disabled" : ""} title="Show lower pitches">▼ Lower</button></div><div class="s8-song-overview" title="Song overview: pink is the time viewport, cyan is the pitch viewport" style="grid-template-columns:repeat(${Math.min(columns, 64)},1fr);grid-template-rows:repeat(73,1fr)">${Array.from({ length: 73 }, (_, row) => { const midi = 96 - row; return Array.from({ length: Math.min(columns, 64) }, (_, column) => { const start = Math.floor(column * columns / Math.min(columns, 64)); const end = Math.max(start + 1, Math.floor((column + 1) * columns / Math.min(columns, 64))); const hasNote = notes.some((note) => note.pitch === midi && note.start < end && note.start + note.duration > start); const inY = midi >= pitches[pitches.length - 1] && midi <= pitches[0]; return `<span class="s8-song-overview-cell ${inY ? "in-y " : ""}${hasNote ? "has-note" : ""}" data-overview-column="${column}" data-overview-midi="${midi}"></span>`; }).join(""); }).join("")}<span class="s8-song-overview-viewport" style="left:${Math.min(100, timeViewStart / Math.max(1, columns) * 100)}%;width:${Math.min(100, Math.min(columns, 32) / Math.max(1, columns) * 100)}%"></span><span class="s8-song-overview-y-viewport" style="top:${(96 - pitches[0]) / 73 * 100}%;height:${pitches.length / 73 * 100}%"></span></div></div>
       <div class="s8-editor-toolbar s8-instrument-controls">
@@ -455,9 +458,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelector<HTMLButtonElement>('[data-action="duplicate-drum"]')?.addEventListener("click", () => { markEdited(); drumTracks.splice(activeDrumTrack + 1, 0, { ...drumTracks[activeDrumTrack], name: `${drumTracks[activeDrumTrack].name} copy`, hits: drumTracks[activeDrumTrack].hits.map((hit) => ({ ...hit })) }); activeDrumTrack++; render(); });
     container.querySelector<HTMLButtonElement>('[data-action="delete-drum"]')?.addEventListener("click", () => { if (drumTracks.length <= 1) return; markEdited(); drumTracks.splice(activeDrumTrack, 1); activeDrumTrack = Math.max(0, activeDrumTrack - 1); render(); });
     container.querySelector<HTMLSelectElement>("[data-quantize]")!.addEventListener("change", (event) => { const step = Number((event.target as HTMLSelectElement).value); markEdited(); notes = notes.map((note) => ({ ...note, start: Math.round(note.start / step) * step, duration: Math.max(step, Math.round(note.duration / step) * step) })); render(); });
-    container.querySelector<HTMLButtonElement>('[data-action="pause"]')!.addEventListener("click", () => { pause(); stopPosition(); });
-    container.querySelector<HTMLButtonElement>('[data-action="resume"]')!.addEventListener("click", () => { resume(); startPosition(); });
-    container.querySelector<HTMLButtonElement>('[data-action="stop"]')!.addEventListener("click", () => { stop(); stopPosition(); positionSeconds = 0; updatePositionView(); });
+    container.querySelector<HTMLButtonElement>('[data-action="pause-resume"]')!.addEventListener("click", () => { if (isPaused) { resume(); isPlaying = true; isPaused = false; startPosition(); } else { pause(); isPlaying = false; isPaused = true; stopPosition(); } render(); });
+    container.querySelector<HTMLButtonElement>('[data-action="stop"]')!.addEventListener("click", () => { stop(); stopPosition(); positionSeconds = 0; isPlaying = false; isPaused = false; render(); updatePositionView(); });
     container.querySelector<HTMLButtonElement>('[data-action="export-song"]')!.addEventListener("click", () => downloadSynth8Source(container.querySelector<HTMLTextAreaElement>("[data-song-source]")!.value, "song.synth8", { bpm, length: columns }));
     container.querySelector<HTMLInputElement>("[data-import-song]")!.addEventListener("change", async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
@@ -469,7 +471,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       bpm = Number(container.querySelector<HTMLInputElement>("[data-bpm]")!.value) || 120;
       const sourceToPlay = importedPlaybackSource ?? container.querySelector<HTMLTextAreaElement>("[data-song-source]")!.value;
       await play(compile(sourceToPlay), { bpm });
-      positionSeconds = 0; updatePositionView(); startPosition();
+      positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
     });
     updatePositionView();
   };
