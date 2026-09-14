@@ -65,8 +65,8 @@ function installStyle() {
     .s8-octave-stepper button { padding:4px 8px; }
     .s8-song-overview { position:relative; display:grid; flex:1; min-width:260px; height:150px; overflow:hidden; border:1px solid #6272a4; border-radius:5px; background:#101018; cursor:pointer; }
     .s8-song-overview-cell { min-width:0; min-height:0; background:#1b1b2b; border-right:1px solid #282a36; border-bottom:1px solid #282a36; }
-    .s8-song-overview-cell.in-y { background:#303344; } .s8-song-overview-cell.has-note { background:#50fa7b; }
-    .s8-song-overview-cell.in-y.has-note { background:#f1fa8c; }
+    .s8-song-overview-cell.in-y { background:#303344; } .s8-song-overview-cell.has-note { background:#50fa7b; border-right-color:#50fa7b; }
+    .s8-song-overview-cell.in-y.has-note { background:#f1fa8c; border-right-color:#f1fa8c; }
     .s8-song-overview-viewport { position:absolute; top:0; bottom:0; border:2px solid #ff79c6; background:rgba(255,121,198,.12); pointer-events:none; }
     .s8-song-overview-y-viewport { position:absolute; left:0; right:0; border:2px solid #8be9fd; background:rgba(139,233,253,.08); pointer-events:none; }
     .s8-editor-toolbar input[type="number"] { color:#f8f8f2; background:#101018; border:1px solid #6272a4; border-radius:5px; padding:5px; }
@@ -87,8 +87,9 @@ function installStyle() {
     .s8-editor-cell.white { background:#252738; } .s8-editor-cell.black { background:#14141f; }
     .s8-editor-cell.white.beat { border-right-color:#8490c0; } .s8-editor-cell.black.beat { border-right-color:#6272a4; }
     .s8-editor-cell.beat { border-right-color:#6272a4; } .s8-editor-cell:hover { background:#44475a; }
-    .s8-editor-cell.note { background:#50fa7b; box-shadow:inset 0 0 0 1px #b7ffca; }
+    .s8-editor-cell.note { background:#50fa7b; border-right-color:#50fa7b; box-shadow:inset 0 0 0 1px #b7ffca; }
     .s8-editor-cell.note-start { border-radius:5px 0 0 5px; }
+    .s8-editor-cell.note-end { border-right-color:#282a36; }
     .s8-editor-cell.note { cursor:grab; } .s8-editor-cell.note:active { cursor:grabbing; }
     .s8-editor-cell.note-end { border-radius:0 5px 5px 0; cursor:ew-resize; }
     .s8-editor-source { width:100%; box-sizing:border-box; min-height:80px; margin-top:14px; padding:10px; color:#f8f8f2; background:#101018; border:1px solid #44475a; border-radius:6px; font:13px monospace; }
