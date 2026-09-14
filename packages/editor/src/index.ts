@@ -25,7 +25,9 @@ function noteName(midi: number): string {
 
 function visiblePitches(topOctave: number): number[] {
   const topMidi = (topOctave + 1) * 12;
-  return Array.from({ length: 25 }, (_, index) => topMidi - index);
+  // Keep a broad pitch range in the roll so a song's notes are visible
+  // together instead of hiding most of a multi-octave example behind paging.
+  return Array.from({ length: 49 }, (_, index) => topMidi - index);
 }
 
 function installStyle() {
@@ -44,6 +46,9 @@ function installStyle() {
     .s8-transport-play { border-color:#50fa7b !important; } .s8-transport-pause { border-color:#f1fa8c !important; }
     .s8-transport-resume { border-color:#8be9fd !important; } .s8-transport-stop { border-color:#ff5555 !important; }
     .s8-value { color:#f1fa8c; font-variant-numeric:tabular-nums; }
+    .s8-global-controls { align-items:stretch; }
+    .s8-global-controls > .s8-control-group:first-child { flex-direction:column; align-items:stretch; min-width:92px; }
+    .s8-global-controls > .s8-control-group:first-child .s8-control-group-title { width:auto; }
     .s8-song-controls { flex:1; align-items:stretch; }
     .s8-song-metrics, .s8-song-timing, .s8-song-loop { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:6px 10px; border-left:1px solid #44475a; }
     .s8-song-metrics { min-width:190px; justify-content:space-around; } .s8-song-timing { min-width:190px; } .s8-song-loop { min-width:220px; }
@@ -259,7 +264,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       <span>Envelope:</span><label>A <input data-envelope="attack" type="number" min="0" step="0.01" value="${melodies[activeMelody].envelope.attack}" style="width:48px"></label><label>D <input data-envelope="decay" type="number" min="0" step="0.01" value="${melodies[activeMelody].envelope.decay}" style="width:48px"></label><label>S <input data-envelope="sustain" type="number" min="0" max="1" step="0.05" value="${melodies[activeMelody].envelope.sustain}" style="width:48px"></label><label>R <input data-envelope="release" type="number" min="0" step="0.01" value="${melodies[activeMelody].envelope.release}" style="width:48px"></label>
       <label>Note length <select data-length>${[1, 2, 3, 4].map((item) => `<option value="${item}" ${item === noteLength ? "selected" : ""}>${item} beat${item === 1 ? "" : "s"}</option>`).join("")}</select></label>
       <label>Snap <select data-quantize><option value="0.25">1/16</option><option value="0.5">1/8</option><option value="1" selected>1/4</option></select></label><label>Velocity <select data-velocity>${[0.25, 0.5, 0.65, 0.8, 1].map((item) => `<option value="${item}" ${item === velocity ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Articulation <select data-articulation>${["", "accent", "staccato", "legato", "slide", "vibrato", "mute"].map((item) => `<option value="${item}" ${item === articulation ? "selected" : ""}>${item || "normal"}</option>`).join("")}</select></label><label>Bend <input data-bend type="number" min="-24" max="24" step="1" value="${bend}" style="width:48px"></label><label>Cutoff <input data-cutoff type="number" min="20" max="20000" step="100" value="${melodies[activeMelody].cutoff}" style="width:72px"></label><label>Resonance <input data-resonance type="number" min="0" max="1" step="0.05" value="${melodies[activeMelody].resonance}" style="width:55px"></label><span>FX:</span><label>Delay <input data-fx="delay" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].delay ?? 0}"></label><label>Room <input data-fx="room" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].room ?? 0}"></label><label>Drive <input data-fx="distortion" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].distortion ?? 0}"></label><label>Chorus <input data-fx="chorus" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].chorus ?? 0}"></label><label>Vibrato <input data-vibrato-rate type="number" min="0" max="20" step="0.1" value="${melodies[activeMelody].vibratoRate ?? 0}" style="width:52px"> Hz</label><label>Portamento <input data-portamento type="number" min="0" max="1" step="0.01" value="${melodies[activeMelody].portamento ?? 0}" style="width:52px"></label></div>
-      <div class="s8-editor-grid"><div class="s8-editor-labels">${pitches.map((midi) => `<span class="${NOTE_NAMES[midi % 12].includes("#") ? "black" : "white"}">${noteName(midi)}</span>`).join("")}</div><div class="s8-editor-roll" style="grid-template-columns:repeat(${columns},34px)">
+      <div class="s8-editor-grid"><div class="s8-editor-labels" style="grid-template-rows:repeat(${pitches.length},28px)">${pitches.map((midi) => `<span class="${NOTE_NAMES[midi % 12].includes("#") ? "black" : "white"}">${noteName(midi)}</span>`).join("")}</div><div class="s8-editor-roll" style="grid-template-columns:repeat(${columns},34px);grid-template-rows:repeat(${pitches.length},28px)">
       ${pitches.flatMap((midi) => Array.from({ length: columns }, (_, column) => {
         const note = notes.find((item) => item.pitch === midi && column >= item.start && column < item.start + item.duration);
         const start = notes.some((item) => item.pitch === midi && item.start === column);
