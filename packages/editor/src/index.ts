@@ -199,7 +199,11 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     const grid = container.querySelector<HTMLElement>(".s8-editor-grid");
     const roll = container.querySelector<HTMLElement>(".s8-editor-roll");
     if (grid && roll) {
-      if (isPlaying) grid.scrollLeft = Math.max(0, Math.min(roll.scrollWidth - grid.clientWidth + 52, musicalPosition / Math.max(1, columns) * roll.scrollWidth));
+      if (isPlaying) {
+        const maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
+        const targetScroll = 52 + musicalPosition / Math.max(1, columns) * roll.scrollWidth - grid.clientWidth * 0.6;
+        grid.scrollLeft = Math.max(0, Math.min(maxScroll, targetScroll));
+      }
       grid.style.setProperty("--playhead", `${position / Math.max(0.001, length) * roll.scrollWidth - grid.scrollLeft}px`);
     }
   };
@@ -296,6 +300,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     const pitches = visiblePitches(topOctave);
     const gridColumns = Math.ceil(columns / gridStep);
     const generated = source();
+    const previousGridScrollLeft = container.querySelector<HTMLElement>(".s8-editor-grid")?.scrollLeft ?? 0;
     container.innerHTML = `<h2>Sketch Editor</h2><p>Choose a track type below. Click to add/remove. Drag melody notes to move them; drag their right edge to resize.</p>
       <div class="s8-editor-toolbar s8-editor-tabs"><button data-tab="melody" class="${editorTab === "melody" ? "is-active" : ""}">Melodies</button><button data-tab="drums" class="${editorTab === "drums" ? "is-active" : ""}">Drums</button><button data-action="clear" title="Clear the active track">Clear track</button><button data-action="undo" title="Undo" ${historyIndex <= 0 ? "disabled" : ""}>↶ Undo</button><button data-action="redo" title="Redo" ${historyIndex + 1 >= history.length ? "disabled" : ""}>↷ Redo</button></div>
       <div class="s8-editor-toolbar s8-global-controls"><div class="s8-control-group"><span class="s8-control-group-title">Transport</span><button class="s8-icon-button s8-transport-play" data-action="play" title="Start the song" ${isPlaying ? "disabled" : ""}><span class="s8-icon">▶</span>Play</button><button class="s8-icon-button s8-transport-pause" data-action="pause-resume" title="Pause or resume the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">${isPaused ? "▶" : "Ⅱ"}</span>${isPaused ? "Resume" : "Pause"}</button><button class="s8-icon-button s8-transport-stop" data-action="stop" title="Stop and reset the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">■</span>Stop</button></div><div class="s8-control-group s8-song-controls"><span class="s8-control-group-title">Song</span><div class="s8-song-metrics"><span class="s8-value" data-current-beat>Beat 1</span><span>Position <strong class="s8-value" data-position>0.0s</strong></span><span>Duration <strong class="s8-value" data-song-length>${(columns * 60 / bpm).toFixed(1)}s</strong></span></div><div class="s8-song-timing"><label>BPM <input data-bpm type="number" min="40" max="240" value="${bpm}" style="width:60px"></label><label>Length <input data-columns type="number" min="1" max="128" value="${columns}" style="width:60px"> beats</label></div><div class="s8-song-loop"><label><input data-loop type="checkbox" ${loopEnabled ? "checked" : ""}> Loop playback</label><label>From <input data-loop-start type="number" min="0" max="${columns}" value="${loopStart}" style="width:48px"></label><label>To <input data-loop-end type="number" min="1" max="${columns}" value="${loopEnd}" style="width:48px"></label></div><label>Master volume <input data-master-gain type="range" min="0" max="1" step="0.05" value="${masterGain}"></label></div></div>
@@ -333,6 +338,9 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       const pianoGrid = container.querySelector<HTMLElement>(".s8-editor-grid");
       if (pitchToolbar && pianoGrid?.parentElement) pianoGrid.parentElement.insertBefore(pitchToolbar, pianoGrid.nextSibling);
     }
+
+    const renderedGrid = container.querySelector<HTMLElement>(".s8-editor-grid");
+    if (renderedGrid) renderedGrid.scrollLeft = previousGridScrollLeft;
 
     // Update the visible roll without rebuilding its DOM. This keeps pointer
     // capture and the current drag interaction alive while the note moves.
