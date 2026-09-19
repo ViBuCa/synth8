@@ -240,6 +240,18 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     return (Number(match[3]) + 1) * 12 + base + (match[2] === "#" ? 1 : match[2] === "b" ? -1 : 0);
   };
 
+  const startPlayback = async () => {
+    bpm = Number(container.querySelector<HTMLInputElement>("[data-bpm]")?.value) || bpm;
+    const sourceToPlay = importedPlaybackSource ?? container.querySelector<HTMLTextAreaElement>("[data-song-source]")!.value;
+    const pattern = compile(sourceToPlay);
+    // The editor owns the master loop switch. The core represents song()
+    // containers as loopable patterns for general playback, so explicitly
+    // override that default here.
+    pattern.loop = loopEnabled;
+    await play(pattern, { bpm, playbackMode: "live" });
+    positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
+  };
+
   const loadSource = (text: string) => {
     const pattern = compile(text);
     importedPlaybackSource = text;
@@ -451,7 +463,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       render();
     });
     container.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => button.addEventListener("click", () => { editorTab = button.dataset.tab as "melody" | "drums"; render(); }));
-    container.querySelector<HTMLInputElement>("[data-master-gain]")!.addEventListener("change", (event) => { markEdited(); masterGain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); render(); });
+    container.querySelector<HTMLInputElement>("[data-master-gain]")!.addEventListener("change", (event) => { markEdited(); masterGain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); if (isPlaying) void startPlayback(); else render(); });
     container.querySelector<HTMLInputElement>("[data-bpm]")!.addEventListener("change", (event) => { markEdited(); bpm = Math.max(40, Math.min(240, Number((event.target as HTMLInputElement).value) || 120)); render(); });
     container.querySelector<HTMLInputElement>("[data-loop]")!.addEventListener("change", (event) => { loopEnabled = (event.target as HTMLInputElement).checked; markEdited(); render(); });
     container.querySelector<HTMLInputElement>("[data-loop-start]")!.addEventListener("change", (event) => { markEdited(); loopStart = Math.max(0, Math.min(columns - 1, Number((event.target as HTMLInputElement).value) || 0)); loopEnd = Math.max(loopStart + 1, loopEnd); render(); });
@@ -495,12 +507,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       try { loadSource(await readSynth8Source(file)); }
       catch (error) { window.alert(error instanceof Error ? error.message : String(error)); }
     });
-    container.querySelector<HTMLButtonElement>('[data-action="play"]')!.addEventListener("click", async () => {
-      bpm = Number(container.querySelector<HTMLInputElement>("[data-bpm]")!.value) || 120;
-      const sourceToPlay = importedPlaybackSource ?? container.querySelector<HTMLTextAreaElement>("[data-song-source]")!.value;
-      await play(compile(sourceToPlay), { bpm, playbackMode: "live" });
-      positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
-    });
+    container.querySelector<HTMLButtonElement>('[data-action="play"]')!.addEventListener("click", () => { void startPlayback(); });
     updatePositionView();
   };
   loadSource(DEFAULT_SONG_SOURCE);
