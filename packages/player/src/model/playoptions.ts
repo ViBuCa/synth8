@@ -3,6 +3,7 @@ export type PreparedPlayback = {
     start(): void | Promise<void>;
     ready?: Promise<void>;
     getPosition?(): number;
+    getDuration?(): number;
     pause(): void;
     resume(): void;
     stop(): void;

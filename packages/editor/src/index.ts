@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { getPlaybackPosition, pause, play, resume, setMasterGain, stop } from "@vibuca/synth8-player";
+import { getPlaybackDuration, getPlaybackPosition, pause, play, resume, setMasterGain, stop } from "@vibuca/synth8-player";
 import { DEFAULT_SONG_SOURCE } from "./default-song";
 
 export { DEFAULT_SONG_SOURCE } from "./default-song";
@@ -174,6 +174,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   let drumTracks: DrumTrack[] = [{ name: "Drums 1", hits: [{ start: 0, drum: "kick" }, { start: 2, drum: "snare" }, { start: 4, drum: "kick" }, { start: 6, drum: "snare" }], bank: "default", gain: 0.8, pan: 0, echo: 0, reverb: 0 }];
   let activeDrumTrack = 0;
   let positionSeconds = 0;
+  let playbackDurationSeconds = 0;
   let positionTimer: number | undefined;
   let positionClockStart = 0;
   let isPlaying = false;
@@ -183,7 +184,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   container.className = "s8-editor";
   root.replaceChildren(container);
 
-  const songLengthSeconds = () => columns * 60 / Math.max(1, bpm);
+  const songLengthSeconds = () => playbackDurationSeconds || columns * 60 / Math.max(1, bpm);
   const updatePositionView = () => {
     const length = songLengthSeconds();
     const position = length > 0 ? Math.min(length, positionSeconds) : 0;
@@ -269,6 +270,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     pattern.loop = loopEnabled;
     await play(pattern, { bpm, playbackMode: "rendered" });
     setMasterGain(masterGain);
+    playbackDurationSeconds = getPlaybackDuration();
     positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
   };
 
