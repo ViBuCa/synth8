@@ -1,4 +1,4 @@
-import type { AudioClock, Synth8AudioBackend, Synth8Event, Synth8Pattern } from "@vibuca/synth8-core";
+import type { AudioClock, Synth8AudioBackend, Synth8Pattern } from "@vibuca/synth8-core";
 
 /** Player-local runtime scheduler to keep tests usable before core is built. */
 export class BackendScheduler {
@@ -22,26 +22,10 @@ export class BackendScheduler {
   }
 
   private queryLoop(start: number, end: number): Synth8Event[] {
-    const length = (this.pattern as { length?: number }).length;
-    if (!length || length <= 0) return this.pattern.query(start, end);
-    const events: Synth8Event[] = [];
-    let cursor = start;
-    let iterations = 0;
-    while (cursor < end && iterations++ < 1024) {
-      const cycle = Math.floor(cursor / length);
-      const offset = cycle * length;
-      const localStart = cursor - offset;
-      const localEnd = Math.min(length, localStart + end - cursor);
-      for (const event of this.pattern.query(localStart, localEnd)) {
-        events.push({ ...event, time: event.time + offset });
-      }
-      const nextCursor = offset + localEnd;
-      // Protect the realtime timer from a floating-point boundary that does
-      // not advance the cursor. A scheduler must fail closed, not spin.
-      if (nextCursor <= cursor) break;
-      cursor = nextCursor;
-    }
-    return events;
+    // The compiled pattern query already knows whether the song is looped.
+    // Repeating here made every live playback loop, including ordinary songs,
+    // and also scheduled audio beyond the editor's Stop/Pause controls.
+    return this.pattern.query(start, end);
   }
 
   private tick(): void {
