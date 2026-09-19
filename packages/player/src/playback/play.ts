@@ -55,7 +55,8 @@ export const play = async (pattern: Pattern, options: PlayOptions = {}): Promise
   const playback = await prepare(pattern, options);
   activePlayback = playback;
   await options.onReady?.(playback);
-  playback.start();
+  await playback.start();
+  await playback.ready;
 };
 
 export const pause = (): void => activePlayback?.pause();

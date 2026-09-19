@@ -1,6 +1,7 @@
 export type PreparedPlayback = {
     playbackMode: "rendered" | "live" | "streamed";
-    start(): void;
+    start(): void | Promise<void>;
+    ready?: Promise<void>;
     pause(): void;
     resume(): void;
     stop(): void;

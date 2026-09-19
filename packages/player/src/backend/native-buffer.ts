@@ -24,6 +24,7 @@ export const createNativeBufferPlayback = (
   let paused = false;
   let offset = 0;
   let startedAt = 0;
+  let ready = Promise.resolve();
   const duration = Math.max(0.001, options.loopEnd ?? buffer.duration);
 
   const currentOffset = (): number => {
@@ -57,12 +58,13 @@ export const createNativeBufferPlayback = (
   const playback: PreparedPlayback = {
     playbackMode: "rendered",
     start() {
-      void context.resume?.();
+      ready = Promise.resolve(context.resume?.()).then(() => undefined);
       offset = 0;
       paused = false;
       started = true;
       startSource(0);
     },
+    get ready() { return ready; },
     pause() {
       if (!started || paused) return;
       offset = currentOffset();
