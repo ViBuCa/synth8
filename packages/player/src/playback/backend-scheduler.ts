@@ -1,4 +1,4 @@
-import type { AudioClock, Synth8AudioBackend, Synth8Pattern } from "@vibuca/synth8-core";
+import type { AudioClock, Synth8AudioBackend, Synth8Event, Synth8Pattern } from "@vibuca/synth8-core";
 
 /** Player-local runtime scheduler to keep tests usable before core is built. */
 export class BackendScheduler {

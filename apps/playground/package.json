@@ -10,6 +10,7 @@
     "@vibuca/synth8-editor": "workspace:*"
   },
   "scripts": {
+    "predev": "pnpm --filter @vibuca/synth8-core build && pnpm --filter @vibuca/synth8-player build && pnpm --filter @vibuca/synth8-import-midi build && pnpm --filter @vibuca/synth8-editor build",
     "dev": "vite",
     "build": "vite build"
   }
