@@ -165,7 +165,8 @@ export class WebAudioBackend implements Synth8AudioBackend {
   start(): void {
     this.origin = this.context.currentTime;
     this.running = true;
-    if ("resume" in this.context) void (this.context as AudioContext).resume();
+    const isOffline = typeof OfflineAudioContext !== "undefined" && this.context instanceof OfflineAudioContext;
+    if (!isOffline && "resume" in this.context) void (this.context as AudioContext).resume();
   }
 
   setMasterGain(gain: number): void {
