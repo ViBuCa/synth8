@@ -46,6 +46,45 @@ describe("native player", () => {
     expect(new Uint8Array(await blob.arrayBuffer()).slice(0, 4)).toEqual(new Uint8Array([82, 73, 70, 70]));
   });
 
+  it("keeps rendered playback position synchronized at multiple BPM values", async () => {
+    for (const bpm of [30, 60, 90, 120]) {
+      const context = { currentTime: 0, destination: {}, createGain: () => ({ gain: { value: 0, setTargetAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn() }), createBufferSource: () => ({ connect: vi.fn(), start: vi.fn(), stop: vi.fn(), disconnect: vi.fn() }), resume: vi.fn(async () => undefined) } as unknown as AudioContext;
+      const duration = 16 * 60 / bpm;
+      const playback = createNativeBufferPlayback({ context, buffer: { duration } as AudioBuffer, loop: false, loopEnd: duration });
+      playback.start();
+      await playback.ready;
+      context.currentTime = duration * 0.5;
+      expect(playback.getPosition?.()).toBeCloseTo(duration * 0.5, 6);
+      context.currentTime = duration;
+      expect(playback.getPosition?.()).toBeCloseTo(duration, 6);
+    }
+  });
+
+  it("preserves the exact audio position across pause and resume", async () => {
+    const context = { currentTime: 0, destination: {}, createGain: () => ({ gain: { value: 0, setTargetAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn() }), createBufferSource: () => ({ connect: vi.fn(), start: vi.fn(), stop: vi.fn(), disconnect: vi.fn() }), resume: vi.fn(async () => undefined) } as unknown as AudioContext;
+    const playback = createNativeBufferPlayback({ context, buffer: { duration: 10 } as AudioBuffer, loop: false, loopEnd: 10 });
+    playback.start();
+    await playback.ready;
+    context.currentTime = 3.25;
+    playback.pause();
+    expect(playback.getPosition?.()).toBeCloseTo(3.25, 6);
+    context.currentTime = 20;
+    playback.resume();
+    context.currentTime = 21.5;
+    expect(playback.getPosition?.()).toBeCloseTo(4.75, 6);
+  });
+
+  it("does not repeat non-looping playback after its pattern duration", () => {
+    const event = { kind: "note", time: 3, duration: 1, pitch: "c4", velocity: 1 } as Synth8Event;
+    const clock = { currentTime: 0 };
+    const batches: Synth8Event[][] = [];
+    const backend = { start: vi.fn(), schedule: vi.fn((events: Synth8Event[]) => batches.push(events)), stop: vi.fn() };
+    const scheduler = new BackendScheduler(pattern([event], 4), backend, clock, { bpm: 30, lookAhead: 0.5 });
+    scheduler.start();
+    expect(batches.flat()).toHaveLength(0);
+    scheduler.stop();
+  });
+
   it("controls a native looping buffer source", () => {
     const source = { connect: vi.fn(), start: vi.fn(), stop: vi.fn(), disconnect: vi.fn() };
     const gain = { gain: { value: 0 }, connect: vi.fn(), disconnect: vi.fn() };
