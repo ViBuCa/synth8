@@ -2,7 +2,7 @@
   "name": "synth8",
   "version": "1.0.0",
   "scripts": {
-    "dev": "pnpm --filter @vibuca/playground dev",
+    "dev": "pnpm --filter @vibuca/playground predev && pnpm --filter @vibuca/playground exec vite",
     "build": "pnpm -r build",
     "clean": "pnpm -r exec rm -rf dist",
     "test": "pnpm -r test"

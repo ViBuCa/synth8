@@ -413,13 +413,14 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       render();
     });
     container.querySelector<HTMLInputElement>("[data-melody-name]")!.addEventListener("change", (event) => {
+      markEdited();
       melodies[activeMelody].name = (event.target as HTMLInputElement).value.trim() || `Melody ${activeMelody + 1}`;
       render();
     });
     container.querySelectorAll<HTMLButtonElement>("[data-drum-track]").forEach((button) => button.addEventListener("click", () => { activeDrumTrack = Number(button.dataset.drumTrack); render(); }));
     container.querySelectorAll<HTMLButtonElement>("[data-drum-toggle]").forEach((button) => button.addEventListener("click", () => { const index = Number(button.dataset.drumToggle); drumTracks[index].enabled = drumTracks[index].enabled === false; markEdited(); render(); }));
     container.querySelector<HTMLButtonElement>('[data-action="new-drum"]')?.addEventListener("click", () => { markEdited(); drumTracks.push({ name: `Drums ${drumTracks.length + 1}`, hits: [], bank: "default", gain: 0.8, pan: 0, echo: 0, reverb: 0 }); activeDrumTrack = drumTracks.length - 1; render(); });
-    container.querySelector<HTMLInputElement>("[data-drum-name]")?.addEventListener("change", (event) => { drumTracks[activeDrumTrack].name = (event.target as HTMLInputElement).value.trim() || `Drums ${activeDrumTrack + 1}`; render(); });
+    container.querySelector<HTMLInputElement>("[data-drum-name]")?.addEventListener("change", (event) => { markEdited(); drumTracks[activeDrumTrack].name = (event.target as HTMLInputElement).value.trim() || `Drums ${activeDrumTrack + 1}`; render(); });
     container.querySelectorAll<HTMLButtonElement>(".s8-editor-drum-cell").forEach((cell) => cell.addEventListener("click", () => {
       markEdited();
       const drum = cell.dataset.drum!; const start = Number(cell.dataset.start); const hits = drumTracks[activeDrumTrack].hits;
@@ -444,16 +445,17 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     });
     container.querySelector<HTMLElement>(".s8-editor-grid")?.addEventListener("wheel", (event) => { event.preventDefault(); if (Math.abs(event.deltaY) < 1) return; topOctave = Math.max(1, Math.min(8, topOctave + (event.deltaY < 0 ? 1 : -1))); render(); }, { passive: false });
     container.querySelector<HTMLInputElement>("[data-columns]")!.addEventListener("change", (event) => {
+      markEdited();
       columns = Math.max(1, Math.min(128, Math.floor(Number((event.target as HTMLInputElement).value) || 1)));
       notes = notes.filter((note) => note.start < columns).map((note) => ({ ...note, duration: Math.min(note.duration, columns - note.start) }));
       render();
     });
     container.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => button.addEventListener("click", () => { editorTab = button.dataset.tab as "melody" | "drums"; render(); }));
-    container.querySelector<HTMLInputElement>("[data-master-gain]")!.addEventListener("change", (event) => { masterGain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); render(); });
-    container.querySelector<HTMLInputElement>("[data-bpm]")!.addEventListener("change", (event) => { bpm = Math.max(40, Math.min(240, Number((event.target as HTMLInputElement).value) || 120)); render(); });
+    container.querySelector<HTMLInputElement>("[data-master-gain]")!.addEventListener("change", (event) => { markEdited(); masterGain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); render(); });
+    container.querySelector<HTMLInputElement>("[data-bpm]")!.addEventListener("change", (event) => { markEdited(); bpm = Math.max(40, Math.min(240, Number((event.target as HTMLInputElement).value) || 120)); render(); });
     container.querySelector<HTMLInputElement>("[data-loop]")!.addEventListener("change", (event) => { loopEnabled = (event.target as HTMLInputElement).checked; markEdited(); render(); });
-    container.querySelector<HTMLInputElement>("[data-loop-start]")!.addEventListener("change", (event) => { loopStart = Math.max(0, Math.min(columns - 1, Number((event.target as HTMLInputElement).value) || 0)); loopEnd = Math.max(loopStart + 1, loopEnd); render(); });
-    container.querySelector<HTMLInputElement>("[data-loop-end]")!.addEventListener("change", (event) => { loopEnd = Math.max(loopStart + 1, Math.min(columns, Number((event.target as HTMLInputElement).value) || columns)); render(); });
+    container.querySelector<HTMLInputElement>("[data-loop-start]")!.addEventListener("change", (event) => { markEdited(); loopStart = Math.max(0, Math.min(columns - 1, Number((event.target as HTMLInputElement).value) || 0)); loopEnd = Math.max(loopStart + 1, loopEnd); render(); });
+    container.querySelector<HTMLInputElement>("[data-loop-end]")!.addEventListener("change", (event) => { markEdited(); loopEnd = Math.max(loopStart + 1, Math.min(columns, Number((event.target as HTMLInputElement).value) || columns)); render(); });
     container.querySelector<HTMLSelectElement>("[data-sound]")!.addEventListener("change", (event) => { markEdited(); melodies[activeMelody].preset = undefined; melodies[activeMelody].sound = (event.target as HTMLSelectElement).value as Sound; render(); });
     container.querySelector<HTMLSelectElement>("[data-preset]")!.addEventListener("change", (event) => { markEdited(); melodies[activeMelody].preset = (event.target as HTMLSelectElement).value || undefined; render(); });
     container.querySelector<HTMLInputElement>("[data-track-gain]")!.addEventListener("change", (event) => { markEdited(); melodies[activeMelody].gain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); render(); });
@@ -466,7 +468,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelectorAll<HTMLInputElement>("[data-envelope]").forEach((input) => input.addEventListener("change", () => { markEdited(); const key = input.dataset.envelope as keyof Envelope; melodies[activeMelody].envelope[key] = Math.max(0, Number(input.value) || 0); render(); }));
     container.querySelector<HTMLInputElement>("[data-cutoff]")!.addEventListener("change", (event) => { markEdited(); melodies[activeMelody].cutoff = Math.max(20, Math.min(20000, Number((event.target as HTMLInputElement).value) || 20000)); render(); });
     container.querySelector<HTMLInputElement>("[data-resonance]")!.addEventListener("change", (event) => { markEdited(); melodies[activeMelody].resonance = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); render(); });
-    container.querySelector<HTMLSelectElement>("[data-drum-bank]")?.addEventListener("change", (event) => { drumTracks[activeDrumTrack].bank = (event.target as HTMLSelectElement).value; render(); });
+    container.querySelector<HTMLSelectElement>("[data-drum-bank]")?.addEventListener("change", (event) => { markEdited(); drumTracks[activeDrumTrack].bank = (event.target as HTMLSelectElement).value; render(); });
     container.querySelector<HTMLInputElement>("[data-drum-gain]")?.addEventListener("change", (event) => { markEdited(); drumTracks[activeDrumTrack].gain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); render(); });
     container.querySelector<HTMLInputElement>("[data-drum-pan]")?.addEventListener("input", (event) => { markEdited(); drumTracks[activeDrumTrack].pan = Number((event.target as HTMLInputElement).value); render(); });
     container.querySelector<HTMLInputElement>("[data-drum-echo]")?.addEventListener("input", (event) => { markEdited(); drumTracks[activeDrumTrack].echo = Number((event.target as HTMLInputElement).value); render(); });
