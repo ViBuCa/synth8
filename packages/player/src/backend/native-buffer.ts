@@ -48,8 +48,10 @@ export const createNativeBufferPlayback = (
     source.loopStart = 0;
     source.loopEnd = Math.min(duration, buffer.duration);
     source.connect(gain);
-    source.start(context.currentTime, Math.max(0, startOffset));
-    startedAt = context.currentTime - startOffset;
+    const offset = Math.max(0, startOffset);
+    source.start(context.currentTime, offset);
+    if (!options.loop) source.stop(context.currentTime + Math.max(0, duration - offset));
+    startedAt = context.currentTime - offset;
   };
 
   const playback: PreparedPlayback = {
