@@ -80,7 +80,8 @@ function installStyle() {
     .s8-editor button,.s8-editor select { background:#282a36; color:#f8f8f2; border:1px solid #6272a4; border-radius:6px; padding:7px 10px; }
     .s8-editor button:hover { background:#44475a; cursor:pointer; } .s8-editor label { margin:0; display:flex; gap:6px; align-items:center; }
     .s8-editor-grid { display:grid; grid-template-columns:52px 1fr; overflow:auto; border:1px solid #44475a; background:#101018; position:relative; --playhead:0px; }
-    .s8-editor-grid::after { content:""; position:absolute; top:0; bottom:0; left:calc(52px + var(--playhead)); width:2px; background:#ff5555; box-shadow:0 0 6px #ff5555; pointer-events:none; z-index:4; }
+    .s8-editor-grid::after { display:none; }
+    .s8-editor-playhead { position:absolute; top:0; bottom:0; width:2px; background:#ff5555; box-shadow:0 0 6px #ff5555; pointer-events:none; z-index:4; }
     .s8-editor-labels { display:grid; grid-template-rows:repeat(25, 28px); position:sticky; left:0; z-index:2; background:#1b1b2b; }
     .s8-editor-labels span { padding:6px 7px; border-bottom:1px solid #282a36; color:#f8f8f2; }
     .s8-editor-labels span.white { background:#303344; } .s8-editor-labels span.black { color:#8be9fd; background:#11111c; }
@@ -204,7 +205,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
         const targetScroll = 52 + musicalPosition / Math.max(1, columns) * roll.scrollWidth - grid.clientWidth * 0.6;
         grid.scrollLeft = Math.max(0, Math.min(maxScroll, targetScroll));
       }
-      grid.style.setProperty("--playhead", `${position / Math.max(0.001, length) * roll.scrollWidth - grid.scrollLeft}px`);
+      const playhead = roll.querySelector<HTMLElement>(".s8-editor-playhead");
+      if (playhead) playhead.style.left = `${position / Math.max(0.001, length) * roll.scrollWidth}px`;
     }
   };
   const stopPosition = () => { if (positionTimer !== undefined) window.clearInterval(positionTimer); positionTimer = undefined; };
@@ -320,7 +322,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
         const keyClass = NOTE_NAMES[midi % 12].includes("#") ? "black" : "white";
         const end = note && time + gridStep >= note.start + note.duration;
         return `<button class="s8-editor-cell ${keyClass} ${Math.abs(time % beatsPerBar) < 0.001 ? "beat bar" : ""} ${note ? "note" : ""} ${start ? "note-start" : ""} ${end ? "note-end" : ""}" data-pitch="${midi}" data-start="${time}" data-duration="${note?.duration ?? 0}" aria-label="${noteName(midi)} beat ${time + gridStep}"></button>`;
-      })).join("")}${notes.map((note) => `<span class="s8-editor-roll-note" data-start="${note.start}" data-duration="${note.duration}" style="left:${note.start / Math.max(1, columns) * 100}%;top:${(pitches[0] - note.pitch) / pitches.length * 100}%;width:${Math.max(0.5, note.duration / Math.max(1, columns) * 100)}%;height:${100 / pitches.length}%"></span>`).join("")}</div></div></div>
+      })).join("")}${notes.map((note) => `<span class="s8-editor-roll-note" data-start="${note.start}" data-duration="${note.duration}" style="left:${note.start / Math.max(1, columns) * 100}%;top:${(pitches[0] - note.pitch) / pitches.length * 100}%;width:${Math.max(0.5, note.duration / Math.max(1, columns) * 100)}%;height:${100 / pitches.length}%"></span>`).join("")}<span class="s8-editor-playhead"></span></div></div></div>
       <div class="drum-section" ${editorTab === "drums" ? "" : "hidden"}><h3 class="s8-editor-drum-title">Drum tracks</h3>
       <div class="s8-editor-toolbar s8-editor-melodies"><strong>Tracks:</strong>${drumTracks.map((track, index) => `<button data-drum-track="${index}" class="${index === activeDrumTrack ? "is-active" : ""}">${track.name}</button><button data-drum-toggle="${index}" class="s8-track-toggle" title="${track.enabled === false ? "Enable" : "Disable"} ${track.name}">${track.enabled === false ? "○" : "●"}</button>`).join("")}<button data-action="new-drum">+ New drum track</button><button data-action="duplicate-drum">Duplicate</button><button data-action="delete-drum">Delete</button><label>Name <input data-drum-name value="${drumTracks[activeDrumTrack].name.replace(/"/g, "&quot;")}" style="width:110px"></label></div>
       <div class="s8-editor-toolbar"><label>Kit <select data-drum-bank>${["default", "808", "909", "arcade", "chip"].map((item) => `<option ${item === drumTracks[activeDrumTrack].bank ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Gain <input data-drum-gain type="number" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].gain}" style="width:55px"></label><label>Pan <input data-drum-pan type="range" min="-1" max="1" step="0.05" value="${drumTracks[activeDrumTrack].pan}"></label><label>Echo <input data-drum-echo type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].echo}"></label><label>Reverb <input data-drum-reverb type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].reverb}"></label><label>Delay <input data-drum-delay type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].delay ?? 0}"></label><label>Room <input data-drum-room type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].room ?? 0}"></label><label>Drive <input data-drum-distortion type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].distortion ?? 0}"></label><label>Chorus <input data-drum-chorus type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].chorus ?? 0}"></label></div>
