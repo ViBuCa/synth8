@@ -189,10 +189,10 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     if (beatLabel) beatLabel.textContent = `Beat ${Math.min(columns, Math.floor(position * bpm / 60) + 1)}`;
     const grid = container.querySelector<HTMLElement>(".s8-editor-grid");
     const roll = container.querySelector<HTMLElement>(".s8-editor-roll");
-    if (grid && roll) grid.style.setProperty("--playhead", `${position / Math.max(0.001, length) * roll.scrollWidth}px`);
+    if (grid && roll) grid.style.setProperty("--playhead", `${position / Math.max(0.001, length) * roll.scrollWidth - grid.scrollLeft}px`);
   };
   const stopPosition = () => { if (positionTimer !== undefined) window.clearInterval(positionTimer); positionTimer = undefined; };
-  const startPosition = () => { stopPosition(); positionTimer = window.setInterval(() => { positionSeconds += 0.1; if (positionSeconds >= songLengthSeconds()) { if (loopEnabled) positionSeconds = loopStart * 60 / bpm; else { positionSeconds = songLengthSeconds(); isPlaying = false; isPaused = false; stopPosition(); } } updatePositionView(); render(); }, 100); };
+  const startPosition = () => { stopPosition(); positionTimer = window.setInterval(() => { positionSeconds += 0.1; if (positionSeconds >= songLengthSeconds()) { if (loopEnabled) positionSeconds = loopStart * 60 / bpm; else { positionSeconds = songLengthSeconds(); isPlaying = false; isPaused = false; stopPosition(); render(); } } updatePositionView(); }, 100); };
 
   const melodySource = (melody: Melody) => {
     const melodyNotes = melody.notes;
@@ -268,6 +268,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     if (pendingHistory && history[historyIndex] !== snapshot()) { history = history.slice(0, historyIndex + 1); history.push(snapshot()); historyIndex++; pendingHistory = false; }
     container.dataset.tab = editorTab;
     const pitches = visiblePitches(topOctave);
+    const gridColumns = Math.ceil(columns / gridStep);
     const generated = source();
     container.innerHTML = `<h2>Sketch Editor</h2><p>Choose a track type below. Click to add/remove. Drag melody notes to move them; drag their right edge to resize.</p>
       <div class="s8-editor-toolbar s8-editor-tabs"><button data-tab="melody" class="${editorTab === "melody" ? "is-active" : ""}">Melodies</button><button data-tab="drums" class="${editorTab === "drums" ? "is-active" : ""}">Drums</button><button data-action="clear" title="Clear the active track">Clear track</button><button data-action="undo" title="Undo" ${historyIndex <= 0 ? "disabled" : ""}>↶ Undo</button><button data-action="redo" title="Redo" ${historyIndex + 1 >= history.length ? "disabled" : ""}>↷ Redo</button></div>
@@ -281,7 +282,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       <div class="s8-control-section"><span class="s8-control-section-title">Note expression</span><div class="s8-control-row"><label>Length <select data-length>${[0.25, 0.5, 1, 2, 4].map((item) => `<option value="${item}" ${item === noteLength ? "selected" : ""}>${item} beat${item === 1 ? "" : "s"}</option>`).join("")}</select></label><label>Snap <select data-quantize><option value="0.25" ${quantizeStep === 0.25 ? "selected" : ""}>1/16</option><option value="0.5" ${quantizeStep === 0.5 ? "selected" : ""}>1/8</option><option value="1" ${quantizeStep === 1 ? "selected" : ""}>1/4</option></select></label><label>Velocity <select data-velocity>${[0.25, 0.5, 0.65, 0.8, 1].map((item) => `<option value="${item}" ${item === velocity ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Articulation <select data-articulation>${["", "accent", "staccato", "legato", "slide", "vibrato", "mute"].map((item) => `<option value="${item}" ${item === articulation ? "selected" : ""}>${item || "normal"}</option>`).join("")}</select></label><label>Bend <input data-bend type="number" min="-24" max="24" step="1" value="${bend}" style="width:48px"></label></div></div>
       <div class="s8-control-section"><span class="s8-control-section-title">Tone</span><div class="s8-control-row"><label>Cutoff <input data-cutoff type="number" min="20" max="20000" step="100" value="${melodies[activeMelody].cutoff}" style="width:72px"></label><label>Resonance <input data-resonance type="number" min="0" max="1" step="0.05" value="${melodies[activeMelody].resonance}" style="width:55px"></label></div></div>
       <div class="s8-control-section"><span class="s8-control-section-title">Effects</span><div class="s8-control-row"><label>Delay <input data-fx="delay" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].delay ?? 0}"></label><label>Room <input data-fx="room" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].room ?? 0}"></label><label>Drive <input data-fx="distortion" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].distortion ?? 0}"></label><label>Chorus <input data-fx="chorus" type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].chorus ?? 0}"></label><label>Vibrato <input data-vibrato-rate type="number" min="0" max="20" step="0.1" value="${melodies[activeMelody].vibratoRate ?? 0}" style="width:52px"> Hz</label><label>Portamento <input data-portamento type="number" min="0" max="1" step="0.01" value="${melodies[activeMelody].portamento ?? 0}" style="width:52px"></label></div></div></div>
-      <div class="s8-editor-grid"><div class="s8-editor-labels" style="grid-template-rows:repeat(${pitches.length},28px)">${pitches.map((midi) => `<span class="${NOTE_NAMES[midi % 12].includes("#") ? "black" : "white"}">${noteName(midi)}</span>`).join("")}</div><div class="s8-editor-roll" style="grid-template-columns:repeat(${Math.ceil(columns / gridStep)},34px);grid-template-rows:repeat(${pitches.length},28px)">
+      <div class="s8-editor-grid"><div class="s8-editor-labels" style="grid-template-rows:repeat(${pitches.length},28px)">${pitches.map((midi) => `<span class="${NOTE_NAMES[midi % 12].includes("#") ? "black" : "white"}">${noteName(midi)}</span>`).join("")}</div><div class="s8-editor-roll" style="grid-template-columns:repeat(${gridColumns},34px);grid-template-rows:repeat(${pitches.length},28px);width:${gridColumns * 34}px">
       ${pitches.flatMap((midi) => Array.from({ length: Math.ceil(columns / gridStep) }, (_, column) => { const time = column * gridStep;
         const note = notes.find((item) => item.pitch === midi && time >= item.start && time < item.start + item.duration);
         const start = notes.some((item) => item.pitch === midi && Math.abs(item.start - time) < 0.001);
@@ -439,6 +440,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelector<HTMLElement>(".s8-editor-grid")?.addEventListener("scroll", (event) => {
       const grid = event.currentTarget as HTMLElement; timeViewStart = Math.max(0, Math.min(Math.max(0, columns - 32), Math.round(grid.scrollLeft / Math.max(1, grid.scrollWidth - grid.clientWidth) * Math.max(0, columns - 32))));
       const viewport = container.querySelector<HTMLElement>(".s8-song-overview-viewport"); if (viewport) viewport.style.left = `${timeViewStart / Math.max(1, columns) * 100}%`;
+      updatePositionView();
     });
     container.querySelector<HTMLElement>(".s8-editor-grid")?.addEventListener("wheel", (event) => { event.preventDefault(); if (Math.abs(event.deltaY) < 1) return; topOctave = Math.max(1, Math.min(8, topOctave + (event.deltaY < 0 ? 1 : -1))); render(); }, { passive: false });
     container.querySelector<HTMLInputElement>("[data-columns]")!.addEventListener("change", (event) => {
@@ -494,7 +496,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelector<HTMLButtonElement>('[data-action="play"]')!.addEventListener("click", async () => {
       bpm = Number(container.querySelector<HTMLInputElement>("[data-bpm]")!.value) || 120;
       const sourceToPlay = importedPlaybackSource ?? container.querySelector<HTMLTextAreaElement>("[data-song-source]")!.value;
-      await play(compile(sourceToPlay), { bpm });
+      await play(compile(sourceToPlay), { bpm, playbackMode: "live" });
       positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
     });
     updatePositionView();
