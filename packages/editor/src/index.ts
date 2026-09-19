@@ -174,6 +174,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   let activeDrumTrack = 0;
   let positionSeconds = 0;
   let positionTimer: number | undefined;
+  let positionClockStart = 0;
   let isPlaying = false;
   let isPaused = false;
 
@@ -203,7 +204,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     }
   };
   const stopPosition = () => { if (positionTimer !== undefined) window.clearInterval(positionTimer); positionTimer = undefined; };
-  const startPosition = () => { stopPosition(); positionTimer = window.setInterval(() => { positionSeconds += 0.1; if (positionSeconds >= songLengthSeconds()) { if (loopEnabled) positionSeconds = loopStart * 60 / bpm; else { positionSeconds = songLengthSeconds(); isPlaying = false; isPaused = false; stopPosition(); render(); } } updatePositionView(); }, 100); };
+  const startPosition = () => { stopPosition(); positionClockStart = performance.now() - positionSeconds * 1000; positionTimer = window.setInterval(() => { positionSeconds = (performance.now() - positionClockStart) / 1000; if (positionSeconds >= songLengthSeconds()) { if (loopEnabled) { positionSeconds = loopStart * 60 / bpm; positionClockStart = performance.now() - positionSeconds * 1000; } else { positionSeconds = songLengthSeconds(); isPlaying = false; isPaused = false; stopPosition(); render(); } } updatePositionView(); }, 50); };
 
   const melodySource = (melody: Melody) => {
     const melodyNotes = melody.notes;
