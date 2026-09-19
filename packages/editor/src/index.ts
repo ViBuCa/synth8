@@ -207,26 +207,27 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
 
   const melodySource = (melody: Melody) => {
     const melodyNotes = melody.notes;
-    const tokens = Array.from({ length: columns }, (_, index) => {
+    const tokens = Array.from({ length: Math.ceil(columns / gridStep) }, (_, index) => {
+      const time = index * gridStep;
       const atStart = melodyNotes
-        .filter((item) => item.start === index)
+        .filter((item) => Math.abs(item.start - time) < 0.001)
         .sort((a, b) => a.pitch - b.pitch);
       if (atStart.length === 0) return "_";
 
       // Several notes starting on the same beat are exported as one parallel
       // Synth8 token, so stacked piano-roll notes remain a chord in playback.
       const duration = Math.max(...atStart.map((item) => item.duration));
-      // The compact DSL applies a slash duration to the whole parallel token,
-      // so per-note velocity annotations are only unambiguous for one-beat
-      // chords. Longer chords still retain their pitches and duration.
-      const chord = atStart.map((item) => `${noteName(item.pitch)}${duration === 1 && item.velocity !== 1 ? `:${item.velocity}` : ""}${item.articulation || item.bend !== undefined ? `{${item.bend !== undefined ? `bend:${item.bend >= 0 ? "+" : ""}${item.bend}` : item.articulation}}` : ""}`).join("+");
-      return `${chord}${duration === 1 ? "" : `/${duration}`}`;
+      const durationUnits = Math.max(1, Math.round(duration / gridStep));
+      // Export at the same sixteenth-beat resolution used by the piano roll,
+      // preserving short imported notes when an editor change regenerates the song.
+      const chord = atStart.map((item) => `${noteName(item.pitch)}${durationUnits === 1 && item.velocity !== 1 ? `:${item.velocity}` : ""}${item.articulation || item.bend !== undefined ? `{${item.bend !== undefined ? `bend:${item.bend >= 0 ? "+" : ""}${item.bend}` : item.articulation}}` : ""}`).join("+");
+      return `${chord}${durationUnits === 1 ? "" : `/${durationUnits}`}`;
     });
     const envelope = melody.envelope;
     const instrument = melody.preset ? `.preset("${melody.preset}")` : `.sound("${melody.sound}")`;
     const pitch = melody.vibratoRate ? `.vibrato(${melody.vibratoRate},${melody.vibratoDepth ?? 0},${melody.vibratoDelay ?? 0})` : "";
     const highpass = melody.highpass !== undefined && melody.highpass >= 20 ? `.highpass(${melody.highpass})` : "";
-    return `melody("${tokens.join(" ")}")${instrument}.gain(${melody.gain.toFixed(2)}).pan(${melody.pan}).attack(${envelope.attack}).decay(${envelope.decay}).sustain(${envelope.sustain}).release(${envelope.release}).echo(${melody.echo}).reverb(${melody.reverb}).delay(${melody.delay ?? 0}).room(${melody.room ?? 0}).lowpass(${melody.cutoff})${highpass}.resonance(${melody.resonance}).distortion(${melody.distortion ?? 0}).chorus(${melody.chorus ?? 0}).portamento(${melody.portamento ?? 0})${pitch}${loopEnabled ? ".loop()" : ""}`;
+    return `melody("${tokens.join(" ")}").fast(4)${instrument}.gain(${melody.gain.toFixed(2)}).pan(${melody.pan}).attack(${envelope.attack}).decay(${envelope.decay}).sustain(${envelope.sustain}).release(${envelope.release}).echo(${melody.echo}).reverb(${melody.reverb}).delay(${melody.delay ?? 0}).room(${melody.room ?? 0}).lowpass(${melody.cutoff})${highpass}.resonance(${melody.resonance}).distortion(${melody.distortion ?? 0}).chorus(${melody.chorus ?? 0}).portamento(${melody.portamento ?? 0})${pitch}${loopEnabled ? ".loop()" : ""}`;
   };
 
   const drumSource = (track: DrumTrack) => {
