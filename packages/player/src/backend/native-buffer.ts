@@ -72,6 +72,9 @@ export const createNativeBufferPlayback = (
       paused = false;
       startSource(offset);
     },
+    setMasterGain(value: number) {
+      gain.gain.setTargetAtTime(Math.max(0, Math.min(1, value)), context.currentTime, 0.01);
+    },
     stop() {
       disposeSource();
       started = false;

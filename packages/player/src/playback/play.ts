@@ -33,6 +33,7 @@ const prepareLive = (pattern: Pattern, options: PlayOptions, context: AudioConte
     start: () => scheduler.start(),
     pause: () => scheduler.pause(),
     resume: () => scheduler.resume(),
+    setMasterGain: (gain: number) => backend.setMasterGain?.(gain),
     stop: () => { scheduler.stop(); backend.dispose?.(); },
     dispose: () => { scheduler.stop(); backend.dispose?.(); },
   };
@@ -60,3 +61,4 @@ export const play = async (pattern: Pattern, options: PlayOptions = {}): Promise
 export const pause = (): void => activePlayback?.pause();
 export const resume = (): void => activePlayback?.resume();
 export const stop = (): void => { activePlayback?.dispose(); activePlayback = undefined; };
+export const setMasterGain = (gain: number): void => activePlayback?.setMasterGain(gain);

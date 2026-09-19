@@ -66,6 +66,7 @@ export const createGameAudio = async (options: GameAudioOptions = {}): Promise<G
     pause: () => playback.pause(),
     resume: () => playback.resume(),
     stop: () => playback.stop(),
+    setMasterGain: (gain: number) => playback.setMasterGain(gain),
     dispose() { playback.dispose(); musicSet.delete(playback); if (currentMusic === playback) currentMusic = undefined; },
   });
 

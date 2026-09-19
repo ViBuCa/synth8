@@ -53,6 +53,7 @@ export interface Synth8AudioBackend {
   schedule(events: readonly Synth8Event[]): void;
   start?(): Promise<void> | void;
   stop?(): void;
+  setMasterGain?(gain: number): void;
   dispose?(): void;
 }
 

@@ -4,6 +4,7 @@ export type PreparedPlayback = {
     pause(): void;
     resume(): void;
     stop(): void;
+    setMasterGain(gain: number): void;
     dispose(): void;
 };
 

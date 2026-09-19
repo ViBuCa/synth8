@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { pause, play, resume, stop } from "@vibuca/synth8-player";
+import { pause, play, resume, setMasterGain, stop } from "@vibuca/synth8-player";
 import { DEFAULT_SONG_SOURCE } from "./default-song";
 
 export { DEFAULT_SONG_SOURCE } from "./default-song";
@@ -215,7 +215,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     const instrument = melody.preset ? `.preset("${melody.preset}")` : `.sound("${melody.sound}")`;
     const pitch = melody.vibratoRate ? `.vibrato(${melody.vibratoRate},${melody.vibratoDepth ?? 0},${melody.vibratoDelay ?? 0})` : "";
     const highpass = melody.highpass !== undefined && melody.highpass >= 20 ? `.highpass(${melody.highpass})` : "";
-    return `melody("${tokens.join(" ")}")${instrument}.gain(${(melody.gain * masterGain).toFixed(2)}).pan(${melody.pan}).attack(${envelope.attack}).decay(${envelope.decay}).sustain(${envelope.sustain}).release(${envelope.release}).echo(${melody.echo}).reverb(${melody.reverb}).delay(${melody.delay ?? 0}).room(${melody.room ?? 0}).lowpass(${melody.cutoff})${highpass}.resonance(${melody.resonance}).distortion(${melody.distortion ?? 0}).chorus(${melody.chorus ?? 0}).portamento(${melody.portamento ?? 0})${pitch}${loopEnabled ? ".loop()" : ""}`;
+    return `melody("${tokens.join(" ")}")${instrument}.gain(${melody.gain.toFixed(2)}).pan(${melody.pan}).attack(${envelope.attack}).decay(${envelope.decay}).sustain(${envelope.sustain}).release(${envelope.release}).echo(${melody.echo}).reverb(${melody.reverb}).delay(${melody.delay ?? 0}).room(${melody.room ?? 0}).lowpass(${melody.cutoff})${highpass}.resonance(${melody.resonance}).distortion(${melody.distortion ?? 0}).chorus(${melody.chorus ?? 0}).portamento(${melody.portamento ?? 0})${pitch}${loopEnabled ? ".loop()" : ""}`;
   };
 
   const drumSource = (track: DrumTrack) => {
@@ -223,7 +223,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       const atStart = track.hits.filter((hit) => hit.start === index).map((hit) => hit.drum);
       return atStart.length ? atStart.join("+") : "_";
     });
-    return `beat("${tokens.join(" ")}").bank("${track.bank}").gain(${(track.gain * masterGain).toFixed(2)}).pan(${track.pan}).echo(${track.echo}).reverb(${track.reverb}).delay(${track.delay ?? 0}).room(${track.room ?? 0}).distortion(${track.distortion ?? 0}).chorus(${track.chorus ?? 0})${loopEnabled ? ".loop()" : ""}`;
+    return `beat("${tokens.join(" ")}").bank("${track.bank}").gain(${track.gain.toFixed(2)}).pan(${track.pan}).echo(${track.echo}).reverb(${track.reverb}).delay(${track.delay ?? 0}).room(${track.room ?? 0}).distortion(${track.distortion ?? 0}).chorus(${track.chorus ?? 0})${loopEnabled ? ".loop()" : ""}`;
   };
 
   const source = () => {
@@ -249,6 +249,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     // override that default here.
     pattern.loop = loopEnabled;
     await play(pattern, { bpm, playbackMode: "live" });
+    setMasterGain(masterGain);
     positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
   };
 
@@ -463,7 +464,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       render();
     });
     container.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((button) => button.addEventListener("click", () => { editorTab = button.dataset.tab as "melody" | "drums"; render(); }));
-    container.querySelector<HTMLInputElement>("[data-master-gain]")!.addEventListener("change", (event) => { markEdited(); masterGain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); if (isPlaying) void startPlayback(); else render(); });
+    container.querySelector<HTMLInputElement>("[data-master-gain]")!.addEventListener("input", (event) => { masterGain = Math.max(0, Math.min(1, Number((event.target as HTMLInputElement).value) || 0)); setMasterGain(masterGain); });
+    container.querySelector<HTMLInputElement>("[data-master-gain]")!.addEventListener("change", () => { markEdited(); render(); });
     container.querySelector<HTMLInputElement>("[data-bpm]")!.addEventListener("change", (event) => { markEdited(); bpm = Math.max(40, Math.min(240, Number((event.target as HTMLInputElement).value) || 120)); render(); });
     container.querySelector<HTMLInputElement>("[data-loop]")!.addEventListener("change", (event) => { loopEnabled = (event.target as HTMLInputElement).checked; markEdited(); render(); });
     container.querySelector<HTMLInputElement>("[data-loop-start]")!.addEventListener("change", (event) => { markEdited(); loopStart = Math.max(0, Math.min(columns - 1, Number((event.target as HTMLInputElement).value) || 0)); loopEnd = Math.max(loopStart + 1, loopEnd); render(); });

@@ -168,6 +168,10 @@ export class WebAudioBackend implements Synth8AudioBackend {
     if ("resume" in this.context) void (this.context as AudioContext).resume();
   }
 
+  setMasterGain(gain: number): void {
+    this.outputGain.gain.setTargetAtTime(Math.max(0, Math.min(1, gain)), this.context.currentTime, 0.01);
+  }
+
   stop(): void {
     this.running = false;
     for (const pool of this.pools.values()) {
