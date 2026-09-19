@@ -63,3 +63,4 @@ export const pause = (): void => activePlayback?.pause();
 export const resume = (): void => activePlayback?.resume();
 export const stop = (): void => { activePlayback?.dispose(); activePlayback = undefined; };
 export const setMasterGain = (gain: number): void => activePlayback?.setMasterGain(gain);
+export const getPlaybackPosition = (): number => activePlayback?.getPosition?.() ?? 0;

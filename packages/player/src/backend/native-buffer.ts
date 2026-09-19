@@ -65,6 +65,7 @@ export const createNativeBufferPlayback = (
       startSource(0);
     },
     get ready() { return ready; },
+    getPosition() { return currentOffset(); },
     pause() {
       if (!started || paused) return;
       offset = currentOffset();

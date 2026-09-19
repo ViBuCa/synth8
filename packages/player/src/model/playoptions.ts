@@ -2,6 +2,7 @@ export type PreparedPlayback = {
     playbackMode: "rendered" | "live" | "streamed";
     start(): void | Promise<void>;
     ready?: Promise<void>;
+    getPosition?(): number;
     pause(): void;
     resume(): void;
     stop(): void;

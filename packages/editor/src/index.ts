@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { pause, play, resume, setMasterGain, stop } from "@vibuca/synth8-player";
+import { getPlaybackPosition, pause, play, resume, setMasterGain, stop } from "@vibuca/synth8-player";
 import { DEFAULT_SONG_SOURCE } from "./default-song";
 
 export { DEFAULT_SONG_SOURCE } from "./default-song";
@@ -210,7 +210,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     }
   };
   const stopPosition = () => { if (positionTimer !== undefined) window.clearInterval(positionTimer); positionTimer = undefined; };
-  const startPosition = () => { stopPosition(); positionClockStart = performance.now() - positionSeconds * 1000; positionTimer = window.setInterval(() => { positionSeconds = (performance.now() - positionClockStart) / 1000; if (positionSeconds >= songLengthSeconds()) { if (loopEnabled) { positionSeconds = loopStart * 60 / bpm; positionClockStart = performance.now() - positionSeconds * 1000; } else { positionSeconds = songLengthSeconds(); isPlaying = false; isPaused = false; stopPosition(); render(); } } updatePositionView(); }, 50); };
+  const startPosition = () => { stopPosition(); positionClockStart = performance.now() - positionSeconds * 1000; positionTimer = window.setInterval(() => { positionSeconds = getPlaybackPosition() || (performance.now() - positionClockStart) / 1000; if (positionSeconds >= songLengthSeconds()) { if (loopEnabled) { positionSeconds = loopStart * 60 / bpm; positionClockStart = performance.now() - positionSeconds * 1000; } else { positionSeconds = songLengthSeconds(); isPlaying = false; isPaused = false; stopPosition(); render(); } } updatePositionView(); }, 50); };
 
   const melodySource = (melody: Melody) => {
     const melodyNotes = melody.notes;
@@ -523,7 +523,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelector<HTMLButtonElement>('[data-action="duplicate-drum"]')?.addEventListener("click", () => { markEdited(); drumTracks.splice(activeDrumTrack + 1, 0, { ...drumTracks[activeDrumTrack], name: `${drumTracks[activeDrumTrack].name} copy`, hits: drumTracks[activeDrumTrack].hits.map((hit) => ({ ...hit })) }); activeDrumTrack++; render(); });
     container.querySelector<HTMLButtonElement>('[data-action="delete-drum"]')?.addEventListener("click", () => { if (drumTracks.length <= 1) return; markEdited(); drumTracks.splice(activeDrumTrack, 1); activeDrumTrack = Math.max(0, activeDrumTrack - 1); render(); });
     container.querySelector<HTMLSelectElement>("[data-quantize]")!.addEventListener("change", (event) => { quantizeStep = Number((event.target as HTMLSelectElement).value); markEdited(); notes = notes.map((note) => ({ ...note, start: Math.round(note.start / quantizeStep) * quantizeStep, duration: Math.max(quantizeStep, Math.round(note.duration / quantizeStep) * quantizeStep) })); render(); });
-    container.querySelector<HTMLButtonElement>('[data-action="pause-resume"]')!.addEventListener("click", () => { if (isPaused) { resume(); isPlaying = true; isPaused = false; startPosition(); } else { pause(); isPlaying = false; isPaused = true; stopPosition(); } render(); });
+    container.querySelector<HTMLButtonElement>('[data-action="pause-resume"]')!.addEventListener("click", () => { if (isPaused) { resume(); isPlaying = true; isPaused = false; startPosition(); } else { positionSeconds = getPlaybackPosition() || positionSeconds; pause(); isPlaying = false; isPaused = true; stopPosition(); } render(); });
     container.querySelector<HTMLButtonElement>('[data-action="stop"]')!.addEventListener("click", () => { stop(); stopPosition(); positionSeconds = 0; isPlaying = false; isPaused = false; render(); updatePositionView(); });
     container.querySelector<HTMLButtonElement>('[data-action="export-song"]')!.addEventListener("click", () => downloadSynth8Source(container.querySelector<HTMLTextAreaElement>("[data-song-source]")!.value, "song.synth8", { bpm, length: columns }));
     container.querySelector<HTMLInputElement>("[data-import-song]")!.addEventListener("change", async (event) => {
