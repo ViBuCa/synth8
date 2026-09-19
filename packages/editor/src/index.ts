@@ -88,6 +88,8 @@ function installStyle() {
     .s8-editor-cell.white { background:#252738; } .s8-editor-cell.black { background:#14141f; }
     .s8-editor-cell.white.beat { border-right-color:#8490c0; } .s8-editor-cell.black.beat { border-right-color:#6272a4; }
     .s8-editor-cell.beat { border-right-color:#6272a4; } .s8-editor-cell:hover { background:#44475a; }
+    .s8-editor-cell.preview-add { background:rgba(80,250,123,.35); box-shadow:inset 0 0 0 1px #50fa7b; }
+    .s8-editor-cell.preview-remove { background:rgba(255,85,85,.35); box-shadow:inset 0 0 0 1px #ff5555; }
     .s8-editor-cell.note { background:transparent; border-right-color:#282a36; box-shadow:none; }
     .s8-editor-roll-note { position:absolute; z-index:2; min-width:2px; box-sizing:border-box; border:1px solid #b7ffca; border-radius:5px; background:#50fa7b; opacity:.95; pointer-events:none; }
     .s8-editor-cell.note-start { border-radius:5px 0 0 5px; }
@@ -321,6 +323,18 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
 
     let drag: { index: number; mode: "move" | "resize"; pitch: number; offset: number } | undefined;
     let dragged = false;
+    const clearCellPreview = () => container.querySelectorAll<HTMLElement>(".s8-editor-cell.preview-add, .s8-editor-cell.preview-remove").forEach((cell) => cell.classList.remove("preview-add", "preview-remove"));
+    const showCellPreview = (pitch: number, start: number) => {
+      clearCellPreview();
+      const existing = notes.find((note) => note.pitch === pitch && start >= note.start && start < note.start + note.duration);
+      container.querySelectorAll<HTMLElement>(".s8-editor-cell").forEach((cell) => {
+        if (Number(cell.dataset.pitch) !== pitch) return;
+        const time = Number(cell.dataset.start);
+        const removing = Boolean(existing);
+        const visible = removing ? time >= existing!.start && time < existing!.start + existing!.duration : time >= start && time < start + noteLength;
+        if (visible) cell.classList.add(removing ? "preview-remove" : "preview-add");
+      });
+    };
     const finishDrag = () => {
       if (!drag) return;
       // A press without movement is left for the click handler, which deletes
@@ -355,6 +369,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       if (target) updateDrag(target);
     });
     container.querySelectorAll<HTMLButtonElement>(".s8-editor-cell").forEach((cell) => {
+      cell.addEventListener("pointerenter", () => showCellPreview(Number(cell.dataset.pitch), Number(cell.dataset.start)));
       cell.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         const pitch = Number(cell.dataset.pitch); const column = Number(cell.dataset.start);
@@ -378,6 +393,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
         render();
       });
     });
+    container.querySelector<HTMLElement>(".s8-editor-roll")?.addEventListener("pointerleave", clearCellPreview);
     window.addEventListener("pointerup", finishDrag, { once: true });
     window.addEventListener("pointercancel", finishDrag, { once: true });
     container.querySelectorAll<HTMLButtonElement>("[data-melody]").forEach((button) => button.addEventListener("click", () => {
