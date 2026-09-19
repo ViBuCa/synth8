@@ -83,12 +83,13 @@ function installStyle() {
     .s8-editor-labels { display:grid; grid-template-rows:repeat(25, 28px); position:sticky; left:0; z-index:2; background:#1b1b2b; }
     .s8-editor-labels span { padding:6px 7px; border-bottom:1px solid #282a36; color:#f8f8f2; }
     .s8-editor-labels span.white { background:#303344; } .s8-editor-labels span.black { color:#8be9fd; background:#11111c; }
-    .s8-editor-roll { display:grid; grid-template-columns:repeat(32, 34px); grid-template-rows:repeat(25, 28px); min-width:max-content; }
+    .s8-editor-roll { display:grid; grid-template-columns:repeat(32, 34px); grid-template-rows:repeat(25, 28px); min-width:max-content; position:relative; }
     .s8-editor-cell { border-right:1px solid #282a36; border-bottom:1px solid #282a36; }
     .s8-editor-cell.white { background:#252738; } .s8-editor-cell.black { background:#14141f; }
     .s8-editor-cell.white.beat { border-right-color:#8490c0; } .s8-editor-cell.black.beat { border-right-color:#6272a4; }
     .s8-editor-cell.beat { border-right-color:#6272a4; } .s8-editor-cell:hover { background:#44475a; }
-    .s8-editor-cell.note { background:#50fa7b; border-right-color:#50fa7b; box-shadow:inset 0 0 0 1px #b7ffca; }
+    .s8-editor-cell.note { background:transparent; border-right-color:#282a36; box-shadow:none; }
+    .s8-editor-roll-note { position:absolute; z-index:2; min-width:2px; box-sizing:border-box; border:1px solid #b7ffca; border-radius:5px; background:#50fa7b; opacity:.95; pointer-events:none; }
     .s8-editor-cell.note-start { border-radius:5px 0 0 5px; }
     .s8-editor-cell.note-end { border-right-color:#282a36; }
     .s8-editor-cell.note { cursor:grab; } .s8-editor-cell.note:active { cursor:grabbing; }
@@ -283,7 +284,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
         const keyClass = NOTE_NAMES[midi % 12].includes("#") ? "black" : "white";
         const end = note && column === note.start + note.duration - 1;
         return `<button class="s8-editor-cell ${keyClass} ${column % beatsPerBar === 0 ? "beat" : ""} ${note ? "note" : ""} ${start ? "note-start" : ""} ${end ? "note-end" : ""}" data-pitch="${midi}" data-start="${column}" aria-label="${noteName(midi)} beat ${column + 1}"></button>`;
-      })).join("")}</div></div></div>
+      })).join("")}${notes.map((note) => `<span class="s8-editor-roll-note" style="left:${note.start / Math.max(1, columns) * 100}%;top:${(pitches[0] - note.pitch) / pitches.length * 100}%;width:${Math.max(0.5, note.duration / Math.max(1, columns) * 100)}%;height:${100 / pitches.length}%"></span>`).join("")}</div></div></div>
       <div class="drum-section" ${editorTab === "drums" ? "" : "hidden"}><h3 class="s8-editor-drum-title">Drum tracks</h3>
       <div class="s8-editor-toolbar s8-editor-melodies"><strong>Tracks:</strong>${drumTracks.map((track, index) => `<button data-drum-track="${index}" class="${index === activeDrumTrack ? "is-active" : ""}">${track.name}</button><button data-drum-toggle="${index}" class="s8-track-toggle" title="${track.enabled === false ? "Enable" : "Disable"} ${track.name}">${track.enabled === false ? "○" : "●"}</button>`).join("")}<button data-action="new-drum">+ New drum track</button><button data-action="duplicate-drum">Duplicate</button><button data-action="delete-drum">Delete</button><label>Name <input data-drum-name value="${drumTracks[activeDrumTrack].name.replace(/"/g, "&quot;")}" style="width:110px"></label></div>
       <div class="s8-editor-toolbar"><label>Kit <select data-drum-bank>${["default", "808", "909", "arcade", "chip"].map((item) => `<option ${item === drumTracks[activeDrumTrack].bank ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Gain <input data-drum-gain type="number" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].gain}" style="width:55px"></label><label>Pan <input data-drum-pan type="range" min="-1" max="1" step="0.05" value="${drumTracks[activeDrumTrack].pan}"></label><label>Echo <input data-drum-echo type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].echo}"></label><label>Reverb <input data-drum-reverb type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].reverb}"></label><label>Delay <input data-drum-delay type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].delay ?? 0}"></label><label>Room <input data-drum-room type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].room ?? 0}"></label><label>Drive <input data-drum-distortion type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].distortion ?? 0}"></label><label>Chorus <input data-drum-chorus type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].chorus ?? 0}"></label></div>
