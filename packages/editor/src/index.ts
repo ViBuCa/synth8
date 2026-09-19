@@ -261,7 +261,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     // containers as loopable patterns for general playback, so explicitly
     // override that default here.
     pattern.loop = loopEnabled;
-    await play(pattern, { bpm, playbackMode: "live" });
+    await play(pattern, { bpm, playbackMode: "rendered" });
     setMasterGain(masterGain);
     positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
   };

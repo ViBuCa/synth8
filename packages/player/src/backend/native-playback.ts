@@ -27,7 +27,7 @@ export const prepareNativeRendered = async (
     context: options.context,
     buffer,
     output: options.output,
-    loop: true,
+    loop: pattern.loop,
     loopEnd,
   });
 };
