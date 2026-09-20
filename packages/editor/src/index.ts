@@ -11,7 +11,7 @@ type Note = { start: number; pitch: number; duration: number; velocity: number; 
 type Envelope = { attack: number; decay: number; sustain: number; release: number };
 type Sound = "square" | "triangle" | "sawtooth" | "sine" | "pulse12" | "pulse25" | "pulse50" | "pulse75" | "noise" | "wavetable";
 type Melody = { name: string; enabled?: boolean; notes: Note[]; sound: Sound; preset?: string; gain: number; pan: number; echo: number; reverb: number; cutoff: number; resonance: number; envelope: Envelope; delay?: number; room?: number; highpass?: number; distortion?: number; chorus?: number; vibratoRate?: number; vibratoDepth?: number; vibratoDelay?: number; portamento?: number; };
-type DrumHit = { start: number; drum: string };
+type DrumHit = { start: number; drum: string; duration?: number };
 type DrumTrack = { name: string; enabled?: boolean; hits: DrumHit[]; bank: string; gain: number; pan: number; echo: number; reverb: number; delay?: number; room?: number; distortion?: number; chorus?: number; };
 
 // Chromatic rows, highest first. The editor now includes every semitone.
@@ -184,6 +184,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   };
   const gridStep = 0.25;
   let noteLength = 1;
+  let drumLength = 1;
   let quantizeStep = gridStep;
   let velocity = 0.8;
   let articulation: Articulation = "";
@@ -277,11 +278,15 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   };
 
   const drumSource = (track: DrumTrack) => {
-    const tokens = Array.from({ length: columns }, (_, index) => {
-      const atStart = track.hits.filter((hit) => hit.start === index).map((hit) => hit.drum);
-      return atStart.length ? atStart.join("+") : "_";
+    const tokens = Array.from({ length: Math.ceil(columns / gridStep) }, (_, index) => {
+      const time = index * gridStep;
+      const atStart = track.hits.filter((hit) => Math.abs(hit.start - time) < 0.001);
+      if (!atStart.length) return "_";
+      const durationUnits = Math.max(1, Math.round(Math.max(...atStart.map((hit) => hit.duration ?? 1)) / gridStep));
+      const drums = atStart.map((hit) => hit.drum).join("+");
+      return `${drums}${durationUnits === 1 ? "" : `/${durationUnits}`}`;
     });
-    return `beat("${tokens.join(" ")}").bank("${track.bank}").gain(${track.gain.toFixed(2)}).pan(${track.pan}).echo(${track.echo}).reverb(${track.reverb}).delay(${track.delay ?? 0}).room(${track.room ?? 0}).distortion(${track.distortion ?? 0}).chorus(${track.chorus ?? 0})${loopEnabled ? ".loop()" : ""}`;
+    return `beat("${tokens.join(" ")}").fast(4).bank("${track.bank}").gain(${track.gain.toFixed(2)}).pan(${track.pan}).echo(${track.echo}).reverb(${track.reverb}).delay(${track.delay ?? 0}).room(${track.room ?? 0}).distortion(${track.distortion ?? 0}).chorus(${track.chorus ?? 0})${loopEnabled ? ".loop()" : ""}`;
   };
 
   const source = () => {
@@ -335,7 +340,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       if (layer.events.some((event) => event.type === "note")) {
         importedMelodies.push({ name: `Melody ${importedMelodies.length + 1}`, enabled: true, preset: playback.preset, sound: (playback.sound as Sound) ?? "square", gain: playback.gain ?? 0.8, pan: playback.pan ?? 0, echo: playback.effects?.echo ?? 0, reverb: playback.effects?.reverb ?? 0, cutoff: playback.filter?.cutoff ?? 20000, resonance: playback.filter?.resonance ?? 0, delay: playback.effects?.delay, room: playback.effects?.room, highpass: playback.effects?.highpass, distortion: playback.effects?.distortion, chorus: playback.effects?.chorus, vibratoRate: playback.pitch?.vibratoRate, vibratoDepth: playback.pitch?.vibratoDepth, vibratoDelay: playback.pitch?.vibratoDelay, portamento: playback.pitch?.portamento, envelope: { attack: playback.envelope?.attack ?? 0.01, decay: playback.envelope?.decay ?? 0.1, sustain: playback.envelope?.sustain ?? 0.7, release: playback.envelope?.release ?? 0.2 }, notes: layer.events.filter((event) => event.type === "note").map((event) => ({ start: event.time, pitch: noteToMidi(event.value), duration: event.dur, velocity: event.velocity ?? 0.8, articulation: event.articulation, bend: event.bend })) });
       } else if (layer.events.some((event) => event.type === "drum")) {
-        importedDrums.push({ name: `Drums ${importedDrums.length + 1}`, enabled: true, bank: playback.bank ?? "default", gain: playback.gain ?? 0.8, pan: playback.pan ?? 0, echo: playback.effects?.echo ?? 0, reverb: playback.effects?.reverb ?? 0, delay: playback.effects?.delay, room: playback.effects?.room, distortion: playback.effects?.distortion, chorus: playback.effects?.chorus, hits: layer.events.filter((event) => event.type === "drum").map((event) => ({ start: event.time, drum: event.value })) });
+        importedDrums.push({ name: `Drums ${importedDrums.length + 1}`, enabled: true, bank: playback.bank ?? "default", gain: playback.gain ?? 0.8, pan: playback.pan ?? 0, echo: playback.effects?.echo ?? 0, reverb: playback.effects?.reverb ?? 0, delay: playback.effects?.delay, room: playback.effects?.room, distortion: playback.effects?.distortion, chorus: playback.effects?.chorus, hits: layer.events.filter((event) => event.type === "drum").map((event) => ({ start: event.time, duration: event.dur, drum: event.value })) });
       }
     }
     melodies = importedMelodies.length ? importedMelodies : [{ name: "Melody 1", notes: [], sound: "square", gain: 0.8, pan: 0, echo: 0, reverb: 0, cutoff: 20000, resonance: 0, envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.2 } }];
@@ -375,9 +380,9 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       })).join("")}${notes.map((note) => `<span class="s8-editor-roll-note" data-start="${note.start}" data-duration="${note.duration}" style="left:${note.start / Math.max(1, columns) * 100}%;top:${(pitches[0] - note.pitch) / pitches.length * 100}%;width:${Math.max(0.5, note.duration / Math.max(1, columns) * 100)}%;height:${100 / pitches.length}%"></span>`).join("")}<span class="s8-editor-playhead"></span></div></div></div>
       <div class="drum-section" ${editorTab === "drums" ? "" : "hidden"}><h3 class="s8-editor-drum-title">Drum tracks</h3>
       <div class="s8-editor-toolbar s8-editor-melodies"><strong>Drums</strong><div class="s8-track-list">${drumTracks.map((track, index) => `<div class="s8-track-row"><button data-drum-track="${index}" class="${index === activeDrumTrack ? "is-active" : ""}">${track.name}</button><button data-drum-toggle="${index}" class="s8-track-toggle" title="${track.enabled === false ? "Enable" : "Disable"} ${track.name}">${track.enabled === false ? "○" : "●"}</button></div>`).join("")}</div><div class="s8-track-actions"><button data-action="new-drum">+ New drum track</button><button data-action="duplicate-drum">Duplicate</button><button data-action="delete-drum">Delete</button><label>Name <input data-drum-name value="${drumTracks[activeDrumTrack].name.replace(/"/g, "&quot;")}" style="width:110px"></label></div></div>
-      <div class="s8-editor-toolbar"><label>Kit <select data-drum-bank>${["default", "808", "909", "arcade", "chip"].map((item) => `<option ${item === drumTracks[activeDrumTrack].bank ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Gain <input data-drum-gain type="number" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].gain}" style="width:55px"></label><label>Pan <input data-drum-pan type="range" min="-1" max="1" step="0.05" value="${drumTracks[activeDrumTrack].pan}"></label><label>Echo <input data-drum-echo type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].echo}"></label><label>Reverb <input data-drum-reverb type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].reverb}"></label><label>Delay <input data-drum-delay type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].delay ?? 0}"></label><label>Room <input data-drum-room type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].room ?? 0}"></label><label>Drive <input data-drum-distortion type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].distortion ?? 0}"></label><label>Chorus <input data-drum-chorus type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].chorus ?? 0}"></label></div>
-      <div class="s8-editor-drum-grid"><div class="s8-editor-drum-labels">${DRUMS.map((drum) => `<span>${drum}</span>`).join("")}</div><div class="s8-editor-drum-roll" style="grid-template-columns:repeat(${columns},34px);width:${columns * 34}px">
-      ${DRUMS.flatMap((drum) => Array.from({ length: columns }, (_, column) => { const hit = drumTracks[activeDrumTrack].hits.some((item) => item.drum === drum && item.start === column); return `<button class="s8-editor-drum-cell ${column % beatsPerBar === 0 ? "beat" : ""} ${hit ? "hit" : ""}" data-drum="${drum}" data-start="${column}" aria-label="${drum} beat ${column + 1}"></button>`; })).join("")}<span class="s8-editor-drum-playhead"></span></div></div></div><div class="song-section"><h3>Song import/export</h3><textarea class="s8-editor-source" data-song-source readonly>${generated}</textarea><div class="s8-editor-toolbar"><button data-action="export-song">Export .synth8</button><label>Import .synth8 <input data-import-song type="file" accept=".synth8,.txt,text/plain"></label></div></div>`;
+      <div class="s8-editor-toolbar"><label>Hit length <select data-drum-length>${[0.25, 0.5, 0.75, 1, 2, 4].map((item) => `<option value="${item}" ${item === drumLength ? "selected" : ""}>${item} beat${item === 1 ? "" : "s"}</option>`).join("")}</select></label><label>Kit <select data-drum-bank>${["default", "808", "909", "arcade", "chip"].map((item) => `<option ${item === drumTracks[activeDrumTrack].bank ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Gain <input data-drum-gain type="number" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].gain}" style="width:55px"></label><label>Pan <input data-drum-pan type="range" min="-1" max="1" step="0.05" value="${drumTracks[activeDrumTrack].pan}"></label><label>Echo <input data-drum-echo type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].echo}"></label><label>Reverb <input data-drum-reverb type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].reverb}"></label><label>Delay <input data-drum-delay type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].delay ?? 0}"></label><label>Room <input data-drum-room type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].room ?? 0}"></label><label>Drive <input data-drum-distortion type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].distortion ?? 0}"></label><label>Chorus <input data-drum-chorus type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].chorus ?? 0}"></label></div>
+      <div class="s8-editor-drum-grid"><div class="s8-editor-drum-labels">${DRUMS.map((drum) => `<span>${drum}</span>`).join("")}</div><div class="s8-editor-drum-roll" style="grid-template-columns:repeat(${gridColumns},34px);width:${gridColumns * 34}px">
+      ${DRUMS.flatMap((drum) => Array.from({ length: gridColumns }, (_, column) => { const time = column * gridStep; const hit = drumTracks[activeDrumTrack].hits.find((item) => item.drum === drum && time >= item.start && time < item.start + (item.duration ?? 1)); return `<button class="s8-editor-drum-cell ${Math.abs(time % beatsPerBar) < 0.001 ? "beat" : ""} ${hit ? "hit" : ""}" data-drum="${drum}" data-start="${time}" data-duration="${hit?.duration ?? 0}" aria-label="${drum} beat ${time + gridStep}"></button>`; })).join("")}<span class="s8-editor-drum-playhead"></span></div></div></div><div class="song-section"><h3>Song import/export</h3><textarea class="s8-editor-source" data-song-source readonly>${generated}</textarea><div class="s8-editor-toolbar"><button data-action="export-song">Export .synth8</button><label>Import .synth8 <input data-import-song type="file" accept=".synth8,.txt,text/plain"></label></div></div>`;
     // Do not leave the inactive editor in the DOM. This is deliberately a
     // removal rather than only a CSS hide, so melody mode has no drum grid.
     if (editorTab === "melody") {
@@ -514,8 +519,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelectorAll<HTMLButtonElement>(".s8-editor-drum-cell").forEach((cell) => cell.addEventListener("click", () => {
       markEdited();
       const drum = cell.dataset.drum!; const start = Number(cell.dataset.start); const hits = drumTracks[activeDrumTrack].hits;
-      const index = hits.findIndex((hit) => hit.drum === drum && hit.start === start);
-      if (index >= 0) hits.splice(index, 1); else hits.push({ drum, start });
+      const index = hits.findIndex((hit) => hit.drum === drum && start >= hit.start && start < hit.start + (hit.duration ?? 1));
+      if (index >= 0) hits.splice(index, 1); else hits.push({ drum, start, duration: drumLength });
       render();
     }));
     container.querySelector<HTMLButtonElement>('[data-action="octave-down"]')!.addEventListener("click", () => { topOctave = Math.max(1, topOctave - 1); render(); });
@@ -566,6 +571,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelector<HTMLInputElement>("[data-drum-reverb]")?.addEventListener("input", (event) => { markEdited(); drumTracks[activeDrumTrack].reverb = Number((event.target as HTMLInputElement).value); render(); });
     container.querySelectorAll<HTMLInputElement>("[data-drum-delay], [data-drum-room], [data-drum-distortion], [data-drum-chorus]").forEach((input) => input.addEventListener("input", () => { markEdited(); const key = input.dataset.drumDelay !== undefined ? "delay" : input.dataset.drumRoom !== undefined ? "room" : input.dataset.drumDistortion !== undefined ? "distortion" : "chorus"; (drumTracks[activeDrumTrack] as unknown as Record<string, number>)[key] = Number(input.value); render(); }));
     container.querySelector<HTMLSelectElement>("[data-length]")!.addEventListener("change", (event) => { noteLength = Number((event.target as HTMLSelectElement).value); render(); });
+    container.querySelector<HTMLSelectElement>("[data-drum-length]")?.addEventListener("change", (event) => { drumLength = Number((event.target as HTMLSelectElement).value); render(); });
     container.querySelector<HTMLSelectElement>("[data-velocity]")!.addEventListener("change", (event) => { velocity = Number((event.target as HTMLSelectElement).value); render(); });
     container.querySelector<HTMLSelectElement>("[data-articulation]")!.addEventListener("change", (event) => { articulation = (event.target as HTMLSelectElement).value as Articulation; markEdited(); render(); });
     container.querySelector<HTMLInputElement>("[data-bend]")!.addEventListener("change", (event) => { bend = Math.max(-24, Math.min(24, Number((event.target as HTMLInputElement).value) || 0)); markEdited(); render(); });
