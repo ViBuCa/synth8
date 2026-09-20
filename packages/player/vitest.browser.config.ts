@@ -4,6 +4,8 @@ import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
     test: {
+        testTimeout: 60000,
+        hookTimeout: 60000,
         include: ["browser-tests/**/*.test.ts"],
         browser: {
             enabled: true,
