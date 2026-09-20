@@ -124,8 +124,9 @@ function installStyle() {
     .s8-editor-cell.note { background:transparent; border-right-color:#282a36; box-shadow:none; }
     .s8-editor-roll-note { position:absolute; z-index:2; min-width:2px; box-sizing:border-box; border:1px solid #b7ffca; border-radius:5px; background:#50fa7b; opacity:.95; pointer-events:none; }
     .s8-editor-cell.bar { border-right-color:#b7c3ff; border-right-width:2px; }
-    .s8-editor-cell.beat-alt:not(.note) { background:#303344; }
-    .s8-editor-drum-cell.beat-alt { background:#303344; }
+    .s8-editor-cell.white.beat-alt:not(.note) { background:#303344; }
+    .s8-editor-cell.black.beat-alt:not(.note) { background:#202332; }
+    .s8-editor-drum-cell.beat-alt { background:#45475a; }
     .s8-editor-drum-cell.beat { border-right-color:#b7c3ff; border-right-width:2px; }
     .s8-editor-cell.note-start { border-radius:5px 0 0 5px; }
     .s8-editor-cell.note-end { border-right-color:#282a36; }
@@ -239,17 +240,17 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     if (grid && roll) {
       if (isPlaying) {
         const maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
-        const targetScroll = 52 + musicalPosition / Math.max(1, columns) * roll.scrollWidth - grid.clientWidth * 0.6;
+        const targetScroll = 52 + position / Math.max(0.001, length) * roll.scrollWidth - grid.clientWidth * 0.6;
         grid.scrollLeft = Math.max(0, Math.min(maxScroll, targetScroll));
       }
-      const playheadPosition = Math.min(1, musicalPosition / Math.max(1, columns)) * roll.scrollWidth;
+      const playheadPosition = position / Math.max(0.001, length) * roll.scrollWidth;
       const playhead = roll.querySelector<HTMLElement>(".s8-editor-playhead");
       if (playhead) playhead.style.left = `${playheadPosition}px`;
       const drumGrid = container.querySelector<HTMLElement>(".s8-editor-drum-grid");
       const drumRoll = container.querySelector<HTMLElement>(".s8-editor-drum-roll");
       const drumPlayhead = drumRoll?.querySelector<HTMLElement>(".s8-editor-drum-playhead");
       if (drumPlayhead && drumRoll) {
-        const drumPosition = Math.min(1, musicalPosition / Math.max(1, columns)) * Math.max(0, drumRoll.scrollWidth - 34);
+        const drumPosition = position / Math.max(0.001, length) * drumRoll.scrollWidth;
         drumPlayhead.style.left = `${drumPosition}px`;
         if (isPlaying && drumGrid) drumGrid.scrollLeft = Math.max(0, Math.min(drumGrid.scrollWidth - drumGrid.clientWidth, drumPosition - drumGrid.clientWidth * 0.6));
       }
