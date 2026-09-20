@@ -33,6 +33,19 @@ describe("native player", () => {
     expect(backend.stop).toHaveBeenCalledOnce();
   });
 
+  it("reports live playback position from the audio clock", () => {
+    const clock = { currentTime: 0 };
+    const backend = { start: vi.fn(), schedule: vi.fn(), stop: vi.fn() };
+    const scheduler = new BackendScheduler(pattern([], 16), backend, clock, { bpm: 90, lookAhead: 0.1 });
+    scheduler.start();
+    clock.currentTime = 2;
+    expect(scheduler.getPosition()).toBeCloseTo(3, 6);
+    scheduler.pause();
+    clock.currentTime = 10;
+    expect(scheduler.getPosition()).toBeCloseTo(3, 6);
+    scheduler.stop();
+  });
+
   it("encodes PCM audio as a WAV blob", async () => {
     const audio = {
       numberOfChannels: 1,
