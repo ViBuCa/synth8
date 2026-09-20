@@ -193,7 +193,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     if (positionLabel) positionLabel.textContent = `${position.toFixed(1)}s`;
     const beatLabel = container.querySelector<HTMLElement>("[data-current-beat]");
     if (beatLabel) beatLabel.textContent = `Beat ${Math.min(columns, Math.floor(position * bpm / 60) + 1)}`;
-    container.querySelectorAll<HTMLElement>(".s8-editor-cell, .s8-editor-roll-note, .s8-song-overview-note").forEach((element) => {
+    container.querySelectorAll<HTMLElement>(".s8-editor-cell, .s8-song-overview-note").forEach((element) => {
       const start = Number(element.dataset.start);
       const duration = Number(element.dataset.duration ?? 0);
       element.classList.toggle("is-playing-note", isPlaying && musicalPosition >= start && musicalPosition < start + duration);
@@ -206,8 +206,13 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
         const targetScroll = 52 + musicalPosition / Math.max(1, columns) * roll.scrollWidth - grid.clientWidth * 0.6;
         grid.scrollLeft = Math.max(0, Math.min(maxScroll, targetScroll));
       }
+      const playheadPosition = position / Math.max(0.001, length) * roll.scrollWidth;
       const playhead = roll.querySelector<HTMLElement>(".s8-editor-playhead");
-      if (playhead) playhead.style.left = `${position / Math.max(0.001, length) * roll.scrollWidth}px`;
+      if (playhead) playhead.style.left = `${playheadPosition}px`;
+      roll.querySelectorAll<HTMLElement>(".s8-editor-roll-note").forEach((note) => {
+        const noteStart = note.offsetLeft;
+        note.classList.toggle("is-playing-note", isPlaying && playheadPosition >= noteStart && playheadPosition < noteStart + note.offsetWidth);
+      });
     }
   };
   const stopPosition = () => { if (positionTimer !== undefined) window.clearInterval(positionTimer); positionTimer = undefined; };
