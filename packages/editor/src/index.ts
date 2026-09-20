@@ -110,6 +110,8 @@ function installStyle() {
     .s8-editor-drum-labels span { padding:6px 7px; border-bottom:1px solid #282a36; color:#c7c7d8; }
     .s8-editor-drum-roll { display:grid; grid-template-rows:repeat(14,28px); min-width:max-content; }
     .s8-editor-drum-cell { border:0; border-right:1px solid #282a36; border-bottom:1px solid #282a36; background:#252738; }
+    .s8-editor-drum-roll { position:relative; }
+    .s8-editor-drum-playhead { position:absolute; top:0; bottom:0; width:2px; background:#ff5555; box-shadow:0 0 6px #ff5555; pointer-events:none; z-index:4; }
     .s8-editor-drum-cell.beat { border-right-color:#8490c0; } .s8-editor-drum-cell.hit { background:#ffb86c; box-shadow:inset 0 0 0 1px #ffe0b2; }
   `;
   document.head.appendChild(element);
@@ -215,6 +217,14 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       const playheadPosition = position / Math.max(0.001, length) * roll.scrollWidth;
       const playhead = roll.querySelector<HTMLElement>(".s8-editor-playhead");
       if (playhead) playhead.style.left = `${playheadPosition}px`;
+      const drumGrid = container.querySelector<HTMLElement>(".s8-editor-drum-grid");
+      const drumRoll = container.querySelector<HTMLElement>(".s8-editor-drum-roll");
+      const drumPlayhead = drumRoll?.querySelector<HTMLElement>(".s8-editor-drum-playhead");
+      if (drumPlayhead && drumRoll) {
+        const drumPosition = position / Math.max(0.001, length) * drumRoll.scrollWidth;
+        drumPlayhead.style.left = `${drumPosition}px`;
+        if (isPlaying && drumGrid) drumGrid.scrollLeft = Math.max(0, Math.min(drumGrid.scrollWidth - drumGrid.clientWidth, drumPosition - drumGrid.clientWidth * 0.6));
+      }
       roll.querySelectorAll<HTMLElement>(".s8-editor-roll-note").forEach((note) => {
         const noteStart = note.offsetLeft;
         note.classList.toggle("is-playing-note", isPlaying && playheadPosition >= noteStart && playheadPosition < noteStart + note.offsetWidth);
@@ -349,8 +359,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
       <div class="drum-section" ${editorTab === "drums" ? "" : "hidden"}><h3 class="s8-editor-drum-title">Drum tracks</h3>
       <div class="s8-editor-toolbar s8-editor-melodies"><strong>Tracks:</strong>${drumTracks.map((track, index) => `<button data-drum-track="${index}" class="${index === activeDrumTrack ? "is-active" : ""}">${track.name}</button><button data-drum-toggle="${index}" class="s8-track-toggle" title="${track.enabled === false ? "Enable" : "Disable"} ${track.name}">${track.enabled === false ? "○" : "●"}</button>`).join("")}<button data-action="new-drum">+ New drum track</button><button data-action="duplicate-drum">Duplicate</button><button data-action="delete-drum">Delete</button><label>Name <input data-drum-name value="${drumTracks[activeDrumTrack].name.replace(/"/g, "&quot;")}" style="width:110px"></label></div>
       <div class="s8-editor-toolbar"><label>Kit <select data-drum-bank>${["default", "808", "909", "arcade", "chip"].map((item) => `<option ${item === drumTracks[activeDrumTrack].bank ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Gain <input data-drum-gain type="number" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].gain}" style="width:55px"></label><label>Pan <input data-drum-pan type="range" min="-1" max="1" step="0.05" value="${drumTracks[activeDrumTrack].pan}"></label><label>Echo <input data-drum-echo type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].echo}"></label><label>Reverb <input data-drum-reverb type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].reverb}"></label><label>Delay <input data-drum-delay type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].delay ?? 0}"></label><label>Room <input data-drum-room type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].room ?? 0}"></label><label>Drive <input data-drum-distortion type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].distortion ?? 0}"></label><label>Chorus <input data-drum-chorus type="range" min="0" max="1" step="0.05" value="${drumTracks[activeDrumTrack].chorus ?? 0}"></label></div>
-      <div class="s8-editor-drum-grid"><div class="s8-editor-drum-labels">${DRUMS.map((drum) => `<span>${drum}</span>`).join("")}</div><div class="s8-editor-drum-roll" style="grid-template-columns:repeat(${columns},34px)">
-      ${DRUMS.flatMap((drum) => Array.from({ length: columns }, (_, column) => { const hit = drumTracks[activeDrumTrack].hits.some((item) => item.drum === drum && item.start === column); return `<button class="s8-editor-drum-cell ${column % beatsPerBar === 0 ? "beat" : ""} ${hit ? "hit" : ""}" data-drum="${drum}" data-start="${column}" aria-label="${drum} beat ${column + 1}"></button>`; })).join("")}</div></div></div><div class="song-section"><h3>Song import/export</h3><textarea class="s8-editor-source" data-song-source readonly>${generated}</textarea><div class="s8-editor-toolbar"><button data-action="export-song">Export .synth8</button><label>Import .synth8 <input data-import-song type="file" accept=".synth8,.txt,text/plain"></label></div></div>`;
+      <div class="s8-editor-drum-grid"><div class="s8-editor-drum-labels">${DRUMS.map((drum) => `<span>${drum}</span>`).join("")}</div><div class="s8-editor-drum-roll" style="grid-template-columns:repeat(${columns},34px);width:${columns * 34}px">
+      ${DRUMS.flatMap((drum) => Array.from({ length: columns }, (_, column) => { const hit = drumTracks[activeDrumTrack].hits.some((item) => item.drum === drum && item.start === column); return `<button class="s8-editor-drum-cell ${column % beatsPerBar === 0 ? "beat" : ""} ${hit ? "hit" : ""}" data-drum="${drum}" data-start="${column}" aria-label="${drum} beat ${column + 1}"></button>`; })).join("")}<span class="s8-editor-drum-playhead"></span></div></div></div><div class="song-section"><h3>Song import/export</h3><textarea class="s8-editor-source" data-song-source readonly>${generated}</textarea><div class="s8-editor-toolbar"><button data-action="export-song">Export .synth8</button><label>Import .synth8 <input data-import-song type="file" accept=".synth8,.txt,text/plain"></label></div></div>`;
     // Do not leave the inactive editor in the DOM. This is deliberately a
     // removal rather than only a CSS hide, so melody mode has no drum grid.
     if (editorTab === "melody") {
