@@ -53,11 +53,12 @@ function installStyle() {
     .s8-track-panel h3 { margin:0 0 8px; color:#8be9fd; font-size:12px; text-transform:uppercase; }
     .s8-track-panel .s8-editor-melodies { flex-direction:column; align-items:stretch; margin:0; }
     .s8-track-panel .s8-editor-melodies button, .s8-track-panel .s8-editor-melodies label { width:100%; box-sizing:border-box; }
-    .s8-track-list { display:flex; flex-direction:column; gap:4px; }
+    .s8-track-list { display:flex; flex-direction:column; gap:4px; max-height:190px; overflow-y:auto; padding-right:4px; }
     .s8-track-row { display:flex; align-items:center; gap:4px; }
     .s8-track-row button:first-child { flex:1; text-align:left; }
     .s8-track-row .s8-track-toggle { width:38px; flex:0 0 38px; }
-    .s8-track-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid #44475a; }
+    .s8-track-actions { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid #44475a; overflow-x:auto; }
+    .s8-track-actions label { flex:0 0 auto; }
     .s8-song-controls { flex:1; }
     .s8-song-controls .s8-song-timing { order:1; }
     .s8-song-controls .s8-song-loop { order:2; }
@@ -232,14 +233,14 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
         const targetScroll = 52 + musicalPosition / Math.max(1, columns) * roll.scrollWidth - grid.clientWidth * 0.6;
         grid.scrollLeft = Math.max(0, Math.min(maxScroll, targetScroll));
       }
-      const playheadPosition = position / Math.max(0.001, length) * roll.scrollWidth;
+      const playheadPosition = Math.min(1, musicalPosition / Math.max(1, columns)) * roll.scrollWidth;
       const playhead = roll.querySelector<HTMLElement>(".s8-editor-playhead");
       if (playhead) playhead.style.left = `${playheadPosition}px`;
       const drumGrid = container.querySelector<HTMLElement>(".s8-editor-drum-grid");
       const drumRoll = container.querySelector<HTMLElement>(".s8-editor-drum-roll");
       const drumPlayhead = drumRoll?.querySelector<HTMLElement>(".s8-editor-drum-playhead");
       if (drumPlayhead && drumRoll) {
-        const drumPosition = position / Math.max(0.001, length) * drumRoll.scrollWidth;
+        const drumPosition = Math.min(1, musicalPosition / Math.max(1, columns)) * drumRoll.scrollWidth;
         drumPlayhead.style.left = `${drumPosition}px`;
         if (isPlaying && drumGrid) drumGrid.scrollLeft = Math.max(0, Math.min(drumGrid.scrollWidth - drumGrid.clientWidth, drumPosition - drumGrid.clientWidth * 0.6));
       }
@@ -358,6 +359,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     const gridColumns = Math.ceil(columns / gridStep);
     const generated = source();
     const previousGridScrollLeft = container.querySelector<HTMLElement>(".s8-editor-grid")?.scrollLeft ?? 0;
+    const previousDrumGridScrollLeft = container.querySelector<HTMLElement>(".s8-editor-drum-grid")?.scrollLeft ?? 0;
     container.innerHTML = `<h2>Sketch Editor</h2><p>Choose a track type below. Click to add/remove. Drag melody notes to move them; drag their right edge to resize.</p>
       <div class="s8-editor-toolbar s8-editor-tabs"><button data-tab="melody" class="${editorTab === "melody" ? "is-active" : ""}">Melodies</button><button data-tab="drums" class="${editorTab === "drums" ? "is-active" : ""}">Drums</button><button data-action="clear" title="Clear the active track">Clear track</button><button data-action="undo" title="Undo" ${historyIndex <= 0 ? "disabled" : ""}>↶ Undo</button><button data-action="redo" title="Redo" ${historyIndex + 1 >= history.length ? "disabled" : ""}>↷ Redo</button></div>
       <div class="s8-editor-toolbar s8-global-controls"><div class="s8-global-left"><div class="s8-control-group"><span class="s8-control-group-title">Transport</span><button class="s8-icon-button s8-transport-play" data-action="play" title="Start the song" ${isPlaying || isStarting ? "disabled" : ""}><span class="s8-icon">▶</span>Play</button><button class="s8-icon-button s8-transport-pause" data-action="pause-resume" title="Pause or resume the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">${isPaused ? "▶" : "Ⅱ"}</span>${isPaused ? "Resume" : "Pause"}</button><button class="s8-icon-button s8-transport-stop" data-action="stop" title="Stop and reset the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">■</span>Stop</button><span class="s8-playback-status" data-playback-status>${isStarting ? "Preparing playback… <progress></progress>" : isPlaying ? "Playing" : isPaused ? "Paused" : ""}</span></div><div class="s8-control-group s8-song-controls"><span class="s8-control-group-title">Song</span><div class="s8-song-metrics"><span class="s8-value" data-current-beat>Beat 1</span><span>Position <strong class="s8-value" data-position>0.0s</strong></span><span>Duration <strong class="s8-value" data-song-length>${(columns * 60 / bpm).toFixed(1)}s</strong></span></div><div class="s8-song-timing"><label>BPM <input data-bpm type="number" min="40" max="240" value="${bpm}" style="width:60px"></label><label>Length <input data-columns type="number" min="1" max="128" value="${columns}" style="width:60px"> beats</label></div><div class="s8-song-loop"><label><input data-loop type="checkbox" ${loopEnabled ? "checked" : ""}> Loop playback</label><label>From <input data-loop-start type="number" min="0" max="${columns}" value="${loopStart}" style="width:48px"></label><label>To <input data-loop-end type="number" min="1" max="${columns}" value="${loopEnd}" style="width:48px"></label></div><label>Master volume <input data-master-gain type="range" min="0" max="1" step="0.05" value="${masterGain}"></label></div></div><div class="s8-track-panel" data-track-panel><h3>Tracks</h3></div></div>
@@ -402,6 +404,8 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
 
     const renderedGrid = container.querySelector<HTMLElement>(".s8-editor-grid");
     if (renderedGrid) renderedGrid.scrollLeft = previousGridScrollLeft;
+    const renderedDrumGrid = container.querySelector<HTMLElement>(".s8-editor-drum-grid");
+    if (renderedDrumGrid) renderedDrumGrid.scrollLeft = previousDrumGridScrollLeft;
 
     // Update the visible roll without rebuilding its DOM. This keeps pointer
     // capture and the current drag interaction alive while the note moves.
