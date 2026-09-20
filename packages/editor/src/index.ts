@@ -52,13 +52,16 @@ function installStyle() {
     .s8-track-panel { min-width:220px; }
     .s8-track-panel h3 { margin:0 0 8px; color:#8be9fd; font-size:12px; text-transform:uppercase; }
     .s8-track-panel .s8-editor-melodies { flex-direction:column; align-items:stretch; margin:0; }
-    .s8-track-panel .s8-editor-melodies button, .s8-track-panel .s8-editor-melodies label { width:100%; box-sizing:border-box; }
-    .s8-track-list { display:flex; flex-direction:column; gap:4px; max-height:190px; overflow-y:auto; padding-right:4px; }
-    .s8-track-row { display:flex; align-items:center; gap:4px; }
-    .s8-track-row button:first-child { flex:1; text-align:left; }
+    .s8-track-panel .s8-track-list button { width:100%; box-sizing:border-box; }
+    .s8-track-list { display:flex; flex-direction:column; gap:4px; height:190px; overflow-y:auto; padding-right:4px; scrollbar-gutter:stable; }
+    .s8-track-row { display:flex; align-items:center; gap:4px; min-height:34px; }
+    .s8-track-row button { min-height:34px; }
+    .s8-track-row button:first-child { flex:1; min-width:0; text-align:left; }
     .s8-track-row .s8-track-toggle { width:38px; flex:0 0 38px; }
-    .s8-track-actions { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid #44475a; overflow-x:auto; }
-    .s8-track-actions label { flex:0 0 auto; }
+    .s8-track-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-height:34px; margin-top:10px; padding-top:10px; border-top:1px solid #44475a; }
+    .s8-track-actions button, .s8-track-actions label, .s8-track-actions input { min-height:34px; box-sizing:border-box; }
+    .s8-track-actions label { flex:1 1 120px; }
+    .s8-track-actions button { flex:1 1 auto; white-space:nowrap; }
     .s8-song-controls { flex:1; }
     .s8-song-controls .s8-song-timing { order:1; }
     .s8-song-controls .s8-song-loop { order:2; }
