@@ -77,8 +77,8 @@ function installStyle() {
     .s8-editor-tabs { border-bottom:1px solid #44475a; padding-bottom:10px; } .s8-editor-tabs button { min-width:120px; font-size:15px; }
     .s8-editor-melodies, .s8-editor-drum-title, .song-section { border:1px solid #44475a; border-radius:8px; padding:10px; background:#1b1b2b; }
     .s8-editor [hidden], .s8-editor[data-tab="melody"] .drum-section, .s8-editor[data-tab="drums"] .melody-section { display:none !important; }
-    .s8-editor[data-playback="starting"] .s8-editor-grid, .s8-editor[data-playback="starting"] .s8-instrument-controls, .s8-editor[data-playback="starting"] .s8-editor-melodies,
-    .s8-editor[data-playback="playing"] .s8-editor-grid, .s8-editor[data-playback="playing"] .s8-instrument-controls, .s8-editor[data-playback="playing"] .s8-editor-melodies { pointer-events:none; opacity:.65; }
+    .s8-editor[data-playback="starting"] .s8-editor-grid, .s8-editor[data-playback="starting"] .s8-editor-drum-grid, .s8-editor[data-playback="starting"] .s8-instrument-controls, .s8-editor[data-playback="starting"] .s8-editor-melodies,
+    .s8-editor[data-playback="playing"] .s8-editor-grid, .s8-editor[data-playback="playing"] .s8-editor-drum-grid, .s8-editor[data-playback="playing"] .s8-editor-instrument-controls, .s8-editor[data-playback="playing"] .s8-instrument-controls, .s8-editor[data-playback="playing"] .s8-editor-melodies, .s8-editor[data-playback="playing"] .drum-section > .s8-editor-toolbar { pointer-events:none; opacity:.65; }
     .s8-playback-status { display:flex; align-items:center; gap:8px; color:#f1fa8c; min-height:24px; }
     .s8-playback-status progress { width:140px; accent-color:#8be9fd; }
     .song-section { margin-top:18px; } .song-section h3 { margin:0 0 10px; }
