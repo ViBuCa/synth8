@@ -9,7 +9,6 @@ export class BackendScheduler {
   private readonly lookAhead: number;
   private readonly updateInterval: number;
   private readonly bpm: number;
-  private pausedPosition = 0;
 
   constructor(
     private readonly pattern: Synth8Pattern,
@@ -29,13 +28,8 @@ export class BackendScheduler {
     return this.pattern.query(start, end);
   }
 
-  getPosition(): number {
-    if (!this.running) return this.pausedPosition;
-    return Math.max(0, (this.clock.currentTime - this.origin) * this.bpm / 60);
-  }
-
   private tick(): void {
-    const musicalNow = this.getPosition();
+    const musicalNow = Math.max(0, (this.clock.currentTime - this.origin) * this.bpm / 60);
     const end = Math.max(this.scheduledUntil, musicalNow + this.lookAhead * this.bpm / 60);
     if (end <= this.scheduledUntil) return;
     this.backend.schedule(this.queryLoop(this.scheduledUntil, end));
@@ -47,10 +41,6 @@ export class BackendScheduler {
     if (this.scheduledUntil === 0) {
       this.origin = this.clock.currentTime;
       this.backend.start?.();
-    } else if (this.pausedPosition > 0) {
-      this.origin = this.clock.currentTime - this.pausedPosition * 60 / this.bpm;
-      this.scheduledUntil = this.pausedPosition;
-      this.backend.start?.();
     }
     this.running = true;
     this.tick();
@@ -58,7 +48,6 @@ export class BackendScheduler {
   }
 
   pause(): void {
-    this.pausedPosition = this.getPosition();
     this.running = false;
     if (this.timer !== undefined) clearInterval(this.timer);
     this.timer = undefined;
@@ -69,7 +58,6 @@ export class BackendScheduler {
   stop(): void {
     this.pause();
     this.scheduledUntil = 0;
-    this.pausedPosition = 0;
     this.backend.stop?.();
   }
 }

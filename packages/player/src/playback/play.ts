@@ -33,7 +33,6 @@ const prepareLive = (pattern: Pattern, options: PlayOptions, context: AudioConte
     start: () => scheduler.start(),
     pause: () => scheduler.pause(),
     resume: () => scheduler.resume(),
-    getPosition: () => scheduler.getPosition() * 60 / (options.bpm ?? 120),
     setMasterGain: (gain: number) => backend.setMasterGain?.(gain),
     stop: () => { scheduler.stop(); backend.dispose?.(); },
     dispose: () => { scheduler.stop(); backend.dispose?.(); },
