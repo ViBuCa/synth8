@@ -265,22 +265,19 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
 
   const melodySource = (melody: Melody) => {
     const melodyNotes = melody.notes;
-    const tokens = Array.from({ length: Math.ceil(columns / gridStep) }, (_, index) => {
-      const time = index * gridStep;
-      const atStart = melodyNotes
-        .filter((item) => Math.abs(item.start - time) < 0.001)
-        .sort((a, b) => a.pitch - b.pitch);
-      if (atStart.length === 0) return "_";
-
-      // Several notes starting on the same beat are exported as one parallel
-      // Synth8 token, so stacked piano-roll notes remain a chord in playback.
+    const tokens: string[] = [];
+    let time = 0;
+    while (time < columns - 0.001) {
+      const atStart = melodyNotes.filter((item) => Math.abs(item.start - time) < 0.001).sort((a, b) => a.pitch - b.pitch);
+      if (atStart.length === 0) { tokens.push("_"); time += gridStep; continue; }
+      // A duration token advances the DSL cursor, so advance the generated
+      // timeline by the same amount instead of indexing a fixed token array.
       const duration = Math.max(...atStart.map((item) => item.duration));
       const durationUnits = Math.max(1, Math.round(duration / gridStep));
-      // Export at the same sixteenth-beat resolution used by the piano roll,
-      // preserving short imported notes when an editor change regenerates the song.
       const chord = atStart.map((item) => `${noteName(item.pitch)}${durationUnits === 1 && item.velocity !== 1 ? `:${item.velocity}` : ""}${item.articulation || item.bend !== undefined ? `{${item.bend !== undefined ? `bend:${item.bend >= 0 ? "+" : ""}${item.bend}` : item.articulation}}` : ""}`).join("+");
-      return `${chord}${durationUnits === 1 ? "" : `/${durationUnits}`}`;
-    });
+      tokens.push(`${chord}${durationUnits === 1 ? "" : `/${durationUnits}`}`);
+      time += durationUnits * gridStep;
+    }
     const envelope = melody.envelope;
     const instrument = melody.preset ? `.preset("${melody.preset}")` : `.sound("${melody.sound}")`;
     const pitch = melody.vibratoRate ? `.vibrato(${melody.vibratoRate},${melody.vibratoDepth ?? 0},${melody.vibratoDelay ?? 0})` : "";
@@ -289,14 +286,16 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   };
 
   const drumSource = (track: DrumTrack) => {
-    const tokens = Array.from({ length: Math.ceil(columns / gridStep) }, (_, index) => {
-      const time = index * gridStep;
+    const tokens: string[] = [];
+    let time = 0;
+    while (time < columns - 0.001) {
       const atStart = track.hits.filter((hit) => Math.abs(hit.start - time) < 0.001);
-      if (!atStart.length) return "_";
+      if (!atStart.length) { tokens.push("_"); time += gridStep; continue; }
       const durationUnits = Math.max(1, Math.round(Math.max(...atStart.map((hit) => hit.duration ?? 1)) / gridStep));
       const drums = atStart.map((hit) => hit.drum).join("+");
-      return `${drums}${durationUnits === 1 ? "" : `/${durationUnits}`}`;
-    });
+      tokens.push(`${drums}${durationUnits === 1 ? "" : `/${durationUnits}`}`);
+      time += durationUnits * gridStep;
+    }
     return `beat("${tokens.join(" ")}").fast(4).bank("${track.bank}").gain(${track.gain.toFixed(2)}).pan(${track.pan}).echo(${track.echo}).reverb(${track.reverb}).delay(${track.delay ?? 0}).room(${track.room ?? 0}).distortion(${track.distortion ?? 0}).chorus(${track.chorus ?? 0})${loopEnabled ? ".loop()" : ""}`;
   };
 
