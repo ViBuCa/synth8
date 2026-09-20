@@ -120,7 +120,7 @@ function installStyle() {
     .s8-editor-cell.preview-remove { background:rgba(255,85,85,.35); box-shadow:inset 0 0 0 1px #ff5555; }
     .s8-editor-drum-cell.preview-add { background:rgba(139,233,253,.35); box-shadow:inset 0 0 0 1px #8be9fd; }
     .s8-editor-drum-cell.preview-remove { background:rgba(255,85,85,.35); box-shadow:inset 0 0 0 1px #ff5555; }
-    .s8-editor-drum-cell.is-playing-note { background:#8be9fd; box-shadow:0 0 7px #8be9fd; }
+    .s8-editor-drum-cell.is-playing-note, .s8-editor-drum-cell.hit.is-playing-note { background:#8be9fd; box-shadow:0 0 7px #8be9fd; }
     .s8-editor-cell.note { background:transparent; border-right-color:#282a36; box-shadow:none; }
     .s8-editor-roll-note { position:absolute; z-index:2; min-width:2px; box-sizing:border-box; border:1px solid #b7ffca; border-radius:5px; background:#50fa7b; opacity:.95; pointer-events:none; }
     .s8-editor-cell.bar { border-right-color:#b7c3ff; border-right-width:2px; }
@@ -326,7 +326,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     // containers as loopable patterns for general playback, so explicitly
     // override that default here.
     pattern.loop = loopEnabled;
-    await play(pattern, { bpm, playbackMode: "rendered" });
+    await play(pattern, { bpm, playbackMode: "live" });
     setMasterGain(masterGain);
     playbackDurationSeconds = getPlaybackDuration();
       positionSeconds = 0; isStarting = false; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
