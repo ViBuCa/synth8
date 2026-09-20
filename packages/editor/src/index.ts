@@ -3,19 +3,20 @@ import { getPlaybackDuration, getPlaybackPosition, pause, play, resume, setMaste
 import { DEFAULT_SONG_SOURCE } from "./default-song";
 
 export { DEFAULT_SONG_SOURCE } from "./default-song";
+export * from "./midi-recorder";
 
 export type EditorOptions = { bars?: number; beatsPerBar?: number; bpm?: number };
 type Articulation = "" | "accent" | "staccato" | "legato" | "slide" | "vibrato" | "mute";
 type Note = { start: number; pitch: number; duration: number; velocity: number; articulation?: Articulation; bend?: number };
 type Envelope = { attack: number; decay: number; sustain: number; release: number };
-type Sound = "square" | "triangle" | "sawtooth" | "sine";
+type Sound = "square" | "triangle" | "sawtooth" | "sine" | "pulse12" | "pulse25" | "pulse50" | "pulse75" | "noise" | "wavetable";
 type Melody = { name: string; enabled?: boolean; notes: Note[]; sound: Sound; preset?: string; gain: number; pan: number; echo: number; reverb: number; cutoff: number; resonance: number; envelope: Envelope; delay?: number; room?: number; highpass?: number; distortion?: number; chorus?: number; vibratoRate?: number; vibratoDepth?: number; vibratoDelay?: number; portamento?: number; };
 type DrumHit = { start: number; drum: string };
 type DrumTrack = { name: string; enabled?: boolean; hits: DrumHit[]; bank: string; gain: number; pan: number; echo: number; reverb: number; delay?: number; room?: number; distortion?: number; chorus?: number; };
 
 // Chromatic rows, highest first. The editor now includes every semitone.
 const NOTE_NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
-const SOUNDS = ["square", "triangle", "sawtooth", "sine"] as const;
+const SOUNDS = ["square", "triangle", "sawtooth", "sine", "pulse12", "pulse25", "pulse50", "pulse75", "noise", "wavetable"] as const;
 const DRUMS = ["kick", "snare", "clap", "hihat", "openhat", "tom", "lowtom", "midtom", "hitom", "rim", "cowbell", "crash", "ride", "shaker"];
 
 function noteName(midi: number): string {
@@ -76,6 +77,10 @@ function installStyle() {
     .s8-editor-tabs { border-bottom:1px solid #44475a; padding-bottom:10px; } .s8-editor-tabs button { min-width:120px; font-size:15px; }
     .s8-editor-melodies, .s8-editor-drum-title, .song-section { border:1px solid #44475a; border-radius:8px; padding:10px; background:#1b1b2b; }
     .s8-editor [hidden], .s8-editor[data-tab="melody"] .drum-section, .s8-editor[data-tab="drums"] .melody-section { display:none !important; }
+    .s8-editor[data-playback="starting"] .s8-editor-grid, .s8-editor[data-playback="starting"] .s8-instrument-controls, .s8-editor[data-playback="starting"] .s8-editor-melodies,
+    .s8-editor[data-playback="playing"] .s8-editor-grid, .s8-editor[data-playback="playing"] .s8-instrument-controls, .s8-editor[data-playback="playing"] .s8-editor-melodies { pointer-events:none; opacity:.65; }
+    .s8-playback-status { display:flex; align-items:center; gap:8px; color:#f1fa8c; min-height:24px; }
+    .s8-playback-status progress { width:140px; accent-color:#8be9fd; }
     .song-section { margin-top:18px; } .song-section h3 { margin:0 0 10px; }
     .s8-editor button,.s8-editor select { background:#282a36; color:#f8f8f2; border:1px solid #6272a4; border-radius:6px; padding:7px 10px; }
     .s8-editor button:hover { background:#44475a; cursor:pointer; } .s8-editor label { margin:0; display:flex; gap:6px; align-items:center; }
@@ -179,6 +184,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   let positionClockStart = 0;
   let isPlaying = false;
   let isPaused = false;
+  let isStarting = false;
 
   const container = document.createElement("section");
   container.className = "s8-editor";
@@ -266,7 +272,11 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   };
 
   const startPlayback = async () => {
-    bpm = Number(container.querySelector<HTMLInputElement>("[data-bpm]")?.value) || bpm;
+    if (isStarting || isPlaying) return;
+    isStarting = true;
+    render();
+    try {
+      bpm = Number(container.querySelector<HTMLInputElement>("[data-bpm]")?.value) || bpm;
     const sourceToPlay = importedPlaybackSource ?? container.querySelector<HTMLTextAreaElement>("[data-song-source]")!.value;
     const pattern = compile(sourceToPlay);
     // The editor owns the master loop switch. The core represents song()
@@ -276,7 +286,12 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     await play(pattern, { bpm, playbackMode: "rendered" });
     setMasterGain(masterGain);
     playbackDurationSeconds = getPlaybackDuration();
-    positionSeconds = 0; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
+      positionSeconds = 0; isStarting = false; isPlaying = true; isPaused = false; render(); updatePositionView(); startPosition();
+    } catch (error) {
+      isStarting = false;
+      render();
+      window.alert(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const loadSource = (text: string) => {
@@ -306,17 +321,18 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
   const render = () => {
     if (pendingHistory && history[historyIndex] !== snapshot()) { history = history.slice(0, historyIndex + 1); history.push(snapshot()); historyIndex++; pendingHistory = false; }
     container.dataset.tab = editorTab;
+    container.dataset.playback = isStarting ? "starting" : isPlaying ? "playing" : isPaused ? "paused" : "stopped";
     const pitches = visiblePitches(topOctave);
     const gridColumns = Math.ceil(columns / gridStep);
     const generated = source();
     const previousGridScrollLeft = container.querySelector<HTMLElement>(".s8-editor-grid")?.scrollLeft ?? 0;
     container.innerHTML = `<h2>Sketch Editor</h2><p>Choose a track type below. Click to add/remove. Drag melody notes to move them; drag their right edge to resize.</p>
       <div class="s8-editor-toolbar s8-editor-tabs"><button data-tab="melody" class="${editorTab === "melody" ? "is-active" : ""}">Melodies</button><button data-tab="drums" class="${editorTab === "drums" ? "is-active" : ""}">Drums</button><button data-action="clear" title="Clear the active track">Clear track</button><button data-action="undo" title="Undo" ${historyIndex <= 0 ? "disabled" : ""}>↶ Undo</button><button data-action="redo" title="Redo" ${historyIndex + 1 >= history.length ? "disabled" : ""}>↷ Redo</button></div>
-      <div class="s8-editor-toolbar s8-global-controls"><div class="s8-control-group"><span class="s8-control-group-title">Transport</span><button class="s8-icon-button s8-transport-play" data-action="play" title="Start the song" ${isPlaying ? "disabled" : ""}><span class="s8-icon">▶</span>Play</button><button class="s8-icon-button s8-transport-pause" data-action="pause-resume" title="Pause or resume the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">${isPaused ? "▶" : "Ⅱ"}</span>${isPaused ? "Resume" : "Pause"}</button><button class="s8-icon-button s8-transport-stop" data-action="stop" title="Stop and reset the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">■</span>Stop</button></div><div class="s8-control-group s8-song-controls"><span class="s8-control-group-title">Song</span><div class="s8-song-metrics"><span class="s8-value" data-current-beat>Beat 1</span><span>Position <strong class="s8-value" data-position>0.0s</strong></span><span>Duration <strong class="s8-value" data-song-length>${(columns * 60 / bpm).toFixed(1)}s</strong></span></div><div class="s8-song-timing"><label>BPM <input data-bpm type="number" min="40" max="240" value="${bpm}" style="width:60px"></label><label>Length <input data-columns type="number" min="1" max="128" value="${columns}" style="width:60px"> beats</label></div><div class="s8-song-loop"><label><input data-loop type="checkbox" ${loopEnabled ? "checked" : ""}> Loop playback</label><label>From <input data-loop-start type="number" min="0" max="${columns}" value="${loopStart}" style="width:48px"></label><label>To <input data-loop-end type="number" min="1" max="${columns}" value="${loopEnd}" style="width:48px"></label></div><label>Master volume <input data-master-gain type="range" min="0" max="1" step="0.05" value="${masterGain}"></label></div></div>
+      <div class="s8-editor-toolbar s8-global-controls"><div class="s8-control-group"><span class="s8-control-group-title">Transport</span><button class="s8-icon-button s8-transport-play" data-action="play" title="Start the song" ${isPlaying || isStarting ? "disabled" : ""}><span class="s8-icon">▶</span>Play</button><button class="s8-icon-button s8-transport-pause" data-action="pause-resume" title="Pause or resume the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">${isPaused ? "▶" : "Ⅱ"}</span>${isPaused ? "Resume" : "Pause"}</button><button class="s8-icon-button s8-transport-stop" data-action="stop" title="Stop and reset the song" ${!isPlaying && !isPaused ? "disabled" : ""}><span class="s8-icon">■</span>Stop</button><span class="s8-playback-status" data-playback-status>${isStarting ? "Preparing playback… <progress></progress>" : isPlaying ? "Playing" : isPaused ? "Paused" : ""}</span></div><div class="s8-control-group s8-song-controls"><span class="s8-control-group-title">Song</span><div class="s8-song-metrics"><span class="s8-value" data-current-beat>Beat 1</span><span>Position <strong class="s8-value" data-position>0.0s</strong></span><span>Duration <strong class="s8-value" data-song-length>${(columns * 60 / bpm).toFixed(1)}s</strong></span></div><div class="s8-song-timing"><label>BPM <input data-bpm type="number" min="40" max="240" value="${bpm}" style="width:60px"></label><label>Length <input data-columns type="number" min="1" max="128" value="${columns}" style="width:60px"> beats</label></div><div class="s8-song-loop"><label><input data-loop type="checkbox" ${loopEnabled ? "checked" : ""}> Loop playback</label><label>From <input data-loop-start type="number" min="0" max="${columns}" value="${loopStart}" style="width:48px"></label><label>To <input data-loop-end type="number" min="1" max="${columns}" value="${loopEnd}" style="width:48px"></label></div><label>Master volume <input data-master-gain type="range" min="0" max="1" step="0.05" value="${masterGain}"></label></div></div>
       <div class="melody-section" ${editorTab === "melody" ? "" : "hidden"}><div class="s8-editor-toolbar s8-editor-melodies"><strong>Melodies:</strong>${melodies.map((melody, index) => `<button data-melody="${index}" class="${index === activeMelody ? "is-active" : ""}">${melody.name}</button><button data-melody-toggle="${index}" class="s8-track-toggle" title="${melody.enabled === false ? "Enable" : "Disable"} ${melody.name}">${melody.enabled === false ? "○" : "●"}</button>`).join("")}<button data-action="new-melody">+ New melody</button><button data-action="duplicate-melody">Duplicate</button><button data-action="delete-melody">Delete</button><label>Name <input data-melody-name value="${melodies[activeMelody].name.replace(/"/g, "&quot;")}" style="width:110px"></label></div>
       <div class="s8-pitch-toolbar"><div class="s8-octave-stepper"><button data-action="octave-up" ${topOctave >= 8 ? "disabled" : ""} title="Show higher pitches">▲ Higher</button><strong>${noteName(pitches[pitches.length - 1])}–${noteName(pitches[0])}</strong><button data-action="octave-down" ${topOctave <= 1 ? "disabled" : ""} title="Show lower pitches">▼ Lower</button></div><div class="s8-song-overview" title="Song overview: pink is the time viewport, cyan is the pitch viewport" style="grid-template-columns:repeat(${Math.min(columns, 64)},1fr);grid-template-rows:repeat(73,1fr)">${Array.from({ length: 73 }, (_, row) => { const midi = 96 - row; return Array.from({ length: Math.min(columns, 64) }, (_, column) => { const inY = midi >= pitches[pitches.length - 1] && midi <= pitches[0]; return `<span class="s8-song-overview-cell ${inY ? "in-y" : ""}" data-overview-column="${column}" data-overview-midi="${midi}"></span>`; }).join(""); }).join("")}${notes.map((note) => `<span class="s8-song-overview-note" data-start="${note.start}" data-duration="${note.duration}" style="left:${note.start / Math.max(1, columns) * 100}%;top:${(96 - note.pitch) / 73 * 100}%;width:${Math.max(0.5, note.duration / Math.max(1, columns) * 100)}%;height:${100 / 73}%"></span>`).join("")}<span class="s8-song-overview-viewport" style="left:${Math.min(100, timeViewStart / Math.max(1, columns) * 100)}%;width:${Math.min(100, Math.min(columns, 32) / Math.max(1, columns) * 100)}%"></span><span class="s8-song-overview-y-viewport" style="top:${(96 - pitches[0]) / 73 * 100}%;height:${pitches.length / 73 * 100}%"></span></div></div>
       <div class="s8-editor-toolbar s8-instrument-controls">
-      <div class="s8-control-section"><span class="s8-control-section-title">Instrument</span><div class="s8-control-row"><label>Sound <select data-sound>${SOUNDS.map((item) => `<option ${item === melodies[activeMelody].sound ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Preset <select data-preset><option value="" ${!melodies[activeMelody].preset ? "selected" : ""}>None</option>${["chip-lead","chip-bass","soft-pad","metal-rhythm","arcade-pluck","deep-bass","warm-pad","glass-lead","metal-lead","synth-brass","dark-pad","warm-keys"].map((item) => `<option value="${item}" ${melodies[activeMelody].preset === item ? "selected" : ""}>${item}</option>`).join("")}</select></label></div></div>
+      <div class="s8-control-section"><span class="s8-control-section-title">Instrument</span><div class="s8-control-row"><label>Sound <select data-sound>${SOUNDS.map((item) => `<option ${item === melodies[activeMelody].sound ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Preset <select data-preset><option value="" ${!melodies[activeMelody].preset ? "selected" : ""}>None</option>${["chip-lead","chip-bass","soft-pad","metal-rhythm","arcade-pluck","deep-bass","warm-pad","glass-lead","metal-lead","synth-brass","dark-pad","warm-keys","anthem-lead","palm-muted","arena-chords","picked-bass","orchestra-hit"].map((item) => `<option value="${item}" ${melodies[activeMelody].preset === item ? "selected" : ""}>${item}</option>`).join("")}</select></label></div></div>
       <div class="s8-control-section"><span class="s8-control-section-title">Mix &amp; space</span><div class="s8-control-row"><label>Gain <input data-track-gain type="number" min="0" max="1" step="0.05" value="${melodies[activeMelody].gain}" style="width:55px"></label><label>Pan <input data-pan type="range" min="-1" max="1" step="0.05" value="${melodies[activeMelody].pan}"></label><label>Echo <input data-echo type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].echo}"></label><label>Reverb <input data-reverb type="range" min="0" max="1" step="0.05" value="${melodies[activeMelody].reverb}"></label></div></div>
       <div class="s8-control-section"><span class="s8-control-section-title">Envelope</span><div class="s8-control-row"><label>Attack <input data-envelope="attack" type="number" min="0" step="0.01" value="${melodies[activeMelody].envelope.attack}" style="width:48px"></label><label>Decay <input data-envelope="decay" type="number" min="0" step="0.01" value="${melodies[activeMelody].envelope.decay}" style="width:48px"></label><label>Sustain <input data-envelope="sustain" type="number" min="0" max="1" step="0.05" value="${melodies[activeMelody].envelope.sustain}" style="width:48px"></label><label>Release <input data-envelope="release" type="number" min="0" step="0.01" value="${melodies[activeMelody].envelope.release}" style="width:48px"></label></div></div>
       <div class="s8-control-section"><span class="s8-control-section-title">Note expression</span><div class="s8-control-row"><label>Length <select data-length>${[0.25, 0.5, 1, 2, 4].map((item) => `<option value="${item}" ${item === noteLength ? "selected" : ""}>${item} beat${item === 1 ? "" : "s"}</option>`).join("")}</select></label><label>Snap <select data-quantize><option value="0.25" ${quantizeStep === 0.25 ? "selected" : ""}>1/16</option><option value="0.5" ${quantizeStep === 0.5 ? "selected" : ""}>1/8</option><option value="1" ${quantizeStep === 1 ? "selected" : ""}>1/4</option></select></label><label>Velocity <select data-velocity>${[0.25, 0.5, 0.65, 0.8, 1].map((item) => `<option value="${item}" ${item === velocity ? "selected" : ""}>${item}</option>`).join("")}</select></label><label>Articulation <select data-articulation>${["", "accent", "staccato", "legato", "slide", "vibrato", "mute"].map((item) => `<option value="${item}" ${item === articulation ? "selected" : ""}>${item || "normal"}</option>`).join("")}</select></label><label>Bend <input data-bend type="number" min="-24" max="24" step="1" value="${bend}" style="width:48px"></label></div></div>
