@@ -118,6 +118,9 @@ function installStyle() {
     .s8-editor-cell.beat { border-right-color:#6272a4; } .s8-editor-cell:hover { background:#44475a; }
     .s8-editor-cell.preview-add { background:rgba(80,250,123,.35); box-shadow:inset 0 0 0 1px #50fa7b; }
     .s8-editor-cell.preview-remove { background:rgba(255,85,85,.35); box-shadow:inset 0 0 0 1px #ff5555; }
+    .s8-editor-drum-cell.preview-add { background:rgba(139,233,253,.35); box-shadow:inset 0 0 0 1px #8be9fd; }
+    .s8-editor-drum-cell.preview-remove { background:rgba(255,85,85,.35); box-shadow:inset 0 0 0 1px #ff5555; }
+    .s8-editor-drum-cell.is-playing-note { background:#8be9fd; box-shadow:0 0 7px #8be9fd; }
     .s8-editor-cell.note { background:transparent; border-right-color:#282a36; box-shadow:none; }
     .s8-editor-roll-note { position:absolute; z-index:2; min-width:2px; box-sizing:border-box; border:1px solid #b7ffca; border-radius:5px; background:#50fa7b; opacity:.95; pointer-events:none; }
     .s8-editor-cell.bar { border-right-color:#b7c3ff; border-right-width:2px; }
@@ -223,7 +226,7 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     if (positionLabel) positionLabel.textContent = `${position.toFixed(1)}s`;
     const beatLabel = container.querySelector<HTMLElement>("[data-current-beat]");
     if (beatLabel) beatLabel.textContent = `Beat ${Math.min(columns, Math.floor(position * bpm / 60) + 1)}`;
-    container.querySelectorAll<HTMLElement>(".s8-editor-cell, .s8-song-overview-note").forEach((element) => {
+    container.querySelectorAll<HTMLElement>(".s8-editor-cell, .s8-editor-drum-cell, .s8-song-overview-note").forEach((element) => {
       const start = Number(element.dataset.start);
       const duration = Number(element.dataset.duration ?? 0);
       element.classList.toggle("is-playing-note", isPlaying && musicalPosition >= start && musicalPosition < start + duration);
@@ -426,7 +429,17 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
 
     let drag: { index: number; mode: "move" | "resize"; pitch: number; offset: number } | undefined;
     let dragged = false;
-    const clearCellPreview = () => container.querySelectorAll<HTMLElement>(".s8-editor-cell.preview-add, .s8-editor-cell.preview-remove").forEach((cell) => cell.classList.remove("preview-add", "preview-remove"));
+    const clearCellPreview = () => container.querySelectorAll<HTMLElement>(".s8-editor-cell.preview-add, .s8-editor-cell.preview-remove, .s8-editor-drum-cell.preview-add, .s8-editor-drum-cell.preview-remove").forEach((cell) => cell.classList.remove("preview-add", "preview-remove"));
+    const showDrumPreview = (drum: string, start: number) => {
+      clearCellPreview();
+      const existing = drumTracks[activeDrumTrack].hits.find((hit) => hit.drum === drum && start >= hit.start && start < hit.start + (hit.duration ?? 1));
+      container.querySelectorAll<HTMLElement>(".s8-editor-drum-cell").forEach((cell) => {
+        if (cell.dataset.drum !== drum) return;
+        const time = Number(cell.dataset.start);
+        const visible = existing ? time >= existing.start && time < existing.start + (existing.duration ?? 1) : time >= start && time < start + drumLength;
+        if (visible) cell.classList.add(existing ? "preview-remove" : "preview-add");
+      });
+    };
     const showCellPreview = (pitch: number, start: number) => {
       clearCellPreview();
       const existing = notes.find((note) => note.pitch === pitch && start >= note.start && start < note.start + note.duration);
@@ -523,13 +536,17 @@ export function mountSynth8Editor(root: HTMLElement, options: EditorOptions = {}
     container.querySelectorAll<HTMLButtonElement>("[data-drum-toggle]").forEach((button) => button.addEventListener("click", () => { const index = Number(button.dataset.drumToggle); drumTracks[index].enabled = drumTracks[index].enabled === false; markEdited(); render(); }));
     container.querySelector<HTMLButtonElement>('[data-action="new-drum"]')?.addEventListener("click", () => { markEdited(); drumTracks.push({ name: `Drums ${drumTracks.length + 1}`, hits: [], bank: "default", gain: 0.8, pan: 0, echo: 0, reverb: 0 }); activeDrumTrack = drumTracks.length - 1; render(); });
     container.querySelector<HTMLInputElement>("[data-drum-name]")?.addEventListener("change", (event) => { markEdited(); drumTracks[activeDrumTrack].name = (event.target as HTMLInputElement).value.trim() || `Drums ${activeDrumTrack + 1}`; render(); });
-    container.querySelectorAll<HTMLButtonElement>(".s8-editor-drum-cell").forEach((cell) => cell.addEventListener("click", () => {
+    container.querySelectorAll<HTMLButtonElement>(".s8-editor-drum-cell").forEach((cell) => {
+      cell.addEventListener("pointerenter", () => showDrumPreview(cell.dataset.drum!, Number(cell.dataset.start)));
+      cell.addEventListener("click", () => {
       markEdited();
       const drum = cell.dataset.drum!; const start = Number(cell.dataset.start); const hits = drumTracks[activeDrumTrack].hits;
       const index = hits.findIndex((hit) => hit.drum === drum && start >= hit.start && start < hit.start + (hit.duration ?? 1));
       if (index >= 0) hits.splice(index, 1); else hits.push({ drum, start, duration: drumLength });
       render();
-    }));
+      });
+    });
+    container.querySelector<HTMLElement>(".s8-editor-drum-roll")?.addEventListener("pointerleave", clearCellPreview);
     container.querySelector<HTMLButtonElement>('[data-action="octave-down"]')!.addEventListener("click", () => { topOctave = Math.max(1, topOctave - 1); render(); });
     container.querySelector<HTMLButtonElement>('[data-action="octave-up"]')!.addEventListener("click", () => { topOctave = Math.min(8, topOctave + 1); render(); });
     container.querySelectorAll<HTMLElement>("[data-overview-midi]").forEach((cell) => cell.addEventListener("click", () => {
