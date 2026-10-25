@@ -372,7 +372,7 @@ root.innerHTML = `
         <button id="game-music-stop">Stop Music</button>
       </div>
       <div class="game-audio-controls">
-        <label for="module-file">Load tracker module</label>
+        <label for="module-file">Load tracker module (MOD / TFMX)</label>
         <input id="module-file" type="file" accept=".mod,.m15,.nst,.tfm,.tfx,.xm,.s3m,.it,audio/x-mod" />
         <button id="module-stop" type="button">Stop Module</button>
       </div>
@@ -852,6 +852,11 @@ document.querySelector<HTMLInputElement>("#import-song")!.addEventListener("chan
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
   try {
+    const header = new TextDecoder("ascii").decode(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
+    if (header.startsWith("TFMX-MOD") || header.startsWith("TFHD")) {
+      setOutput("error", "This is a binary TFMX/TFHD tracker module. Use the 'Load tracker module' input instead; TFMX playback is not available yet.");
+      return;
+    }
     sourceInput.value = await readSynth8Source(file);
     const metadata = getSynth8FileMetadata(sourceInput.value);
     if (metadata.bpm !== undefined) bpmInput.value = String(metadata.bpm);
