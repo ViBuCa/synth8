@@ -18,6 +18,11 @@ export type SampleVoiceOptions = {
     lowpass?: number;
     highpass?: number;
     distortion?: number;
+    delay?: number;
+    echo?: number;
+    chorus?: number;
+    reverb?: number;
+    room?: number;
   };
 };
 
@@ -96,7 +101,17 @@ export const scheduleSampleVoice = (
   }
   const sourceChain = filter ? gain.connect(filter) : gain;
   const shaped = distortion ? sourceChain.connect(distortion) : sourceChain;
-  shaped.connect(panner).connect(output);
+  shaped.connect(panner);
+  panner.connect(output);
+  const ambience = effects.echo ?? effects.reverb ?? effects.room ?? effects.chorus;
+  const delay = ambience !== undefined || effects.delay !== undefined ? context.createDelay(2) : undefined;
+  const wetGain = delay ? context.createGain() : undefined;
+  if (delay && wetGain) {
+    const amount = Math.max(0, Math.min(1, ambience ?? 0.2));
+    delay.delayTime.setValueAtTime(effects.delay ?? (effects.chorus !== undefined ? 0.025 : effects.reverb !== undefined || effects.room !== undefined ? 0.32 : 0.18), when);
+    wetGain.gain.setValueAtTime(Math.min(0.8, amount * (effects.chorus !== undefined ? 0.75 : 0.5)), when);
+    panner.connect(delay).connect(wetGain).connect(output);
+  }
 
   const duration = options.duration === undefined ? undefined : Math.max(0, options.duration);
   const end = duration === undefined ? undefined : when + duration;
@@ -127,6 +142,8 @@ export const scheduleSampleVoice = (
     gain.disconnect();
     filter?.disconnect();
     distortion?.disconnect();
+    delay?.disconnect();
+    wetGain?.disconnect();
     panner.disconnect();
   };
 
