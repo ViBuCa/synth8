@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, decodeModule, getPlaybackMetrics, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
+import { createGameAudio, decodeModule, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
 import type { GameAudio, PreparedPlayback, PreparedSfx, TrackerModule } from "@vibuca/synth8-player"
 import {
   parseMidi,
@@ -830,7 +830,10 @@ moduleFileInput.addEventListener("change", async () => {
     setGameAudioStatus(`Playing MOD ${loadedModule.title ?? file.name} (${loadedModule.channels ?? 0} channels).`);
   } catch (error) {
     loadedModule = undefined;
-    setGameAudioStatus(error instanceof Error ? error.message : String(error));
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const inspection = inspectModule(bytes);
+    const details = [inspection.title, inspection.date, inspection.time].filter(Boolean).join(" · ");
+    setGameAudioStatus(`${details || file.name}: ${error instanceof Error ? error.message : String(error)}`);
   }
 });
 

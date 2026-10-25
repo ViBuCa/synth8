@@ -4,6 +4,7 @@ export * from "./tracker-model";
 export * from "./tracker-clock";
 export * from "./decoder";
 export * from "./tracker-playback";
+export * from "./inspect";
 
 /**
  * Format-neutral module status. Decoder and tracker-player APIs will be added
@@ -16,4 +17,7 @@ export type ModuleMetadata = {
   title?: string;
   channels?: number;
   duration?: number;
+  date?: string;
+  time?: string;
+  byteLength?: number;
 };

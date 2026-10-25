@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeModule, detectModuleFormat } from "../module";
+import { decodeModule, detectModuleFormat, inspectModule } from "../module";
 
 const putText = (data: Uint8Array, offset: number, value: string): void => {
   data.set(new TextEncoder().encode(value), offset);
@@ -65,6 +65,7 @@ describe("module format detection", () => {
   it("identifies TFMX and TFHD for a future specialized backend", () => {
     expect(detectModuleFormat(new TextEncoder().encode("TFMX-MOD"))).toBe("tfmx");
     expect(detectModuleFormat(new TextEncoder().encode("TFHD"))).toBe("tfhd");
+    expect(inspectModule(new TextEncoder().encode("TFMX-MOD Date : 23.01.91  Time : 17:56"))).toMatchObject({ format: "tfmx", date: "23.01.91", time: "17:56" });
   });
 });
 
