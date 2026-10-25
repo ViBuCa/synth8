@@ -28,3 +28,15 @@ export const analyzeSample = (sample: SampleAssetData): SampleAnalysis => {
     zeroCrossings,
   };
 };
+
+/** Remove exact PCM duplicates while retaining the first asset's metadata. */
+export const deduplicateSamples = <T extends SampleAssetData>(samples: readonly T[]): T[] => {
+  const seen = new Map<string, T>();
+  for (const sample of samples) {
+    const bytes = new Uint8Array(sample.pcm.buffer, sample.pcm.byteOffset, sample.pcm.byteLength);
+    let key = `${sample.sampleRate}:${bytes.length}:`;
+    for (const byte of bytes) key += String.fromCharCode(byte);
+    if (!seen.has(key)) seen.set(key, sample);
+  }
+  return [...seen.values()];
+};

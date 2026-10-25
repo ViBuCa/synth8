@@ -26,7 +26,7 @@ module file -> format decoder -> tracker/module player -> music bus
 
 The playground now has a tracker file input in the **Music + Sfx** panel. TFMX/TFHD candidates can be previewed, exported as WAV files and collected into a JSON sample bank there, while MOD files can be played directly. It uses the same `GameAudio.prepareModule()` path as a game, making it possible to validate real modules before adding more format adapters. The decoder accepts both standard signature-based MOD files and legacy 15-sample headerless MOD files, including common multi-channel signatures. TFMX-MOD and TFHD files are recognized but currently produce a clear unsupported-backend message rather than being imported incorrectly.
 
-An experimental `extractTfmxSampleCandidates()` API now identifies likely embedded PCM regions without invoking the original TFMX replay engine. It now handles the pointer representation used by both TFMX-MOD and TFHD; candidates remain intentionally marked as unverified until their boundaries and loop metadata are validated.
+An experimental `extractTfmxSampleCandidates()` API now identifies likely embedded PCM regions without invoking the original TFMX replay engine. It now handles the pointer representation used by both TFMX-MOD and TFHD; candidates remain intentionally marked as unverified until their boundaries and loop metadata are validated. Exact PCM duplicates are removed automatically, and lightweight RMS/peak/duration diagnostics are available for review.
 
 ## Performance principles
 

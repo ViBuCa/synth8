@@ -1,4 +1,5 @@
 import type { SampleAssetData } from "./sample-bank";
+import { deduplicateSamples } from "./sample-analysis";
 
 export type TfmxSampleCandidate = SampleAssetData & {
   sourceOffset: number;
@@ -47,5 +48,5 @@ export const extractTfmxSampleCandidates = (data: Uint8Array): TfmxSampleCandida
       confidence: "candidate",
     });
   }
-  return [...byOffset.values()].sort((a, b) => a.sourceOffset - b.sourceOffset);
+  return deduplicateSamples([...byOffset.values()].sort((a, b) => a.sourceOffset - b.sourceOffset));
 };
