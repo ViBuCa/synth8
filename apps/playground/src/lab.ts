@@ -875,6 +875,14 @@ const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandid
         duration: Math.min(3, Math.max(0.1, candidate.pcm.length / candidate.sampleRate)),
       });
     });
+    const useSample = document.createElement("button");
+    useSample.type = "button";
+    useSample.textContent = "Use in Synth8";
+    useSample.addEventListener("click", () => {
+      sourceInput.value = `melody("c3 c3 c3 c3").sample("${candidate.id}")`;
+      setOutput("success", `Created a Synth8 sample pattern for ${candidate.id}. Supply the exported sample bank when playing it.`);
+      sourceInput.focus();
+    });
     const download = document.createElement("button");
     download.type = "button";
     download.textContent = "WAV";
@@ -886,7 +894,7 @@ const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandid
       link.click();
       URL.revokeObjectURL(url);
     });
-    row.append(label, preview, download);
+    row.append(label, preview, useSample, download);
     moduleSamples.append(row);
   }
 };
