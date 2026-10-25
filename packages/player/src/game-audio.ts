@@ -1,8 +1,10 @@
 import type { Pattern } from "@vibuca/synth8-core";
-import type { GameAudio, GameAudioOptions, GameMusicOptions, GameSfxOptions, PlaySfxOptions, PreparedPlayback, PreparedSfx } from "./model";
+import type { GameAudio, GameAudioOptions, GameModuleOptions, GameMusicOptions, GameSfxOptions, PlaySfxOptions, PreparedPlayback, PreparedSfx } from "./model";
+import type { TrackerModule } from "./module";
 import { renderToAudioBuffer } from "./playback/render";
 import { prepare as preparePlayback } from "./playback/play";
 import { createNativeBufferPlayback } from "./backend/native-buffer";
+import { createTrackerPlayback } from "./module";
 
 const DEFAULT_BPM = 120;
 const DEFAULT_SFX_VOICES = 8;
@@ -56,6 +58,27 @@ export const createGameAudio = async (options: GameAudioOptions = {}): Promise<G
     return wrapMusic(playback);
   };
 
+  const prepareModule = async (module: TrackerModule, moduleOptions: GameModuleOptions = {}): Promise<PreparedPlayback> => {
+    const tracker = createTrackerPlayback(module, {
+      context,
+      output: music,
+      sampleRate: moduleOptions.sampleRate,
+      lookAhead: moduleOptions.lookAhead,
+      updateInterval: moduleOptions.updateInterval,
+    });
+    const playback: PreparedPlayback = {
+      playbackMode: "live",
+      start: () => tracker.start(),
+      pause: () => tracker.pause(),
+      resume: () => tracker.resume(),
+      stop: () => tracker.stop(),
+      setMasterGain: () => undefined,
+      dispose: () => tracker.dispose(),
+    };
+    musicSet.add(playback);
+    return wrapMusic(playback);
+  };
+
   const wrapMusic = (playback: PreparedPlayback): PreparedPlayback => ({
     playbackMode: playback.playbackMode,
     start() {
@@ -98,7 +121,7 @@ export const createGameAudio = async (options: GameAudioOptions = {}): Promise<G
   };
 
   return {
-    prepareMusic, prepareSfx, playSfx,
+    prepareMusic, prepareModule, prepareSfx, playSfx,
     setMasterVolume(value) { masterVolume = volume(value); master.gain.value = masterVolume; },
     setMusicVolume(value) { musicVolume = volume(value); music.gain.value = musicVolume * ducking; },
     setSfxVolume(value) { sfxVolume = volume(value); sfx.gain.value = sfxVolume; },

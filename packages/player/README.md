@@ -90,6 +90,16 @@ and more format adapters are still being implemented.
 
 `createGameAudio()` provides native Web Audio music and SFX buses with master,
 music, SFX volume, ducking, overlapping SFX voices, and rendered or live music.
+Decoded tracker modules can use the same music bus:
+
+```ts
+const moduleMusic = await audio.prepareModule(module, {
+  lookAhead: 0.25,
+});
+moduleMusic.start();
+```
+
+This keeps tracker music under the same lifecycle as Synth8 music and SFX.
 
 ## Rendering and export
 

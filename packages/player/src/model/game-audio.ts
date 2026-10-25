@@ -1,4 +1,5 @@
 import type { Pattern } from "@vibuca/synth8-core";
+import type { TrackerModule } from "../module";
 import type { PreparedPlayback } from "./playoptions";
 
 export type GameAudioOptions = {
@@ -23,6 +24,12 @@ export type GameMusicOptions = {
     streamPrefetchChunks?: number;
 };
 
+export type GameModuleOptions = {
+    sampleRate?: number;
+    lookAhead?: number;
+    updateInterval?: number;
+};
+
 export type GameSfxOptions = {
     bpm?: number;
     voices?: number;
@@ -41,6 +48,7 @@ export type PreparedSfx = {
 
 export type GameAudio = {
     prepareMusic(pattern: Pattern, options?: GameMusicOptions): Promise<PreparedPlayback>;
+    prepareModule(module: TrackerModule, options?: GameModuleOptions): Promise<PreparedPlayback>;
     prepareSfx(pattern: Pattern, options?: GameSfxOptions): Promise<PreparedSfx>;
     playSfx(sfx: PreparedSfx, options?: PlaySfxOptions): void;
     setMasterVolume(volume: number): void;
