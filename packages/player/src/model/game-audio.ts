@@ -49,6 +49,7 @@ export type PreparedSfx = {
 export type GameAudio = {
     prepareMusic(pattern: Pattern, options?: GameMusicOptions): Promise<PreparedPlayback>;
     prepareModule(module: TrackerModule, options?: GameModuleOptions): Promise<PreparedPlayback>;
+    prepareModuleBytes(data: ArrayBuffer | Uint8Array, options?: GameModuleOptions): Promise<PreparedPlayback>;
     prepareSfx(pattern: Pattern, options?: GameSfxOptions): Promise<PreparedSfx>;
     playSfx(sfx: PreparedSfx, options?: PlaySfxOptions): void;
     setMasterVolume(volume: number): void;

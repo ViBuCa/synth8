@@ -60,9 +60,10 @@ separate npm package for MOD, XM, S3M, IT, or TFMX. The first format-neutral
 tracker model and ProTracker MOD detector/decoder are now available:
 
 ```ts
-import { decodeModule } from "@vibuca/synth8-player";
+import { decodeModuleAsync } from "@vibuca/synth8-player";
 
-const module = decodeModule(new Uint8Array(await file.arrayBuffer()));
+const bytes = new Uint8Array(await file.arrayBuffer());
+const module = await decodeModuleAsync(bytes);
 console.log(module.title, module.orders, module.samples);
 ```
 
@@ -103,6 +104,13 @@ adapters are still being implemented.
 
 `createGameAudio()` provides native Web Audio music and SFX buses with master,
 music, SFX volume, ducking, overlapping SFX voices, and rendered or live music.
+Games can also prepare a module directly from file bytes:
+
+```ts
+const moduleMusic = await audio.prepareModuleBytes(await file.arrayBuffer());
+moduleMusic.start();
+```
+
 Decoded tracker modules can use the same music bus:
 
 ```ts

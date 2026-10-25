@@ -4,7 +4,7 @@ import type { TrackerModule } from "./module";
 import { renderToAudioBuffer } from "./playback/render";
 import { prepare as preparePlayback } from "./playback/play";
 import { createNativeBufferPlayback } from "./backend/native-buffer";
-import { createTrackerPlayback } from "./module";
+import { createTrackerPlayback, decodeModuleAsync } from "./module";
 
 const DEFAULT_BPM = 120;
 const DEFAULT_SFX_VOICES = 8;
@@ -79,6 +79,11 @@ export const createGameAudio = async (options: GameAudioOptions = {}): Promise<G
     return wrapMusic(playback);
   };
 
+  const prepareModuleBytes = async (data: ArrayBuffer | Uint8Array, moduleOptions: GameModuleOptions = {}): Promise<PreparedPlayback> => {
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+    return prepareModule(await decodeModuleAsync(bytes), moduleOptions);
+  };
+
   const wrapMusic = (playback: PreparedPlayback): PreparedPlayback => ({
     playbackMode: playback.playbackMode,
     start() {
@@ -121,7 +126,7 @@ export const createGameAudio = async (options: GameAudioOptions = {}): Promise<G
   };
 
   return {
-    prepareMusic, prepareModule, prepareSfx, playSfx,
+    prepareMusic, prepareModule, prepareModuleBytes, prepareSfx, playSfx,
     setMasterVolume(value) { masterVolume = volume(value); master.gain.value = masterVolume; },
     setMusicVolume(value) { musicVolume = volume(value); music.gain.value = musicVolume * ducking; },
     setSfxVolume(value) { sfxVolume = volume(value); sfx.gain.value = sfxVolume; },
