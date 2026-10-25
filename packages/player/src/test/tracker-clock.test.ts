@@ -34,6 +34,12 @@ describe("TrackerClock", () => {
     expect(clock.current).toMatchObject({ order: 0, pattern: 3, row: 0, tick: 0 });
   });
 
+  it("can jump to an order and row", () => {
+    const clock = new TrackerClock({ orders: [2, 5], patternRows: { 2: 4, 5: 8 } });
+    clock.jump(1, 3);
+    expect(clock.current).toMatchObject({ order: 1, pattern: 5, row: 3, tick: 0 });
+  });
+
   it("supports runtime speed and tempo changes", () => {
     const clock = new TrackerClock({ orders: [0], patternRows: { 0: 8 }, speed: 6, tempo: 125 });
     clock.setSpeed(3);

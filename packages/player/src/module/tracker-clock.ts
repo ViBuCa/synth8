@@ -73,6 +73,14 @@ export class TrackerClock {
     this.tempoValue = Math.max(1, tempo);
   }
 
+  jump(order: number, row = 0): void {
+    const nextOrder = Math.max(0, Math.min(this.orders.length - 1, Math.floor(order)));
+    this.position.order = nextOrder;
+    this.position.pattern = this.orders[nextOrder] ?? 0;
+    this.position.row = Math.max(0, Math.min(rowCount(this.patternRows, this.position.pattern) - 1, Math.floor(row)));
+    this.position.tick = 0;
+  }
+
   /** Advance one tracker tick and return the new position. */
   advance(): TrackerTick {
     this.position.tick += 1;
