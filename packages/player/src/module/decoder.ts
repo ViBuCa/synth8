@@ -9,7 +9,10 @@ export type ModuleDecoder = {
 const text = (data: Uint8Array, start: number, length: number): string =>
   new TextDecoder("ascii").decode(data.subarray(start, start + length)).replace(/\0+$/, "").trimEnd();
 
-const signatures = new Set(["M.K.", "M!K!", "M&K!", "N.T.", "FLT4", "FLT8", "4CHN", "6CHN", "8CHN"]);
+const signatures = new Set(["M.K.", "M!K!", "M&K!", "N.T.", "FLT4", "FLT8", "4CHN", "6CHN", "8CHN", "OKTA", "CD81"]);
+
+const isModSignature = (signature: string): boolean =>
+  signatures.has(signature) || /^\dCHN$/.test(signature) || /^\d{2}CH$/.test(signature);
 
 const isLegacy15Mod = (data: Uint8Array): boolean =>
   data.length >= 600 &&
@@ -17,7 +20,7 @@ const isLegacy15Mod = (data: Uint8Array): boolean =>
   (data[472] ?? 0) < 64;
 
 export const detectModuleFormat = (data: Uint8Array): ModuleFormat => {
-  if (data.length >= 1084 && signatures.has(text(data, 1080, 4))) return "mod";
+  if (data.length >= 1084 && isModSignature(text(data, 1080, 4))) return "mod";
   if (isLegacy15Mod(data)) return "mod";
   return "unknown";
 };
@@ -83,9 +86,9 @@ const effect = (command: number, value: number) => {
 };
 
 const channelsFor = (signature: string): number => {
-  if (signature === "6CHN") return 6;
-  if (signature === "8CHN" || signature === "FLT8") return 8;
-  if (/^[1-9]CHN$/.test(signature)) return Number(signature[0]);
+  if (signature === "OKTA" || signature === "CD81" || signature === "FLT8") return 8;
+  if (/^\dCHN$/.test(signature)) return Number(signature[0]);
+  if (/^\d{2}CH$/.test(signature)) return Number(signature.slice(0, 2));
   return 4;
 };
 

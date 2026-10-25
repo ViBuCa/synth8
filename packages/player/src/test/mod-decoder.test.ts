@@ -61,6 +61,14 @@ describe("MOD decoder", () => {
   });
 });
 
+describe("MOD channel signatures", () => {
+  it("recognizes multi-digit channel signatures", () => {
+    const data = new Uint8Array(1084);
+    putText(data, 1080, "12CH");
+    expect(detectModuleFormat(data)).toBe("mod");
+  });
+});
+
 describe("legacy 15-sample MOD decoder", () => {
   it("detects the headerless 15-sample layout", () => {
     const module = decodeModule(makeLegacy15Mod());

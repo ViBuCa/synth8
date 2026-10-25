@@ -66,7 +66,7 @@ const module = decodeModule(new Uint8Array(await file.arrayBuffer()));
 console.log(module.title, module.orders, module.samples);
 ```
 
-The decoder currently extracts standard and legacy 15-sample MOD patterns,
+The decoder currently extracts standard and legacy 15-sample MOD patterns, including common multi-channel signatures,
 notes, common effects and signed 8-bit sample data. A first live playback path is also available:
 
 ```ts
