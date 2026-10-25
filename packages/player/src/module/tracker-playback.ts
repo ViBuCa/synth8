@@ -1,6 +1,6 @@
 import type { TrackerEffect, TrackerModule } from "./tracker-model";
 import { TrackerClock, type TrackerPosition } from "./tracker-clock";
-import { SampleBank, type SampleAsset } from "./sample-bank";
+import { SampleBank, type SampleAsset, type SampleAssetData } from "./sample-bank";
 import { samplePlaybackRate, scheduleSampleVoice, type SampleVoice } from "./sample-player";
 
 export type TrackerPlaybackOptions = {
@@ -22,6 +22,21 @@ export type TrackerPlayback = {
 
 const patternRows = (module: TrackerModule): ReadonlyMap<number, number> =>
   new Map(module.patterns.map((pattern) => [pattern.index, pattern.rows.length]));
+
+/** Convert decoded module samples into portable Synth8 sample assets. */
+export const sampleDataFromModule = (module: TrackerModule, sampleRate = 8363): SampleAssetData[] => module.samples
+  .filter((sample) => sample.data?.length)
+  .map((sample) => ({
+    id: sample.assetId,
+    name: sample.name,
+    pcm: sample.data!,
+    sampleRate,
+    rootNote: sample.rootNote,
+    volume: sample.volume,
+    ...(sample.loopStart !== undefined && sample.loopEnd !== undefined
+      ? { loop: { type: "forward" as const, start: sample.loopStart, end: sample.loopEnd } }
+      : {}),
+  }));
 
 /** Convert decoded MOD-style PCM into a preloaded sample bank. */
 export const sampleBankFromModule = (

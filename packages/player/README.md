@@ -48,6 +48,8 @@ import { SampleBank, scheduleSampleVoice } from "@vibuca/synth8-player";
 
 const bank = new SampleBank(audioContext);
 const sample = await bank.load("bass", bassBlob, { rootNote: 36 });
+const portableAssets = bank.exportData();
+// Save portableAssets or replace one of them with your own PCM data.
 scheduleSampleVoice(audioContext, sample, {
   when: audioContext.currentTime + 0.05,
   note: 36,
