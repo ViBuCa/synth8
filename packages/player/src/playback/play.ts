@@ -7,7 +7,8 @@ import { WebAudioBackend } from "../backend/web-audio";
 let activePlayback: PreparedPlayback | undefined;
 let sharedContext: AudioContext | undefined;
 
-const getContext = (): AudioContext => {
+const getContext = (provided?: AudioContext): AudioContext => {
+  if (provided) return provided;
   if (sharedContext) return sharedContext;
   const Constructor = globalThis.AudioContext;
   if (!Constructor) throw new Error("This environment does not provide AudioContext.");
@@ -41,7 +42,7 @@ const prepareLive = (pattern: Pattern, options: PlayOptions, context: AudioConte
 };
 
 export const prepare = async (pattern: Pattern, options: PlayOptions = {}): Promise<PreparedPlayback> => {
-  const context = getContext();
+  const context = getContext(options.context);
   const mode = options.playbackMode === "live" ? "live" : "rendered";
   if (mode === "live") return prepareLive(pattern, options, context);
   return prepareNativeRendered(pattern, { context, bpm: options.bpm, sampleBank: options.sampleBank });

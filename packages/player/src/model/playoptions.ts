@@ -17,6 +17,8 @@ import type { SampleBank } from "../module";
 export type PlayOptions = {
     /** Optional backend for live playback. */
     backend?: Synth8AudioBackend;
+    /** Optional existing context for applications that own sample assets. */
+    context?: AudioContext;
     /** Destination for live playback (defaults to the AudioContext destination). */
     output?: AudioNode;
     sampleBank?: SampleBank;

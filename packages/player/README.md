@@ -34,7 +34,7 @@ const backend = new WebAudioBackend({
   output: audioContext.destination,
   maxVoices: 16,
 });
-await play(pattern, { playbackMode: "live", backend, clock: audioContext });
+await play(pattern, { playbackMode: "live", backend, clock: audioContext, sampleBank });
 ```
 
 ## Sample and tracker foundation

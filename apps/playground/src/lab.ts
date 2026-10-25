@@ -451,6 +451,7 @@ const moduleSamples = document.querySelector<HTMLDivElement>("#module-samples")!
 const sampleBankFileInput = document.querySelector<HTMLInputElement>("#sample-bank-file")!;
 let samplePreviewContext: AudioContext | undefined;
 let samplePreviewBank: SampleBank | undefined;
+let loadedSampleBank: SampleBank | undefined;
 let loadedSampleAssets: SampleAssetData[] = [];
 let samplePreviewVoice: ReturnType<typeof scheduleSampleVoice> | undefined;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
@@ -565,7 +566,12 @@ playButton.addEventListener("click", async () => {
 
     resetPlaybackMetrics();
     setOutput("json", JSON.stringify(pattern, null, 2));
-    await play(pattern, { bpm, playbackMode });
+    await play(pattern, {
+      bpm,
+      playbackMode,
+      context: samplePreviewContext,
+      sampleBank: loadedSampleBank,
+    });
 
     setPlaybackStatus(`Playing (${playbackMode}).`);
     output.className = "output output-success";
@@ -939,7 +945,13 @@ sampleBankFileInput.addEventListener("change", async () => {
   if (!file) return;
   try {
     loadedSampleAssets = decodeSampleBank(await file.text());
-    samplePreviewBank = undefined;
+    const Constructor = globalThis.AudioContext;
+    if (!Constructor) throw new Error("This environment does not provide AudioContext.");
+    samplePreviewContext ??= new Constructor();
+    await samplePreviewContext.resume();
+    loadedSampleBank = new SampleBank(samplePreviewContext);
+    for (const asset of loadedSampleAssets) loadedSampleBank.addData(asset);
+    samplePreviewBank = loadedSampleBank;
     setGameAudioStatus(`Loaded ${loadedSampleAssets.length} Synth8 sample assets from ${file.name}.`);
   } catch (error) {
     setGameAudioStatus(error instanceof Error ? error.message : String(error));
