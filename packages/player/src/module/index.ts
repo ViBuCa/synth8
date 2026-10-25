@@ -1,4 +1,5 @@
 export * from "./sample-bank";
+export * from "./sample-player";
 
 /**
  * Format-neutral module status. Decoder and tracker-player APIs will be added

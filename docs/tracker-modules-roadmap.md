@@ -32,4 +32,4 @@ module file -> format decoder -> tracker/module player -> music bus
 - Use live playback for adaptive music and rendered buffers for fixed loops.
 - Keep original short samples when authenticity matters; use oscillator instruments when procedural control is more useful.
 
-The first implementation slice is the reusable `SampleBank` exported by `@vibuca/synth8-player`. It does not claim to decode tracker files yet; it establishes the asset boundary needed by MOD, XM and TFMX playback without splitting the project into many packages.
+The first implementation slice is the reusable `SampleBank` and `scheduleSampleVoice` exported by `@vibuca/synth8-player`. They preload/decode sample assets and schedule tuned sample voices without decoding at note time. This does not claim to decode tracker files yet; it establishes the asset boundary needed by MOD, XM and TFMX playback without splitting the project into many packages.
