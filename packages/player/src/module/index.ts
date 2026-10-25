@@ -1,6 +1,7 @@
 export * from "./sample-bank";
 export * from "./sample-player";
 export * from "./sample-wav";
+export * from "./tfmx-samples";
 export * from "./tracker-model";
 export * from "./tracker-clock";
 export * from "./decoder";

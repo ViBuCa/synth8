@@ -70,6 +70,10 @@ const module = await decodeModuleAsync(bytes);
 console.log(module.title, module.orders, module.samples);
 ```
 
+The player also exposes experimental `extractTfmxSampleCandidates()` for
+inspecting embedded TFMX PCM regions without replaying the original module.
+These are marked as candidates until all TFMX variants are covered.
+
 The decoder currently extracts standard and legacy 15-sample MOD patterns,
 including common multi-channel signatures, notes, common effects and signed
 8-bit sample data. Optional format adapters can be registered without creating
