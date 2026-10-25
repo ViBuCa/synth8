@@ -21,6 +21,7 @@ const prepareLive = (pattern: Pattern, options: PlayOptions, context: AudioConte
     bpm: options.bpm,
     maxVoices: 16,
     output: options.output,
+    sampleBank: options.sampleBank,
   });
   const clock: AudioClock = options.clock ?? context;
   const scheduler = new BackendScheduler(pattern, backend, clock, {
@@ -43,7 +44,7 @@ export const prepare = async (pattern: Pattern, options: PlayOptions = {}): Prom
   const context = getContext();
   const mode = options.playbackMode === "live" ? "live" : "rendered";
   if (mode === "live") return prepareLive(pattern, options, context);
-  return prepareNativeRendered(pattern, { context, bpm: options.bpm });
+  return prepareNativeRendered(pattern, { context, bpm: options.bpm, sampleBank: options.sampleBank });
 };
 
 export const play = async (pattern: Pattern, options: PlayOptions = {}): Promise<void> => {

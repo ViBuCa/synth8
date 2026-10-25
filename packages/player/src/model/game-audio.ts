@@ -17,6 +17,7 @@ export type MusicDuckingOptions = {
 
 export type GameMusicOptions = {
     bpm?: number;
+    sampleBank?: import("../module").SampleBank;
     playbackMode?: "live" | "rendered" | "streamed";
     streamChunkDuration?: number;
     streamTailDuration?: number;

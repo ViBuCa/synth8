@@ -1,5 +1,6 @@
 import type { Pattern, Synth8Event } from "@vibuca/synth8-core";
 import { WebAudioBackend } from "./web-audio";
+import type { SampleBank } from "../module";
 
 /** Options for native OfflineAudioContext rendering. */
 export type NativeRenderOptions = {
@@ -10,6 +11,7 @@ export type NativeRenderOptions = {
   tail?: number;
   /** Uses the same calibration as live native playback by default. */
   masterGain?: number;
+  sampleBank?: SampleBank;
 };
 
 const DEFAULT_BPM = 120;
@@ -46,6 +48,7 @@ export const renderNative = async (
     bpm,
     maxVoices: 32,
     masterGain: options.masterGain,
+    sampleBank: options.sampleBank,
   });
   const events: Synth8Event[] = pattern.query(0, pattern.length);
 

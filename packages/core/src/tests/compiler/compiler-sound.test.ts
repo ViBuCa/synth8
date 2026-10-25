@@ -3,6 +3,12 @@ import { compile } from "../../compiler";
 
 describe('compile sounds', () => {
 
+    it("adds a sample asset reference to melody playback", () => {
+        expect(compile(`melody("c2 eb2").sample("turrican-bass")`).layers).toMatchObject([
+            { playback: { sample: "turrican-bass" } },
+        ]);
+    });
+
     it("adds playback sound to melody layers", () => {
         expect(compile(`melody("c4 e4").sound("triangle")`).layers).toMatchObject([
             {

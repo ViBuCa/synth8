@@ -223,6 +223,7 @@ const compileMelodySteps = (
 };
 
 const compilePlayback = (ast: {
+  sample?: PlaybackConfig["sample"];
   preset?: PlaybackConfig["preset"];
   bank?: PlaybackConfig["bank"];
   sound?: Waveform;
@@ -234,6 +235,10 @@ const compilePlayback = (ast: {
   filter?: PlaybackConfig["filter"];
 }): PlaybackConfig | undefined => {
   const playback: PlaybackConfig = {};
+
+  if (ast.sample !== undefined) {
+    playback.sample = ast.sample;
+  }
 
   if (ast.preset !== undefined) {
     playback.preset = ast.preset;

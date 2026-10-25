@@ -1,5 +1,6 @@
 import type { PlaybackConfig, Synth8AudioBackend, Synth8Event } from "@vibuca/synth8-core";
 import { resolvePlaybackPreset } from "../playback/presets";
+import { scheduleSampleVoice, type SampleBank, type SampleVoice } from "../module";
 
 export type WebAudioBackendOptions = {
   context: BaseAudioContext;
@@ -8,6 +9,8 @@ export type WebAudioBackendOptions = {
   output?: AudioNode;
   /** Output calibration against Tone.js' default destination level. */
   masterGain?: number;
+  /** Optional imported sample/instrument bank. */
+  sampleBank?: SampleBank;
 };
 
 export type WebAudioBackendStats = {
@@ -121,6 +124,14 @@ const drumProfile = (name: string, bank?: string): DrumProfile => {
   return { noise: false, frequency: tomFrequency, decay: 0.18, release: 0.05, pitchDecay: 0.02, octaves: 2 };
 };
 
+const pitchToMidi = (pitch: string): number => {
+  const match = /^([a-gA-G])([#b]?)(-?\d+)$/.exec(pitch.trim());
+  if (!match) return 60;
+  const semitones: Record<string, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
+  const accidental = match[2] === "#" ? 1 : match[2] === "b" ? -1 : 0;
+  return (Number(match[3]) + 1) * 12 + semitones[match[1].toLowerCase()] + accidental;
+};
+
 const pitchToFrequency = (pitch: string): number => {
   const match = /^([a-gA-G])([#b]?)(-?\d+)$/.exec(pitch.trim());
   if (!match) return 440;
@@ -141,6 +152,8 @@ export class WebAudioBackend implements Synth8AudioBackend {
   private readonly outputGain: GainNode;
   private readonly bpm: number;
   private readonly maxVoices: number;
+  private readonly sampleBank?: SampleBank;
+  private readonly sampleVoices: SampleVoice[] = [];
   private readonly pools = new Map<string, Voice[]>();
   private origin = 0;
   private running = false;
@@ -160,6 +173,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
     this.output = this.outputGain;
     this.bpm = options.bpm ?? 120;
     this.maxVoices = Math.max(1, Math.floor(options.maxVoices ?? 8));
+    this.sampleBank = options.sampleBank;
   }
 
   start(): void {
@@ -175,6 +189,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
 
   stop(): void {
     this.running = false;
+    for (const sampleVoice of this.sampleVoices.splice(0)) sampleVoice.dispose();
     for (const pool of this.pools.values()) {
       for (const voice of pool) {
         voice.gain.gain.cancelScheduledValues(this.context.currentTime);
@@ -232,6 +247,24 @@ export class WebAudioBackend implements Synth8AudioBackend {
 
   private scheduleNote(event: Extract<Synth8Event, { kind: "note" }>, time: number): void {
     const playback = eventPlayback(event);
+    const sample = playback.sample ? this.sampleBank?.get(playback.sample) : undefined;
+    if (sample) {
+      const duration = Math.max(0.005, event.duration * (60 / this.bpm));
+      const envelope = playback.envelope ?? {};
+      const gain = Math.max(0, Math.min(1, (event.velocity ?? 0.8) * (event.controls?.gain ?? 1) * (playback.gain ?? 1)));
+      this.sampleVoices.push(scheduleSampleVoice(this.context, sample, {
+        when: time,
+        note: pitchToMidi(event.pitch),
+        duration,
+        gain,
+        pan: event.controls?.pan ?? playback.pan ?? 0,
+        attack: envelope.attack,
+        release: envelope.release,
+        output: this.output,
+      }));
+      this.stats.eventsScheduled += 1;
+      return;
+    }
     const instrument = event.instrument ?? "default";
     const pool = this.pools.get(instrument) ?? this.createPool(instrument, playback);
     const duration = Math.max(0.005, event.duration * (60 / this.bpm));

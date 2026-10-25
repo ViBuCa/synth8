@@ -1,11 +1,13 @@
 import type { Pattern } from "@vibuca/synth8-core";
 import { renderNative, renderNativeChunk } from "../backend/native-render";
+import type { SampleBank } from "../module";
 
 export type RenderOptions = {
   bpm?: number;
   cache?: boolean;
   channels?: number;
   sampleRate?: number;
+  sampleBank?: SampleBank;
 };
 
 export type RenderChunkOptions = RenderOptions & {
@@ -20,6 +22,7 @@ const keyFor = (pattern: Pattern, options: RenderOptions): string => JSON.string
   bpm: options.bpm ?? 120,
   channels: options.channels ?? 2,
   sampleRate: options.sampleRate ?? 44100,
+  samples: options.sampleBank?.list().map((sample) => sample.id).sort(),
 });
 
 export const clearRenderCache = (): void => cache.clear();

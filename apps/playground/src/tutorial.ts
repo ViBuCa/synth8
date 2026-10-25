@@ -93,7 +93,7 @@ const tutorialExamples: TutorialExample[] = [
   {
     title: "Sounds",
     body: "Use sound() to choose the synth waveform for a melody layer.",
-    details: "Sources: sine, triangle, square, sawtooth, pulse12, pulse25, pulse50, pulse75, noise, wavetable. Pulse duty is fixed by the source name.",
+    details: "Sources: sine, triangle, square, sawtooth, pulse12, pulse25, pulse50, pulse75, noise, wavetable. Pulse duty is fixed by the source name. Imported assets can use .sample(\"asset-id\") when a SampleBank is supplied by the application.",
     source: `melody("c4 e4 g4 c5")
   .sound("pulse25")`,
   },

@@ -12,6 +12,7 @@ type Modifiers = {
   repeat: number;
   offset: number;
   loop: boolean;
+  sample?: string;
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;

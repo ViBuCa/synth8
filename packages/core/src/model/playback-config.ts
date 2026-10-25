@@ -78,6 +78,8 @@ export type EffectConfig = {
 };
 
 export type PlaybackConfig = {
+  /** ID of a preloaded sample/instrument asset. */
+  sample?: string;
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;

@@ -2,6 +2,7 @@ import type { Pattern } from "@vibuca/synth8-core";
 import type { PreparedPlayback } from "../model";
 import { createNativeBufferPlayback } from "./native-buffer";
 import { renderNative } from "./native-render";
+import type { SampleBank } from "../module";
 
 export type NativeRenderedPlaybackOptions = {
   context: AudioContext;
@@ -9,6 +10,7 @@ export type NativeRenderedPlaybackOptions = {
   output?: AudioNode;
   masterGain?: number;
   tail?: number;
+  sampleBank?: SampleBank;
 };
 
 /** Prepare a rendered native loop without Tone.Transport or Tone.Player. */
@@ -20,6 +22,7 @@ export const prepareNativeRendered = async (
     bpm: options.bpm,
     masterGain: options.masterGain,
     tail: options.tail,
+    sampleBank: options.sampleBank,
   });
   const secondsPerBeat = 60 / (options.bpm ?? 120);
   const loopEnd = pattern.length * secondsPerBeat;

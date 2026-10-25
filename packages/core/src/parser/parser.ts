@@ -16,6 +16,7 @@ type Modifiers = {
   repeat: number;
   loop: boolean;
   offset: number;
+  sample?: string;
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;
@@ -182,6 +183,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let gain: number | undefined = undefined;
   let preset: PlaybackPreset | undefined = undefined;
   let bank: PlaybackBank | undefined = undefined;
+  let sample: string | undefined = undefined;
   let sound: Waveform | undefined = undefined;
   let pan: number | undefined = undefined;
   const envelope: EnvelopeConfig = {};
@@ -261,6 +263,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
         }
         break;
       case "sound":
+      case "sample":
       case "preset":
       case "bank":
         str = expectString(state);
@@ -325,6 +328,11 @@ const parseModifiers = (state: ParserState): Modifiers => {
           throw new Error("pan() must be between -1 and 1.");
         }
         pan = value;
+        break;
+
+      case "sample":
+        if (!str.trim()) throw new Error("sample() requires a non-empty sample ID.");
+        sample = str;
         break;
 
       case "sound":
@@ -424,6 +432,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
     repeat,
     loop,
     offset,
+    sample,
     preset,
     bank,
     sound,
@@ -451,7 +460,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     throw new Error("beat() requires at least one step.");
   }
 
-  const { rate, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { rate, repeat, loop, offset, sample, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -460,6 +469,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     repeat,
     loop,
     offset,
+    sample,
     preset,
     bank,
     sound,
@@ -486,7 +496,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     throw new Error("melody() requires at least one note.");
   }
 
-  const { rate, transpose, repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, sample, preset, bank, sound, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -496,6 +506,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     repeat,
     loop,
     offset,
+    sample,
     preset,
     bank,
     sound,
@@ -527,7 +538,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { repeat, loop, offset, sample, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -535,6 +546,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     repeat,
     loop,
     offset,
+    sample,
     preset,
     bank,
     sound,

@@ -44,7 +44,7 @@ export const createGameAudio = async (options: GameAudioOptions = {}): Promise<G
     // Native rendered playback is deterministic and also covers the old
     // streamed mode without creating a player for every rendered chunk.
     if (musicOptions.playbackMode !== "live") {
-      const buffer = await renderToAudioBuffer(pattern, { bpm });
+      const buffer = await renderToAudioBuffer(pattern, { bpm, sampleBank: musicOptions.sampleBank });
       const playback = createNativeBufferPlayback({
         context, buffer, output: music, loop: true,
         loopEnd: pattern.length * 60 / bpm,

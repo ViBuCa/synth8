@@ -51,6 +51,7 @@ Melody-only modifiers:
 
 Playback/layer modifiers:
 - .sound("sine" | "triangle" | "square" | "sawtooth" | "pulse12" | "pulse25" | "pulse50" | "pulse75" | "noise" | "wavetable")
+- .sample("asset-id") selects a preloaded PCM sample supplied by the host application. Use only when the application provides a matching SampleBank entry.
 - .preset("chip-lead" | "chip-bass" | "soft-pad" | "metal-rhythm" | "arcade-pluck" | "deep-bass" | "warm-pad" | "glass-lead" | "metal-lead" | "anthem-lead" | "palm-muted" | "arena-chords" | "picked-bass" | "metal-bass" | "synth-brass" | "dark-pad" | "orchestra-hit" | "warm-keys")
 - .bank("default" | "808" | "909" | "arcade" | "chip") for drum character
 - .gain(0..1)
