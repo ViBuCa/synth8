@@ -20,6 +20,9 @@ const isLegacy15Mod = (data: Uint8Array): boolean =>
   (data[472] ?? 0) < 64;
 
 export const detectModuleFormat = (data: Uint8Array): ModuleFormat => {
+  const magic = text(data, 0, 8);
+  if (magic.startsWith("TFMX-MOD")) return "tfmx";
+  if (text(data, 0, 4) === "TFHD") return "tfhd";
   if (data.length >= 1084 && isModSignature(text(data, 1080, 4))) return "mod";
   if (isLegacy15Mod(data)) return "mod";
   return "unknown";
@@ -27,7 +30,13 @@ export const detectModuleFormat = (data: Uint8Array): ModuleFormat => {
 
 export const decodeModule = (data: Uint8Array, decoders: readonly ModuleDecoder[] = [modDecoder]): TrackerModule => {
   const decoder = decoders.find((candidate) => candidate.canDecode(data));
-  if (!decoder) throw new Error(`Unsupported module format: ${detectModuleFormat(data)}`);
+  if (!decoder) {
+    const format = detectModuleFormat(data);
+    if (format === "tfmx" || format === "tfhd") {
+      throw new Error(`${format.toUpperCase()} module recognized, but its specialized replay backend is not available yet.`);
+    }
+    throw new Error(`Unsupported module format: ${format}`);
+  }
   return decoder.decode(data);
 };
 

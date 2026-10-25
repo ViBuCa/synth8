@@ -61,6 +61,13 @@ describe("MOD decoder", () => {
   });
 });
 
+describe("module format detection", () => {
+  it("identifies TFMX and TFHD for a future specialized backend", () => {
+    expect(detectModuleFormat(new TextEncoder().encode("TFMX-MOD"))).toBe("tfmx");
+    expect(detectModuleFormat(new TextEncoder().encode("TFHD"))).toBe("tfhd");
+  });
+});
+
 describe("MOD channel signatures", () => {
   it("recognizes multi-digit channel signatures", () => {
     const data = new Uint8Array(1084);

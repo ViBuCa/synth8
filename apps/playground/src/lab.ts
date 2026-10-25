@@ -372,8 +372,8 @@ root.innerHTML = `
         <button id="game-music-stop">Stop Music</button>
       </div>
       <div class="game-audio-controls">
-        <label for="module-file">Load MOD</label>
-        <input id="module-file" type="file" accept=".mod,.m15,.nst,.m\.k\.,audio/x-mod" />
+        <label for="module-file">Load tracker module</label>
+        <input id="module-file" type="file" accept=".mod,.m15,.nst,.tfm,.tfx,.xm,.s3m,.it,audio/x-mod" />
         <button id="module-stop" type="button">Stop Module</button>
       </div>
 
