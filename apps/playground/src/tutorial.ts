@@ -72,6 +72,25 @@ const tutorialExamples: TutorialExample[] = [
     source: `beat("kick+hihat _ snare+hihat _ kick openhat snare hihat")`,
   },
   {
+    title: "Layered Bass",
+    body: "Several sawtooth layers can approximate a multi-oscillator or tracker bass.",
+    details: "This is a Synth8 approximation: parallel layers provide separate frequencies, while distortion and filtering shape the combined sound. Future instrument definitions will support multiple oscillators as one voice.",
+    source: `song(
+  melody("c2 c2 eb2 c2")
+    .sound("sawtooth")
+    .gain(0.42),
+  melody("c2 c2 eb2 c2")
+    .sound("sawtooth")
+    .transpose(7)
+    .gain(0.2),
+  melody("c2 c2 eb2 c2")
+    .sound("square")
+    .preset("metal-bass")
+    .distortion(0.35)
+    .lowpass(2200)
+)`
+  },
+  {
     title: "Sounds",
     body: "Use sound() to choose the synth waveform for a melody layer.",
     details: "Sources: sine, triangle, square, sawtooth, pulse12, pulse25, pulse50, pulse75, noise, wavetable. Pulse duty is fixed by the source name.",
@@ -258,6 +277,7 @@ export function renderTutorial(root: HTMLElement) {
       <section class="tutorial-hero">
         <h1>Synth8 Tutorial</h1>
         <p class="lead">Each example is editable and playable. Change a pattern, then press Play to hear what changed.</p>
+        <p class="tutorial-details"><strong>Synth8 and tracker music:</strong> Synth8's DSL creates oscillator-based music. Tracker modules use a separate playback path because they may combine short waveform samples, recorded samples, pattern rows and per-tick effects. Sample-bank and module playback support is being added to the player without creating a package for every file format. See <a href="https://github.com/ViBuCa/synth8/blob/main/docs/tracker-modules-roadmap.md">the tracker roadmap</a>.</p>
       </section>
 
       <div class="tutorial-list">

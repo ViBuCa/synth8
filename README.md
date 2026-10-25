@@ -61,6 +61,7 @@ Unlike many live-coding environments, Synth8 is designed from the ground up for 
 * Polyphonic note playback, including white-noise voices
 * Native rendered loop playback
 * Optional native live scheduling mode for interactive playback
+* Preloaded sample-bank foundation for tracker and module playback
 * Prepare/start flow for game loading screens
 * Pause, resume and stop controls
 
@@ -125,7 +126,7 @@ If you want an LLM to compose Synth8 music for you, copy the prompt/reference in
 | Package                    | Description                           |
 | -------------------------- | ------------------------------------- |
 | @vibuca/synth8-core        | Parser, AST and compiler              |
-| @vibuca/synth8-player      | Native Web Audio playback and rendering |
+| @vibuca/synth8-player      | Native Web Audio playback, rendering and sample assets |
 | @vibuca/synth8-import-midi | MIDI importer for Synth8              |
 | @vibuca/synth8-editor      | Small browser piano-roll editor       |
 | Playground                 | Browser-based development environment |
@@ -159,9 +160,13 @@ Implemented:
 * Effects
 * MIDI export
 * First browser piano-roll editor preview
+* Preloaded sample-bank foundation for future tracker/module playback
 
 Planned:
 
 * Full editor package
 * Phaser examples
 * Procedural composition helpers
+* Tracker/module playback (MOD, XM, S3M, IT, TFMX and related formats)
+
+See [docs/tracker-modules-roadmap.md](docs/tracker-modules-roadmap.md) for the module playback plan.

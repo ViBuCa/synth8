@@ -6,3 +6,4 @@ export * from './backend/web-audio';
 export * from './backend/native-render';
 export * from './backend/native-buffer';
 export * from './backend/native-playback';
+export * from './module';
