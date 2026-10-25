@@ -261,6 +261,11 @@ export class WebAudioBackend implements Synth8AudioBackend {
         attack: envelope.attack,
         release: envelope.release,
         output: this.output,
+        effects: {
+          ...playback.effects,
+          lowpass: playback.filter?.cutoff ?? playback.effects?.lowpass,
+          highpass: playback.effects?.highpass,
+        },
       }));
       this.stats.eventsScheduled += 1;
       return;

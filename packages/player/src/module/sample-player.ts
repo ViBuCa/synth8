@@ -14,6 +14,11 @@ export type SampleVoiceOptions = {
   duration?: number;
   offset?: number;
   output?: AudioNode;
+  effects?: {
+    lowpass?: number;
+    highpass?: number;
+    distortion?: number;
+  };
 };
 
 export type SampleVoice = {
@@ -50,6 +55,7 @@ export const scheduleSampleVoice = (
   const gain = context.createGain();
   const panner = context.createStereoPanner();
   const output = options.output ?? context.destination;
+  const effects = options.effects ?? {};
   const when = Math.max(context.currentTime, options.when ?? context.currentTime);
   const offset = Math.max(0, Math.min(options.offset ?? 0, asset.buffer.duration));
   const attack = Math.max(0.001, options.attack ?? 0.002);
@@ -71,7 +77,26 @@ export const scheduleSampleVoice = (
   panner.pan.setValueAtTime(Math.max(-1, Math.min(1, options.pan ?? 0)), when);
   gain.gain.setValueAtTime(0, when);
   gain.gain.linearRampToValueAtTime(requestedGain, when + attack);
-  source.connect(gain).connect(panner).connect(output);
+  const filter = effects.lowpass !== undefined || effects.highpass !== undefined
+    ? context.createBiquadFilter()
+    : undefined;
+  if (filter) {
+    filter.type = effects.highpass !== undefined && effects.lowpass === undefined ? "highpass" : "lowpass";
+    filter.frequency.setValueAtTime(effects.highpass ?? effects.lowpass ?? 20000, when);
+  }
+  const distortion = effects.distortion !== undefined ? context.createWaveShaper() : undefined;
+  if (distortion) {
+    const curve = new Float32Array(256);
+    const drive = 1 + effects.distortion! * 40;
+    for (let index = 0; index < curve.length; index += 1) {
+      const x = (index * 2) / (curve.length - 1) - 1;
+      curve[index] = Math.tanh(x * drive) * (1 - effects.distortion! * 0.3);
+    }
+    distortion.curve = curve;
+  }
+  const sourceChain = filter ? gain.connect(filter) : gain;
+  const shaped = distortion ? sourceChain.connect(distortion) : sourceChain;
+  shaped.connect(panner).connect(output);
 
   const duration = options.duration === undefined ? undefined : Math.max(0, options.duration);
   const end = duration === undefined ? undefined : when + duration;
@@ -100,6 +125,8 @@ export const scheduleSampleVoice = (
     try { source.stop(); } catch { /* already stopped */ }
     source.disconnect();
     gain.disconnect();
+    filter?.disconnect();
+    distortion?.disconnect();
     panner.disconnect();
   };
 
