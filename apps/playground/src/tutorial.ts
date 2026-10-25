@@ -277,7 +277,7 @@ export function renderTutorial(root: HTMLElement) {
       <section class="tutorial-hero">
         <h1>Synth8 Tutorial</h1>
         <p class="lead">Each example is editable and playable. Change a pattern, then press Play to hear what changed.</p>
-        <p class="tutorial-details"><strong>Tracker files and samples:</strong> Open the <strong>Laboratory</strong>, choose <strong>Music + Sfx</strong>, then use <strong>Load tracker module (MOD / TFMX)</strong>. MOD files can be previewed as modules. TFMX and TFHD files are inspected for reusable sample candidates; each candidate can be previewed, renamed, exported as WAV or collected into a Synth8 sample-bank JSON file. TFMX/TFHD arrangement replay is intentionally not required for this workflow. See <a href="https://github.com/ViBuCa/synth8/blob/main/docs/tracker-modules-roadmap.md">the tracker roadmap</a>.</p>
+        <p class="tutorial-details"><strong>Tracker files and samples:</strong> Open the <strong>Laboratory</strong>, choose <strong>Music + Sfx</strong>, then use <strong>Load tracker module (MOD / TFMX / TFHD)</strong>. MOD files can be previewed as modules. TFMX and TFHD files are inspected for reusable sample candidates; each candidate can be previewed, renamed, exported as WAV or collected into a Synth8 sample-bank JSON file. TFMX/TFHD arrangement replay is intentionally not required for this workflow. See <a href="https://github.com/ViBuCa/synth8/blob/main/docs/tracker-modules-roadmap.md">the tracker roadmap</a>.</p>
         <div class="tutorial-tracker-guide">
           <h2>Imported sample workflow</h2>
           <ol>
