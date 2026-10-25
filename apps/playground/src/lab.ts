@@ -956,7 +956,7 @@ sampleBankFileInput.addEventListener("change", async () => {
     samplePreviewContext ??= new Constructor();
     await samplePreviewContext.resume();
     loadedSampleBank = new SampleBank(samplePreviewContext);
-    for (const asset of loadedSampleAssets) loadedSampleBank.addData(asset);
+    loadedSampleBank.addAll(loadedSampleAssets);
     samplePreviewBank = loadedSampleBank;
     setGameAudioStatus(`Loaded ${loadedSampleAssets.length} Synth8 sample assets from ${file.name}.`);
   } catch (error) {

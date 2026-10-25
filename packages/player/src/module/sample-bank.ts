@@ -48,6 +48,10 @@ export class SampleBank {
     return asset;
   }
 
+  addAll(assets: readonly SampleAssetData[]): SampleAsset[] {
+    return assets.map((asset) => this.addData(asset));
+  }
+
   addData(asset: SampleAssetData): SampleAsset {
     return this.addPcm(asset.id, asset.pcm, {
       sampleRate: asset.sampleRate,
