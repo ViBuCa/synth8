@@ -357,6 +357,8 @@ root.innerHTML = `
       </div>
 
       <div id="playback-status" class="playback-status" role="status" aria-live="polite">Idle.</div>
+      <p class="tracker-callout"><strong>Working with tracker files?</strong> Open <em>Music + Sfx</em> to load MOD, TFMX or TFHD files, preview extracted samples and export a Synth8 sample bank.</p>
+      <button id="open-tracker-import" type="button">Open tracker importer</button>
     </section>
 
     <section
@@ -463,12 +465,15 @@ const musicVolumeValue = document.querySelector<HTMLOutputElement>("#music-volum
 const sfxVolumeValue = document.querySelector<HTMLOutputElement>("#sfx-volume-value")!;
 const tabButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".demo-tab"));
 const tabPanels = Array.from(document.querySelectorAll<HTMLElement>(".demo-panel"));
+const openTrackerImport = document.querySelector<HTMLButtonElement>("#open-tracker-import")!;
 
 let gameAudio: GameAudio | undefined;
 let gameMusic: PreparedPlayback | undefined;
 let moduleMusic: PreparedPlayback | undefined;
 let loadedModule: TrackerModule | undefined;
 const preparedSfx = new Map<GameSfxName, PreparedSfx>();
+
+openTrackerImport.addEventListener("click", () => selectTab("game"));
 
 function selectTab(tab: DemoTab) {
   for (const button of tabButtons) {

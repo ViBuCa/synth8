@@ -277,7 +277,17 @@ export function renderTutorial(root: HTMLElement) {
       <section class="tutorial-hero">
         <h1>Synth8 Tutorial</h1>
         <p class="lead">Each example is editable and playable. Change a pattern, then press Play to hear what changed.</p>
-        <p class="tutorial-details"><strong>Synth8 and tracker music:</strong> Synth8's DSL creates oscillator-based music. Tracker modules use a separate playback path because they may combine short waveform samples, recorded samples, pattern rows and per-tick effects. Sample-bank and module playback support is being added to the player without creating a package for every file format. See <a href="https://github.com/ViBuCa/synth8/blob/main/docs/tracker-modules-roadmap.md">the tracker roadmap</a>.</p>
+        <p class="tutorial-details"><strong>Tracker files and samples:</strong> Open the <strong>Laboratory</strong>, choose <strong>Music + Sfx</strong>, then use <strong>Load tracker module (MOD / TFMX)</strong>. MOD files can be previewed as modules. TFMX and TFHD files are inspected for reusable sample candidates; each candidate can be previewed, renamed, exported as WAV or collected into a Synth8 sample-bank JSON file. TFMX/TFHD arrangement replay is intentionally not required for this workflow. See <a href="https://github.com/ViBuCa/synth8/blob/main/docs/tracker-modules-roadmap.md">the tracker roadmap</a>.</p>
+        <div class="tutorial-tracker-guide">
+          <h2>Imported sample workflow</h2>
+          <ol>
+            <li>Load a <code>.tfm</code> or <code>.tfx</code> file in the Laboratory.</li>
+            <li>Preview candidates and rename useful assets.</li>
+            <li>Export <code>tfmx-sample-candidates.s8bank.json</code>.</li>
+            <li>Load that bank, select <strong>Use in Synth8</strong>, and play or export the generated pattern.</li>
+          </ol>
+          <pre><code>melody("c2 eb2 f2").sample("tfmx-candidate-5794")</code></pre>
+        </div>
       </section>
 
       <div class="tutorial-list">
