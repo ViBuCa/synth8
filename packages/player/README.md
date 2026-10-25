@@ -44,12 +44,13 @@ format-neutral tracker model, and a tick/row/order clock. These are the shared
 building blocks for module playback; file decoders are not enabled yet.
 
 ```ts
-import { SampleBank, encodeSampleWav, scheduleSampleVoice } from "@vibuca/synth8-player";
+import { SampleBank, encodeSampleBank, encodeSampleWav, scheduleSampleVoice } from "@vibuca/synth8-player";
 
 const bank = new SampleBank(audioContext);
 const sample = await bank.load("bass", bassBlob, { rootNote: 36 });
 const portableAssets = bank.exportData();
-// Save portableAssets or replace one of them with your own PCM data.
+const savedBank = encodeSampleBank(portableAssets);
+// Save savedBank or replace one of the assets with your own PCM data.
 const wav = encodeSampleWav(portableAssets[0]);
 scheduleSampleVoice(audioContext, sample, {
   when: audioContext.currentTime + 0.05,

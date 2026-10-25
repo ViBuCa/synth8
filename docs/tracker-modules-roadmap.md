@@ -16,7 +16,7 @@ module file -> format decoder -> tracker/module player -> music bus
 
 ## Stages
 
-1. **Sample assets** — preload and share decoded samples, with root-note tuning and loop metadata. The initial `SampleBank`, scheduled sample voice APIs, portable `SampleAssetData`, module sample extraction and `.sample("asset-id")` playback references are now available.
+1. **Sample assets** — preload and share decoded samples, with root-note tuning and loop metadata. The initial `SampleBank`, scheduled sample voice APIs, portable `SampleAssetData`, JSON sample-bank serialization, module sample extraction and `.sample("asset-id")` playback references are now available.
 2. **Tracker clock** — implement order/row/tick timing, speed, tempo and looping. The initial format-neutral clock and tracker model are now available.
 3. **Common module model** — represent patterns, channels, instruments, samples and effects without tying the model to one file format. The initial model is now available.
 4. **First format** — implement MOD playback, then XM/S3M/IT as adapters or WASM-backed decoders. The first ProTracker MOD detector/decoder and initial playback path are now available.
