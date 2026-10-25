@@ -72,7 +72,7 @@ console.log(module.title, module.orders, module.samples);
 
 The player also exposes experimental `extractTfmxSampleCandidates()` for
 inspecting embedded TFMX PCM regions without replaying the original module.
-These are marked as candidates until all TFMX variants are covered.
+These are marked as candidates until their boundaries and loop metadata are validated across TFMX-MOD and TFHD variants.
 
 The decoder currently extracts standard and legacy 15-sample MOD patterns,
 including common multi-channel signatures, notes, common effects and signed

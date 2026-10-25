@@ -11,6 +11,9 @@ const u32 = (data: Uint8Array, offset: number): number =>
 const u16 = (data: Uint8Array, offset: number): number =>
   ((data[offset] ?? 0) << 8) | (data[offset + 1] ?? 0);
 
+const modulePointer = (value: number, dataLength: number): number =>
+  value > dataLength && (value & 0xffff) === 0 ? value >>> 16 : value;
+
 /**
  * Find embedded TFMX sample candidates without running the original replay
  * routine. TFMX variants use sample descriptors inside macro data; this
@@ -23,8 +26,8 @@ export const extractTfmxSampleCandidates = (data: Uint8Array): TfmxSampleCandida
   if (!magic.startsWith("TFMX-MOD") && magic.slice(0, 4) !== "TFHD") {
     throw new Error("Not a recognized TFMX-MOD or TFHD file.");
   }
-  const tableEnd = u32(data, 0x1e8);
-  const dataFloor = Math.max(0x200, u32(data, 0x1ec));
+  const tableEnd = modulePointer(u32(data, 0x1e8), data.length);
+  const dataFloor = Math.max(0x200, modulePointer(u32(data, 0x1ec), data.length));
   const end = tableEnd > 0x200 && tableEnd < data.length ? tableEnd : Math.min(data.length, 0x4000);
   const byOffset = new Map<number, TfmxSampleCandidate>();
   for (let offset = 0x200; offset + 12 <= end; offset += 2) {
