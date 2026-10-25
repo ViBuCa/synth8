@@ -1,6 +1,6 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, decodeModuleAsync, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
-import type { GameAudio, PreparedPlayback, PreparedSfx, TrackerModule } from "@vibuca/synth8-player"
+import { createGameAudio, decodeModuleAsync, decodeSampleBank, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
+import type { GameAudio, PreparedPlayback, PreparedSfx, SampleAssetData, TrackerModule } from "@vibuca/synth8-player"
 import {
   parseMidi,
   midiToSynth8Source,
@@ -377,6 +377,10 @@ root.innerHTML = `
         <button id="module-stop" type="button">Stop Module</button>
       </div>
       <div id="module-samples" class="module-samples" hidden></div>
+      <div class="game-audio-controls">
+        <label for="sample-bank-file">Load Synth8 sample bank</label>
+        <input id="sample-bank-file" type="file" accept=".json,.s8bank.json,application/json" />
+      </div>
 
       <div class="volume-grid">
         <label class="volume-control" for="master-volume">
@@ -444,8 +448,10 @@ const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-mus
 const moduleFileInput = document.querySelector<HTMLInputElement>("#module-file")!;
 const moduleStopButton = document.querySelector<HTMLButtonElement>("#module-stop")!;
 const moduleSamples = document.querySelector<HTMLDivElement>("#module-samples")!;
+const sampleBankFileInput = document.querySelector<HTMLInputElement>("#sample-bank-file")!;
 let samplePreviewContext: AudioContext | undefined;
 let samplePreviewBank: SampleBank | undefined;
+let loadedSampleAssets: SampleAssetData[] = [];
 let samplePreviewVoice: ReturnType<typeof scheduleSampleVoice> | undefined;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
 const masterVolumeInput = document.querySelector<HTMLInputElement>("#master-volume")!;
@@ -835,7 +841,19 @@ const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandid
   moduleSamples.hidden = false;
   const heading = document.createElement("p");
   heading.textContent = `Sample candidates (${candidates.length}) — preview or export individually:`;
-  moduleSamples.append(heading);
+  const exportBank = document.createElement("button");
+  exportBank.type = "button";
+  exportBank.textContent = "Export sample bank JSON";
+  exportBank.addEventListener("click", () => {
+    const blob = new Blob([encodeSampleBank(candidates)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "tfmx-sample-candidates.s8bank.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+  moduleSamples.append(heading, exportBank);
   for (const candidate of candidates) {
     const row = document.createElement("div");
     row.className = "module-sample-row";
@@ -906,6 +924,18 @@ moduleFileInput.addEventListener("change", async () => {
 moduleStopButton.addEventListener("click", () => {
   moduleMusic?.stop();
   setGameAudioStatus("Tracker module stopped.");
+});
+
+sampleBankFileInput.addEventListener("change", async () => {
+  const file = sampleBankFileInput.files?.[0];
+  if (!file) return;
+  try {
+    loadedSampleAssets = decodeSampleBank(await file.text());
+    samplePreviewBank = undefined;
+    setGameAudioStatus(`Loaded ${loadedSampleAssets.length} Synth8 sample assets from ${file.name}.`);
+  } catch (error) {
+    setGameAudioStatus(error instanceof Error ? error.message : String(error));
+  }
 });
 
 document.querySelector<HTMLInputElement>("#import-song")!.addEventListener("change", async (event) => {
