@@ -37,6 +37,27 @@ const backend = new WebAudioBackend({
 await play(pattern, { playbackMode: "live", backend, clock: audioContext });
 ```
 
+## Sample and tracker foundation
+
+The player exports a reusable `SampleBank`, `scheduleSampleVoice`, a
+format-neutral tracker model, and a tick/row/order clock. These are the shared
+building blocks for module playback; file decoders are not enabled yet.
+
+```ts
+import { SampleBank, scheduleSampleVoice } from "@vibuca/synth8-player";
+
+const bank = new SampleBank(audioContext);
+const sample = await bank.load("bass", bassBlob, { rootNote: 36 });
+scheduleSampleVoice(audioContext, sample, {
+  when: audioContext.currentTime + 0.05,
+  note: 36,
+  duration: 0.5,
+});
+```
+
+Tracker modules will remain part of this player package rather than requiring a
+separate npm package for MOD, XM, S3M, IT, or TFMX.
+
 ## Game audio
 
 `createGameAudio()` provides native Web Audio music and SFX buses with master,

@@ -1,5 +1,7 @@
 export * from "./sample-bank";
 export * from "./sample-player";
+export * from "./tracker-model";
+export * from "./tracker-clock";
 
 /**
  * Format-neutral module status. Decoder and tracker-player APIs will be added
