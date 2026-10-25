@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, decodeModuleAsync, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
+import { createGameAudio, decodeModuleAsync, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
 import type { GameAudio, PreparedPlayback, PreparedSfx, TrackerModule } from "@vibuca/synth8-player"
 import {
   parseMidi,
@@ -376,6 +376,7 @@ root.innerHTML = `
         <input id="module-file" type="file" accept=".mod,.m15,.nst,.tfm,.tfx,.xm,.s3m,.it,audio/x-mod" />
         <button id="module-stop" type="button">Stop Module</button>
       </div>
+      <div id="module-samples" class="module-samples" hidden></div>
 
       <div class="volume-grid">
         <label class="volume-control" for="master-volume">
@@ -442,6 +443,10 @@ const gameMusicButton = document.querySelector<HTMLButtonElement>("#game-music")
 const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-music-stop")!;
 const moduleFileInput = document.querySelector<HTMLInputElement>("#module-file")!;
 const moduleStopButton = document.querySelector<HTMLButtonElement>("#module-stop")!;
+const moduleSamples = document.querySelector<HTMLDivElement>("#module-samples")!;
+let samplePreviewContext: AudioContext | undefined;
+let samplePreviewBank: SampleBank | undefined;
+let samplePreviewVoice: ReturnType<typeof scheduleSampleVoice> | undefined;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
 const masterVolumeInput = document.querySelector<HTMLInputElement>("#master-volume")!;
 const musicVolumeInput = document.querySelector<HTMLInputElement>("#music-volume")!;
@@ -817,10 +822,62 @@ document.querySelector<HTMLButtonElement>("#export-song")!.addEventListener("cli
   downloadSynth8Source(sourceInput.value, "song.synth8", { bpm: Number(bpmInput.value), length });
 });
 
+const clearModuleSamples = (): void => {
+  samplePreviewVoice?.stop();
+  samplePreviewVoice = undefined;
+  moduleSamples.hidden = true;
+  moduleSamples.replaceChildren();
+};
+
+const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandidates>): void => {
+  clearModuleSamples();
+  if (!candidates.length) return;
+  moduleSamples.hidden = false;
+  const heading = document.createElement("p");
+  heading.textContent = `Sample candidates (${candidates.length}) — preview or export individually:`;
+  moduleSamples.append(heading);
+  for (const candidate of candidates) {
+    const row = document.createElement("div");
+    row.className = "module-sample-row";
+    const label = document.createElement("span");
+    label.textContent = `${candidate.id} (${candidate.pcm.length} bytes)`;
+    const preview = document.createElement("button");
+    preview.type = "button";
+    preview.textContent = "Preview";
+    preview.addEventListener("click", async () => {
+      const Constructor = globalThis.AudioContext;
+      if (!Constructor) return;
+      samplePreviewContext ??= new Constructor();
+      await samplePreviewContext.resume();
+      samplePreviewVoice?.stop();
+      samplePreviewBank ??= new SampleBank(samplePreviewContext);
+      const asset = samplePreviewBank.addData(candidate);
+      samplePreviewVoice = scheduleSampleVoice(samplePreviewContext, asset, {
+        note: candidate.rootNote ?? 48,
+        duration: Math.min(3, Math.max(0.1, candidate.pcm.length / candidate.sampleRate)),
+      });
+    });
+    const download = document.createElement("button");
+    download.type = "button";
+    download.textContent = "WAV";
+    download.addEventListener("click", () => {
+      const url = URL.createObjectURL(encodeSampleWav(candidate));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${candidate.id}.wav`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+    row.append(label, preview, download);
+    moduleSamples.append(row);
+  }
+};
+
 moduleFileInput.addEventListener("change", async () => {
   const file = moduleFileInput.files?.[0];
   if (!file) return;
   try {
+    clearModuleSamples();
     moduleMusic?.stop();
     moduleMusic?.dispose();
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -832,6 +889,9 @@ moduleFileInput.addEventListener("change", async () => {
     loadedModule = undefined;
     const bytes = new Uint8Array(await file.arrayBuffer());
     const inspection = inspectModule(bytes);
+    if (inspection.format === "tfmx" || inspection.format === "tfhd") {
+      showModuleSamples(extractTfmxSampleCandidates(bytes));
+    }
     const details = [
       inspection.format.toUpperCase(),
       inspection.title,
