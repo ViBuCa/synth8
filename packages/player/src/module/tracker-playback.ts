@@ -1,6 +1,6 @@
 import type { TrackerEffect, TrackerModule } from "./tracker-model";
 import { TrackerClock, type TrackerPosition } from "./tracker-clock";
-import { SampleBank } from "./sample-bank";
+import { SampleBank, type SampleAsset } from "./sample-bank";
 import { samplePlaybackRate, scheduleSampleVoice, type SampleVoice } from "./sample-player";
 
 export type TrackerPlaybackOptions = {
@@ -89,6 +89,7 @@ const scheduleRow = (
   when: number,
   duration: number,
   tickDuration: number,
+  channelSamples: Array<SampleAsset | undefined>,
   output?: AudioNode,
 ): ScheduledRow => {
   const pattern = module.patterns.find((candidate) => candidate.index === position.pattern);
@@ -98,9 +99,12 @@ const scheduleRow = (
   const effects: TrackerEffect[] = [];
   row.cells.forEach((cell, channel) => {
     if (cell.effect) effects.push(cell.effect);
-    if (cell.note === undefined || cell.instrument === undefined) return;
-    const sample = module.samples.find((candidate) => candidate.index === cell.instrument);
-    const asset = sample ? bank.get(sample.assetId) : undefined;
+    if (cell.instrument !== undefined) {
+      const selected = module.samples.find((candidate) => candidate.index === cell.instrument);
+      channelSamples[channel] = selected ? bank.get(selected.assetId) : undefined;
+    }
+    if (cell.note === undefined) return;
+    const asset = channelSamples[channel];
     if (!asset) return;
     const delay = cell.effect?.type === "note-delay" ? cell.effect.tick * tickDuration : 0;
     const cut = cell.effect?.type === "note-cut" ? cell.effect.tick * tickDuration : duration;
@@ -164,6 +168,7 @@ export const createTrackerPlayback = (
   const lookAhead = Math.max(0.05, options.lookAhead ?? 0.2);
   const updateInterval = Math.max(10, options.updateInterval ?? 25);
   const voices: SampleVoice[] = [];
+  const channelSamples: Array<SampleAsset | undefined> = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
   let scheduledUntil = 0;
   let running = false;
@@ -180,7 +185,7 @@ export const createTrackerPlayback = (
     while (scheduledUntil < now + lookAhead) {
       const position = clock.current;
       const rowDuration = clock.tickDuration * clock.speed;
-      const row = scheduleRow(options.context, module, bank, position, scheduledUntil, rowDuration, clock.tickDuration, options.output);
+      const row = scheduleRow(options.context, module, bank, position, scheduledUntil, rowDuration, clock.tickDuration, channelSamples, options.output);
       voices.push(...row.voices);
       const rowSpeed = clock.speed;
       scheduledUntil += rowDuration;
@@ -199,6 +204,7 @@ export const createTrackerPlayback = (
   const reset = (): void => {
     clearTimer();
     for (const voice of voices.splice(0)) voice.dispose();
+    channelSamples.fill(undefined);
     clock.reset();
     scheduledUntil = 0;
   };
