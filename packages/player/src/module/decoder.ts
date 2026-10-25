@@ -3,7 +3,7 @@ import type { ModuleFormat, TrackerModule } from "./index";
 export type ModuleDecoder = {
   format: ModuleFormat;
   canDecode(data: Uint8Array): boolean;
-  decode(data: Uint8Array): TrackerModule;
+  decode(data: Uint8Array): TrackerModule | Promise<TrackerModule>;
 };
 
 const text = (data: Uint8Array, start: number, length: number): string =>
@@ -41,17 +41,26 @@ export const registerModuleDecoder = (decoder: ModuleDecoder): (() => void) => {
 
 export const getModuleDecoders = (): readonly ModuleDecoder[] => [modDecoder, ...registeredDecoders];
 
-export const decodeModule = (data: Uint8Array, decoders: readonly ModuleDecoder[] = getModuleDecoders()): TrackerModule => {
+const findDecoder = (data: Uint8Array, decoders: readonly ModuleDecoder[]): ModuleDecoder => {
   const decoder = decoders.find((candidate) => candidate.canDecode(data));
-  if (!decoder) {
-    const format = detectModuleFormat(data);
-    if (format === "tfmx" || format === "tfhd") {
-      throw new Error(`${format.toUpperCase()} module recognized, but its specialized replay backend is not available yet.`);
-    }
-    throw new Error(`Unsupported module format: ${format}`);
+  if (decoder) return decoder;
+  const format = detectModuleFormat(data);
+  if (format === "tfmx" || format === "tfhd") {
+    throw new Error(`${format.toUpperCase()} module recognized, but its specialized replay backend is not available yet.`);
   }
-  return decoder.decode(data);
+  throw new Error(`Unsupported module format: ${format}`);
 };
+
+export const decodeModule = (data: Uint8Array, decoders: readonly ModuleDecoder[] = getModuleDecoders()): TrackerModule => {
+  const result = findDecoder(data, decoders).decode(data);
+  if (result instanceof Promise) throw new Error("This module decoder is asynchronous; use decodeModuleAsync().");
+  return result;
+};
+
+export const decodeModuleAsync = async (
+  data: Uint8Array,
+  decoders: readonly ModuleDecoder[] = getModuleDecoders(),
+): Promise<TrackerModule> => findDecoder(data, decoders).decode(data);
 
 const readU16 = (data: Uint8Array, offset: number): number =>
   ((data[offset] ?? 0) << 8) | (data[offset + 1] ?? 0);

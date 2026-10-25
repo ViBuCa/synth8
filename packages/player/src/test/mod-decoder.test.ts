@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeModule, detectModuleFormat, inspectModule, registerModuleDecoder } from "../module";
+import { decodeModule, decodeModuleAsync, detectModuleFormat, inspectModule, registerModuleDecoder } from "../module";
 
 const putText = (data: Uint8Array, offset: number, value: string): void => {
   data.set(new TextEncoder().encode(value), offset);
@@ -56,6 +56,18 @@ describe("decoder registry", () => {
     };
     const unregister = registerModuleDecoder(decoder);
     expect(decodeModule(new Uint8Array([0xaa]))).toMatchObject({ format: "tfmx" });
+    unregister();
+  });
+
+  it("supports asynchronous decoder initialization", async () => {
+    const decoder = {
+      format: "tfhd" as const,
+      canDecode: (data: Uint8Array) => data[0] === 0xbb,
+      decode: async () => ({ format: "tfhd" as const, orders: [], patterns: [], samples: [], instruments: [], initialSpeed: 6, initialTempo: 125 }),
+    };
+    const unregister = registerModuleDecoder(decoder);
+    await expect(decodeModuleAsync(new Uint8Array([0xbb]))).resolves.toMatchObject({ format: "tfhd" });
+    expect(() => decodeModule(new Uint8Array([0xbb]))).toThrow(/decodeModuleAsync/);
     unregister();
   });
 });

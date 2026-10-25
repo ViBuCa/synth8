@@ -73,6 +73,7 @@ separate player packages:
 
 ```ts
 const unregister = registerModuleDecoder(tfmxDecoder);
+const module = await decodeModuleAsync(bytes);
 ```
 
 TFMX-MOD and TFHD headers are recognized so applications can report that their
