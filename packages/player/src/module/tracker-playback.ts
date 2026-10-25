@@ -1,7 +1,7 @@
 import type { TrackerEffect, TrackerModule } from "./tracker-model";
 import { TrackerClock, type TrackerPosition } from "./tracker-clock";
 import { SampleBank } from "./sample-bank";
-import { scheduleSampleVoice, type SampleVoice } from "./sample-player";
+import { samplePlaybackRate, scheduleSampleVoice, type SampleVoice } from "./sample-player";
 
 export type TrackerPlaybackOptions = {
   context: AudioContext;
@@ -46,6 +46,41 @@ export const sampleBankFromModule = (
 
 type ScheduledRow = { voices: SampleVoice[]; effects: TrackerEffect[] };
 
+const schedulePitchEffect = (
+  voice: SampleVoice,
+  effect: TrackerEffect | undefined,
+  when: number,
+  duration: number,
+  tickDuration: number,
+  baseRate: number,
+): void => {
+  if (!effect) return;
+  const rate = voice.source.playbackRate;
+  rate.cancelScheduledValues(when);
+  rate.setValueAtTime(baseRate, when);
+  if (effect.type === "pitch-slide-up" || effect.type === "pitch-slide-down") {
+    // MOD slide units are period deltas, not semitones. This bounded
+    // approximation keeps the direction and musical scale without pretending
+    // that a one-row event is a persistent channel effect yet.
+    const semitones = effect.amount / 8 * (effect.type === "pitch-slide-up" ? 1 : -1);
+    rate.linearRampToValueAtTime(baseRate * 2 ** (semitones / 12), when + duration);
+  } else if (effect.type === "arpeggio") {
+    const values = [0, effect.x, effect.y, 0];
+    values.forEach((semitones, index) => {
+      const time = when + Math.min(duration, index * tickDuration);
+      rate.setValueAtTime(baseRate * 2 ** (semitones / 12), time);
+    });
+  } else if (effect.type === "vibrato") {
+    const ticks = Math.max(1, Math.ceil(duration / tickDuration));
+    for (let tick = 0; tick <= ticks; tick += 1) {
+      const time = when + Math.min(duration, tick * tickDuration);
+      const phase = tick * effect.speed * Math.PI / 8;
+      const semitones = Math.sin(phase) * effect.depth / 2;
+      rate.setValueAtTime(baseRate * 2 ** (semitones / 12), time);
+    }
+  }
+};
+
 const scheduleRow = (
   context: AudioContext,
   module: TrackerModule,
@@ -73,7 +108,7 @@ const scheduleRow = (
     const sampleOffset = cell.effect?.type === "sample-offset"
       ? cell.effect.offset / asset.buffer.sampleRate
       : 0;
-    voices.push(scheduleSampleVoice(context, asset, {
+    const voice = scheduleSampleVoice(context, asset, {
       when: when + delay,
       note: cell.note,
       duration: noteDuration,
@@ -81,7 +116,23 @@ const scheduleRow = (
       gain: cell.volume ?? 1,
       pan: module.channels && module.channels > 1 ? (channel / (module.channels - 1)) * 2 - 1 : 0,
       output,
-    }));
+    });
+    schedulePitchEffect(
+      voice,
+      cell.effect,
+      when + delay,
+      noteDuration,
+      tickDuration,
+      samplePlaybackRate(asset, cell.note),
+    );
+    if (cell.effect?.type === "volume-slide") {
+      const up = cell.effect.amount >> 4;
+      const down = cell.effect.amount & 0x0f;
+      const delta = (up - down) / 64;
+      const target = Math.max(0.001, Math.min(1, (cell.volume ?? 1) + delta));
+      voice.gain.gain.linearRampToValueAtTime(target, when + delay + noteDuration);
+    }
+    voices.push(voice);
   });
   return { voices, effects };
 };

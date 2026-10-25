@@ -23,11 +23,18 @@ export type SampleVoice = {
   dispose: () => void;
 };
 
-const midiRate = (asset: SampleAsset, options: SampleVoiceOptions): number => {
+export const samplePlaybackRate = (
+  asset: SampleAsset,
+  note: number,
+  finetune = 0,
+): number => {
   const root = asset.rootNote ?? 60;
-  const cents = (asset.finetune ?? 0) + (options.finetune ?? 0);
-  return 2 ** (((options.note ?? root) - root) / 12 + cents / 1200);
+  const cents = (asset.finetune ?? 0) + finetune;
+  return 2 ** ((note - root) / 12 + cents / 1200);
 };
+
+const midiRate = (asset: SampleAsset, options: SampleVoiceOptions): number =>
+  samplePlaybackRate(asset, options.note ?? asset.rootNote ?? 60, options.finetune ?? 0);
 
 /**
  * Schedule one preloaded sample without decoding or allocating audio data at

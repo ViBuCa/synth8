@@ -82,8 +82,9 @@ playback.start();
 
 This first player schedules decoded sample notes using tracker order/row/tick
 timing and handles initial speed/tempo changes, pattern jumps/breaks, sample
-offsets, note cuts and note delays. Full pitch/volume effect state and more
-format adapters are still being implemented.
+offsets, note cuts and note delays. It also approximates per-row arpeggio,
+pitch slides, vibrato and volume slides. Persistent per-channel effect state
+and more format adapters are still being implemented.
 
 ## Game audio
 
