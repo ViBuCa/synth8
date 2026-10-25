@@ -1,6 +1,6 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, getPlaybackMetrics, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
-import type { GameAudio, PreparedPlayback, PreparedSfx } from "@vibuca/synth8-player"
+import { createGameAudio, decodeModule, getPlaybackMetrics, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, stop } from "@vibuca/synth8-player";
+import type { GameAudio, PreparedPlayback, PreparedSfx, TrackerModule } from "@vibuca/synth8-player"
 import {
   parseMidi,
   midiToSynth8Source,
@@ -371,6 +371,11 @@ root.innerHTML = `
         <button id="game-music">Start Music</button>
         <button id="game-music-stop">Stop Music</button>
       </div>
+      <div class="game-audio-controls">
+        <label for="module-file">Load MOD</label>
+        <input id="module-file" type="file" accept=".mod,.m15,.nst,.m\.k\.,audio/x-mod" />
+        <button id="module-stop" type="button">Stop Module</button>
+      </div>
 
       <div class="volume-grid">
         <label class="volume-control" for="master-volume">
@@ -435,6 +440,8 @@ const exportOggButton = document.querySelector<HTMLButtonElement>("#export-ogg")
 const benchmarkButton = document.querySelector<HTMLButtonElement>("#benchmark")!;
 const gameMusicButton = document.querySelector<HTMLButtonElement>("#game-music")!;
 const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-music-stop")!;
+const moduleFileInput = document.querySelector<HTMLInputElement>("#module-file")!;
+const moduleStopButton = document.querySelector<HTMLButtonElement>("#module-stop")!;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
 const masterVolumeInput = document.querySelector<HTMLInputElement>("#master-volume")!;
 const musicVolumeInput = document.querySelector<HTMLInputElement>("#music-volume")!;
@@ -447,6 +454,8 @@ const tabPanels = Array.from(document.querySelectorAll<HTMLElement>(".demo-panel
 
 let gameAudio: GameAudio | undefined;
 let gameMusic: PreparedPlayback | undefined;
+let moduleMusic: PreparedPlayback | undefined;
+let loadedModule: TrackerModule | undefined;
 const preparedSfx = new Map<GameSfxName, PreparedSfx>();
 
 function selectTab(tab: DemoTab) {
@@ -806,6 +815,28 @@ document.querySelector<HTMLButtonElement>("#export-song")!.addEventListener("cli
   const pattern = compile(sourceInput.value);
   const length = Math.max(pattern.length, ...pattern.events.map((event) => event.time + event.dur));
   downloadSynth8Source(sourceInput.value, "song.synth8", { bpm: Number(bpmInput.value), length });
+});
+
+moduleFileInput.addEventListener("change", async () => {
+  const file = moduleFileInput.files?.[0];
+  if (!file) return;
+  try {
+    moduleMusic?.stop();
+    moduleMusic?.dispose();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    loadedModule = decodeModule(bytes);
+    moduleMusic = await (await getGameAudio()).prepareModule(loadedModule, { lookAhead: 0.25 });
+    moduleMusic.start();
+    setGameAudioStatus(`Playing MOD ${loadedModule.title ?? file.name} (${loadedModule.channels ?? 0} channels).`);
+  } catch (error) {
+    loadedModule = undefined;
+    setGameAudioStatus(error instanceof Error ? error.message : String(error));
+  }
+});
+
+moduleStopButton.addEventListener("click", () => {
+  moduleMusic?.stop();
+  setGameAudioStatus("Tracker module stopped.");
 });
 
 document.querySelector<HTMLInputElement>("#import-song")!.addEventListener("change", async (event) => {

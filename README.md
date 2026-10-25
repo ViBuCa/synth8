@@ -161,6 +161,7 @@ Implemented:
 * MIDI export
 * First browser piano-roll editor preview
 * Preloaded sample-bank foundation for future tracker/module playback
+* Playground MOD loading and live module playback preview
 
 Planned:
 
