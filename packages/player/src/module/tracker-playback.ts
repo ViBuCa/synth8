@@ -46,6 +46,25 @@ export const sampleBankFromModule = (
 
 type ScheduledRow = { voices: SampleVoice[]; effects: TrackerEffect[] };
 
+type EffectMemory = Array<TrackerEffect | undefined>;
+
+const rememberedEffect = (effect: TrackerEffect, previous: TrackerEffect | undefined): TrackerEffect => {
+  if (!previous || previous.type !== effect.type) return effect;
+  if (effect.type === "pitch-slide-up" && previous.type === effect.type && effect.amount === 0) return previous;
+  if (effect.type === "pitch-slide-down" && previous.type === effect.type && effect.amount === 0) return previous;
+  if (effect.type === "portamento" && previous.type === effect.type && effect.amount === 0) return previous;
+  if (effect.type === "sample-offset" && previous.type === effect.type && effect.offset === 0) return previous;
+  if (effect.type === "volume-slide" && previous.type === effect.type && effect.amount === 0) return previous;
+  if (effect.type === "vibrato" && previous.type === effect.type) {
+    return {
+      type: "vibrato",
+      speed: effect.speed || previous.speed,
+      depth: effect.depth || previous.depth,
+    };
+  }
+  return effect;
+};
+
 const schedulePitchEffect = (
   voice: SampleVoice,
   effect: TrackerEffect | undefined,
@@ -90,6 +109,7 @@ const scheduleRow = (
   duration: number,
   tickDuration: number,
   channelSamples: Array<SampleAsset | undefined>,
+  effectMemory: EffectMemory,
   output?: AudioNode,
 ): ScheduledRow => {
   const pattern = module.patterns.find((candidate) => candidate.index === position.pattern);
@@ -98,7 +118,13 @@ const scheduleRow = (
   const voices: SampleVoice[] = [];
   const effects: TrackerEffect[] = [];
   row.cells.forEach((cell, channel) => {
-    if (cell.effect) effects.push(cell.effect);
+    const activeEffect = cell.effect
+      ? rememberedEffect(cell.effect, effectMemory[channel])
+      : undefined;
+    if (cell.effect && activeEffect) {
+      effectMemory[channel] = activeEffect;
+      effects.push(activeEffect);
+    }
     if (cell.instrument !== undefined) {
       const selected = module.samples.find((candidate) => candidate.index === cell.instrument);
       channelSamples[channel] = selected ? bank.get(selected.assetId) : undefined;
@@ -106,11 +132,11 @@ const scheduleRow = (
     if (cell.note === undefined) return;
     const asset = channelSamples[channel];
     if (!asset) return;
-    const delay = cell.effect?.type === "note-delay" ? cell.effect.tick * tickDuration : 0;
-    const cut = cell.effect?.type === "note-cut" ? cell.effect.tick * tickDuration : duration;
+    const delay = activeEffect?.type === "note-delay" ? activeEffect.tick * tickDuration : 0;
+    const cut = activeEffect?.type === "note-cut" ? activeEffect.tick * tickDuration : duration;
     const noteDuration = Math.max(0.01, Math.min(duration, cut));
-    const sampleOffset = cell.effect?.type === "sample-offset"
-      ? cell.effect.offset / asset.buffer.sampleRate
+    const sampleOffset = activeEffect?.type === "sample-offset"
+      ? activeEffect.offset / asset.buffer.sampleRate
       : 0;
     const voice = scheduleSampleVoice(context, asset, {
       when: when + delay,
@@ -123,15 +149,15 @@ const scheduleRow = (
     });
     schedulePitchEffect(
       voice,
-      cell.effect,
+      activeEffect,
       when + delay,
       noteDuration,
       tickDuration,
       samplePlaybackRate(asset, cell.note),
     );
-    if (cell.effect?.type === "volume-slide") {
-      const up = cell.effect.amount >> 4;
-      const down = cell.effect.amount & 0x0f;
+    if (activeEffect?.type === "volume-slide") {
+      const up = activeEffect.amount >> 4;
+      const down = activeEffect.amount & 0x0f;
       const delta = (up - down) / 64;
       const target = Math.max(0.001, Math.min(1, (cell.volume ?? 1) + delta));
       voice.gain.gain.linearRampToValueAtTime(target, when + delay + noteDuration);
@@ -150,8 +176,9 @@ const applyRowControls = (clock: TrackerClock, effects: readonly TrackerEffect[]
 
 /**
  * Minimal live tracker player. It schedules row note-ons ahead of the audio
- * clock while preserving the module's order/row/tick timing. Tracker effects
- * are decoded already, but effect execution is intentionally the next layer.
+ * clock while preserving the module's order/row/tick timing. A small amount
+ * of per-channel effect parameter memory is retained for tracker commands
+ * that omit a parameter on subsequent rows.
  */
 export const createTrackerPlayback = (
   module: TrackerModule,
@@ -169,6 +196,7 @@ export const createTrackerPlayback = (
   const updateInterval = Math.max(10, options.updateInterval ?? 25);
   const voices: SampleVoice[] = [];
   const channelSamples: Array<SampleAsset | undefined> = [];
+  const effectMemory: EffectMemory = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
   let scheduledUntil = 0;
   let running = false;
@@ -185,7 +213,7 @@ export const createTrackerPlayback = (
     while (scheduledUntil < now + lookAhead) {
       const position = clock.current;
       const rowDuration = clock.tickDuration * clock.speed;
-      const row = scheduleRow(options.context, module, bank, position, scheduledUntil, rowDuration, clock.tickDuration, channelSamples, options.output);
+      const row = scheduleRow(options.context, module, bank, position, scheduledUntil, rowDuration, clock.tickDuration, channelSamples, effectMemory, options.output);
       voices.push(...row.voices);
       const rowSpeed = clock.speed;
       scheduledUntil += rowDuration;
@@ -205,6 +233,7 @@ export const createTrackerPlayback = (
     clearTimer();
     for (const voice of voices.splice(0)) voice.dispose();
     channelSamples.fill(undefined);
+    effectMemory.fill(undefined);
     clock.reset();
     scheduledUntil = 0;
   };
