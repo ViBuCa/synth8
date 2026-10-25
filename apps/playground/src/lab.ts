@@ -832,7 +832,13 @@ moduleFileInput.addEventListener("change", async () => {
     loadedModule = undefined;
     const bytes = new Uint8Array(await file.arrayBuffer());
     const inspection = inspectModule(bytes);
-    const details = [inspection.title, inspection.date, inspection.time].filter(Boolean).join(" · ");
+    const details = [
+      inspection.format.toUpperCase(),
+      inspection.title,
+      inspection.date,
+      inspection.time,
+      inspection.byteLength ? `${Math.ceil(inspection.byteLength / 1024)} KB` : undefined,
+    ].filter(Boolean).join(" · ");
     setGameAudioStatus(`${details || file.name}: ${error instanceof Error ? error.message : String(error)}`);
   }
 });
