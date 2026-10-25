@@ -67,7 +67,22 @@ console.log(module.title, module.orders, module.samples);
 ```
 
 The decoder currently extracts MOD patterns, notes, common effects and signed
-8-bit sample data. It does not yet play the decoded module automatically.
+8-bit sample data. A first live playback path is also available:
+
+```ts
+import { createTrackerPlayback, decodeModule } from "@vibuca/synth8-player";
+
+const module = decodeModule(new Uint8Array(await file.arrayBuffer()));
+const playback = createTrackerPlayback(module, {
+  context: audioContext,
+  output: musicBus,
+});
+playback.start();
+```
+
+This first player schedules decoded sample notes using tracker order/row/tick
+timing. Tracker effect execution and more format adapters are still being
+implemented.
 
 ## Game audio
 

@@ -19,8 +19,8 @@ module file -> format decoder -> tracker/module player -> music bus
 1. **Sample assets** — preload and share decoded samples, with root-note tuning and loop metadata. The initial `SampleBank` and scheduled sample voice APIs are now available.
 2. **Tracker clock** — implement order/row/tick timing, speed, tempo and looping. The initial format-neutral clock and tracker model are now available.
 3. **Common module model** — represent patterns, channels, instruments, samples and effects without tying the model to one file format. The initial model is now available.
-4. **First format** — implement MOD playback, then XM/S3M/IT as adapters or WASM-backed decoders. The first ProTracker MOD detector/decoder is now available; playback wiring is next.
-5. **Live player** — schedule preloaded sample voices during gameplay, with music/SFX buses and pause/resume.
+4. **First format** — implement MOD playback, then XM/S3M/IT as adapters or WASM-backed decoders. The first ProTracker MOD detector/decoder and initial playback path are now available.
+5. **Live player** — schedule preloaded sample voices during gameplay, with music/SFX buses and pause/resume. The initial MOD player now schedules notes using order/row/tick timing; effect execution and lifecycle hardening remain.
 6. **TFMX/TFHD** — use a specialized replay backend where generic tracker conversion would lose TFMX behavior.
 7. **AudioWorklet mixer** — move mixing into an AudioWorklet when voice counts or timing requirements justify it.
 
