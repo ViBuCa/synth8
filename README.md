@@ -162,7 +162,7 @@ Implemented:
 * MIDI export
 * First browser piano-roll editor preview
 * Preloaded sample-bank foundation for imported tracker samples
-* Playground MOD loading, TFMX sample candidate preview, WAV export, sample-bank JSON import/export and sample-backed Synth8 preview
+* Playground MOD loading, TFMX sample candidate preview, naming, WAV export, sample-bank JSON import/export and sample-backed Synth8 preview
 
 Planned:
 

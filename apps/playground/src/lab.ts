@@ -865,6 +865,12 @@ const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandid
     row.className = "module-sample-row";
     const label = document.createElement("span");
     label.textContent = `${candidate.id} (${candidate.pcm.length} bytes)`;
+    const name = document.createElement("input");
+    name.type = "text";
+    name.value = candidate.name ?? candidate.id;
+    name.placeholder = "Sample name";
+    name.title = "Name saved into the exported sample bank";
+    name.addEventListener("input", () => { candidate.name = name.value.trim() || candidate.id; });
     const preview = document.createElement("button");
     preview.type = "button";
     preview.textContent = "Preview";
@@ -900,7 +906,7 @@ const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandid
       link.click();
       URL.revokeObjectURL(url);
     });
-    row.append(label, preview, useSample, download);
+    row.append(label, name, preview, useSample, download);
     moduleSamples.append(row);
   }
 };
