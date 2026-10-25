@@ -34,4 +34,4 @@ The playground now has a MOD file input in the **Music + Sfx** panel. It uses th
 - Use live playback for adaptive music and rendered buffers for fixed loops.
 - Keep original short samples when authenticity matters; use oscillator instruments when procedural control is more useful.
 
-The first implementation slice is the reusable `SampleBank` and `scheduleSampleVoice` exported by `@vibuca/synth8-player`. They preload/decode sample assets and schedule tuned sample voices without decoding at note time. This does not claim to decode tracker files yet; it establishes the asset boundary needed by MOD, XM and TFMX playback without splitting the project into many packages.
+The first implementation slice is the reusable `SampleBank` and `scheduleSampleVoice` exported by `@vibuca/synth8-player`. They preload/decode sample assets and schedule tuned sample voices without decoding at note time. The decoder registry now also accepts optional format adapters, so a WASM-backed TFMX decoder can be installed without creating a separate player package.

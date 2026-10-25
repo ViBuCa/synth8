@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeModule, detectModuleFormat, inspectModule } from "../module";
+import { decodeModule, detectModuleFormat, inspectModule, registerModuleDecoder } from "../module";
 
 const putText = (data: Uint8Array, offset: number, value: string): void => {
   data.set(new TextEncoder().encode(value), offset);
@@ -46,6 +46,19 @@ const makeLegacy15Mod = (): Uint8Array => {
   data[1625] = 0;
   return data;
 };
+
+describe("decoder registry", () => {
+  it("allows optional format adapters without separate player packages", () => {
+    const decoder = {
+      format: "tfmx" as const,
+      canDecode: (data: Uint8Array) => data[0] === 0xaa,
+      decode: () => ({ format: "tfmx" as const, orders: [], patterns: [], samples: [], instruments: [], initialSpeed: 6, initialTempo: 125 }),
+    };
+    const unregister = registerModuleDecoder(decoder);
+    expect(decodeModule(new Uint8Array([0xaa]))).toMatchObject({ format: "tfmx" });
+    unregister();
+  });
+});
 
 describe("MOD decoder", () => {
   it("detects and decodes a ProTracker module", () => {

@@ -28,7 +28,20 @@ export const detectModuleFormat = (data: Uint8Array): ModuleFormat => {
   return "unknown";
 };
 
-export const decodeModule = (data: Uint8Array, decoders: readonly ModuleDecoder[] = [modDecoder]): TrackerModule => {
+const registeredDecoders: ModuleDecoder[] = [];
+
+/** Register an optional format decoder, such as a WASM-backed TFMX adapter. */
+export const registerModuleDecoder = (decoder: ModuleDecoder): (() => void) => {
+  if (!registeredDecoders.includes(decoder)) registeredDecoders.push(decoder);
+  return () => {
+    const index = registeredDecoders.indexOf(decoder);
+    if (index >= 0) registeredDecoders.splice(index, 1);
+  };
+};
+
+export const getModuleDecoders = (): readonly ModuleDecoder[] => [modDecoder, ...registeredDecoders];
+
+export const decodeModule = (data: Uint8Array, decoders: readonly ModuleDecoder[] = getModuleDecoders()): TrackerModule => {
   const decoder = decoders.find((candidate) => candidate.canDecode(data));
   if (!decoder) {
     const format = detectModuleFormat(data);

@@ -68,9 +68,16 @@ console.log(module.title, module.orders, module.samples);
 
 The decoder currently extracts standard and legacy 15-sample MOD patterns,
 including common multi-channel signatures, notes, common effects and signed
-8-bit sample data. TFMX-MOD and TFHD headers are recognized so applications can
-report that their specialized backend is not yet available. A first live
-playback path is also available:
+8-bit sample data. Optional format adapters can be registered without creating
+separate player packages:
+
+```ts
+const unregister = registerModuleDecoder(tfmxDecoder);
+```
+
+TFMX-MOD and TFHD headers are recognized so applications can report that their
+specialized backend is not yet available. A first live playback path is also
+available:
 
 ```ts
 import { createTrackerPlayback, decodeModule } from "@vibuca/synth8-player";
