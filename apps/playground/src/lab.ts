@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { createGameAudio, decodeModuleAsync, decodeSampleBank, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
+import { analyzeSample, createGameAudio, decodeModuleAsync, decodeSampleBank, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
 import type { GameAudio, PreparedPlayback, PreparedSfx, SampleAssetData, TrackerModule } from "@vibuca/synth8-player"
 import {
   parseMidi,
@@ -864,7 +864,8 @@ const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandid
     const row = document.createElement("div");
     row.className = "module-sample-row";
     const label = document.createElement("span");
-    label.textContent = `${candidate.id} (${candidate.pcm.length} bytes)`;
+    const analysis = analyzeSample(candidate);
+    label.textContent = `${candidate.id} (${candidate.pcm.length} bytes, ${analysis.duration.toFixed(2)}s, RMS ${analysis.rms.toFixed(2)})`;
     const name = document.createElement("input");
     name.type = "text";
     name.value = candidate.name ?? candidate.id;
