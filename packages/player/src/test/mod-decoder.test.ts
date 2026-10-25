@@ -19,7 +19,6 @@ const makeMod = (): Uint8Array => {
   data[950] = 1;
   data[952] = 0;
   putText(data, 1080, "M.K.");
-  // Row 0 / channel 0: instrument 1, C-3 (period 428).
   data[1084] = 1;
   data[1085] = 428 & 0xff;
   data[1086] = 0x10;
@@ -28,6 +27,23 @@ const makeMod = (): Uint8Array => {
   data[2109] = 0x7f;
   data[2110] = 0;
   data[2111] = 0xff;
+  return data;
+};
+
+const makeLegacy15Mod = (): Uint8Array => {
+  const data = new Uint8Array(600 + 1024 + 2);
+  putText(data, 0, "Legacy 15 sample MOD");
+  putText(data, 20, "Legacy sample");
+  putU16(data, 42, 1);
+  data[45] = 64;
+  data[470] = 1;
+  data[472] = 0;
+  data[600] = 1;
+  data[601] = 0xac;
+  data[602] = 0x10;
+  data[603] = 0;
+  data[1624] = 64;
+  data[1625] = 0;
   return data;
 };
 
@@ -42,5 +58,14 @@ describe("MOD decoder", () => {
     expect(module.patterns[0].rows[0].cells[0]).toMatchObject({ note: 48, instrument: 1 });
     expect(module.samples[0]).toMatchObject({ name: "C3 sample", length: 4, volume: 1 });
     expect([...(module.samples[0].data ?? [])]).toEqual([-128, 127, 0, -1]);
+  });
+});
+
+describe("legacy 15-sample MOD decoder", () => {
+  it("detects the headerless 15-sample layout", () => {
+    const module = decodeModule(makeLegacy15Mod());
+    expect(module.format).toBe("mod");
+    expect(module.samples).toHaveLength(15);
+    expect(module.patterns[0].rows[0].cells[0]).toMatchObject({ note: 48, instrument: 1 });
   });
 });

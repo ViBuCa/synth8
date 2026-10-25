@@ -11,8 +11,14 @@ const text = (data: Uint8Array, start: number, length: number): string =>
 
 const signatures = new Set(["M.K.", "M!K!", "M&K!", "N.T.", "FLT4", "FLT8", "4CHN", "6CHN", "8CHN"]);
 
+const isLegacy15Mod = (data: Uint8Array): boolean =>
+  data.length >= 600 &&
+  (data[470] ?? 0) > 0 && (data[470] ?? 0) <= 128 &&
+  (data[472] ?? 0) < 64;
+
 export const detectModuleFormat = (data: Uint8Array): ModuleFormat => {
   if (data.length >= 1084 && signatures.has(text(data, 1080, 4))) return "mod";
+  if (isLegacy15Mod(data)) return "mod";
   return "unknown";
 };
 
@@ -88,15 +94,20 @@ export const modDecoder: ModuleDecoder = {
   canDecode(data) { return detectModuleFormat(data) === "mod"; },
   decode(data) {
     if (!this.canDecode(data)) throw new Error("Not a supported ProTracker MOD file.");
-    const signature = text(data, 1080, 4);
+    const legacy15 = isLegacy15Mod(data);
+    const signature = legacy15 ? "M.K." : text(data, 1080, 4);
     const channels = channelsFor(signature);
     const title = text(data, 0, 20);
-    const songLength = Math.min(data[950] ?? 0, 128);
-    const restartOrder = data[951] ?? 0;
-    const orderTable = Array.from(data.subarray(952, 1080));
+    const sampleCount = legacy15 ? 15 : 31;
+    const songLengthOffset = legacy15 ? 470 : 950;
+    const orderTableOffset = legacy15 ? 472 : 952;
+    const headerEnd = legacy15 ? 600 : 1084;
+    const songLength = Math.min(data[songLengthOffset] ?? 0, 128);
+    const restartOrder = data[songLengthOffset + 1] ?? 0;
+    const orderTable = Array.from(data.subarray(orderTableOffset, orderTableOffset + 128));
     const orders = orderTable.slice(0, songLength);
     const patternCount = Math.max(0, ...orders) + 1;
-    const patternDataStart = 1084;
+    const patternDataStart = headerEnd;
     const patternSize = 64 * channels * 4;
     const patterns = [];
     for (let patternIndex = 0; patternIndex < patternCount; patternIndex += 1) {
@@ -129,7 +140,7 @@ export const modDecoder: ModuleDecoder = {
 
     const samples = [];
     let sampleOffset = patternDataStart + patternCount * patternSize;
-    for (let index = 0; index < 31; index += 1) {
+    for (let index = 0; index < sampleCount; index += 1) {
       const header = 20 + index * 30;
       const length = readU16(data, header + 22) * 2;
       const volume = Math.min(64, data[header + 25] ?? 0) / 64;

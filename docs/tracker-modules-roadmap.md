@@ -24,7 +24,7 @@ module file -> format decoder -> tracker/module player -> music bus
 6. **TFMX/TFHD** — use a specialized replay backend where generic tracker conversion would lose TFMX behavior.
 7. **AudioWorklet mixer** — move mixing into an AudioWorklet when voice counts or timing requirements justify it.
 
-The playground now has a MOD file input in the **Music + Sfx** panel. It uses the same `GameAudio.prepareModule()` path as a game, making it possible to validate real modules before adding more format adapters.
+The playground now has a MOD file input in the **Music + Sfx** panel. It uses the same `GameAudio.prepareModule()` path as a game, making it possible to validate real modules before adding more format adapters. The decoder accepts both standard signature-based MOD files and legacy 15-sample headerless MOD files.
 
 ## Performance principles
 
