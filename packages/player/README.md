@@ -56,7 +56,18 @@ scheduleSampleVoice(audioContext, sample, {
 ```
 
 Tracker modules will remain part of this player package rather than requiring a
-separate npm package for MOD, XM, S3M, IT, or TFMX.
+separate npm package for MOD, XM, S3M, IT, or TFMX. The first format-neutral
+tracker model and ProTracker MOD detector/decoder are now available:
+
+```ts
+import { decodeModule } from "@vibuca/synth8-player";
+
+const module = decodeModule(new Uint8Array(await file.arrayBuffer()));
+console.log(module.title, module.orders, module.samples);
+```
+
+The decoder currently extracts MOD patterns, notes, common effects and signed
+8-bit sample data. It does not yet play the decoded module automatically.
 
 ## Game audio
 

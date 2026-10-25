@@ -41,6 +41,8 @@ export type TrackerSample = {
   length: number;
   loopStart?: number;
   loopEnd?: number;
+  /** Original signed 8-bit PCM, when supplied by a decoder. */
+  data?: Int8Array;
 };
 
 export type TrackerInstrument = {
