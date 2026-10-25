@@ -643,7 +643,7 @@ exportWavButton.addEventListener("click", async () => {
 
     const pattern = compile(sourceInput.value);
     const bpm = Number(bpmInput.value);
-    const blob = await renderWav(pattern, { bpm });
+    const blob = await renderWav(pattern, { bpm, sampleBank: loadedSampleBank });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
@@ -673,7 +673,7 @@ exportOggButton.addEventListener("click", async () => {
 
     const pattern = compile(sourceInput.value);
     const bpm = Number(bpmInput.value);
-    const blob = await renderOgg(pattern, { bpm });
+    const blob = await renderOgg(pattern, { bpm, sampleBank: loadedSampleBank });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
@@ -705,7 +705,7 @@ gameMusicButton.addEventListener("click", async () => {
     const pattern = compile(sourceInput.value);
     const bpm = Number(bpmInput.value);
 
-    gameMusic = await audio.prepareMusic(pattern, { bpm });
+    gameMusic = await audio.prepareMusic(pattern, { bpm, sampleBank: loadedSampleBank });
     gameMusic.start();
 
     setGameAudioStatus("Game music playing. SFX can overlap.");
