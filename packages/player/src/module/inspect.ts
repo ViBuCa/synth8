@@ -19,8 +19,8 @@ export const inspectModule = (data: Uint8Array): ModuleMetadata => {
   }
   if (format === "tfmx" || format === "tfhd") {
     result.title = format === "tfmx" ? "TFMX module" : "TFHD module";
-    const date = /Date\s*:\s*([^\r\n]+?)(?=\s{2,}Time|\s*$)/.exec(content)?.[1]?.trim();
-    const time = /Time\s*:\s*([^\r\n]+)/.exec(content)?.[1]?.trim();
+    const date = /Date\s*:\s*(\d{1,2}\.\d{1,2}\.\d{2})/.exec(content)?.[1];
+    const time = /Time\s*:\s*(\d{1,2}:\d{2})/.exec(content)?.[1];
     if (date) result.date = date;
     if (time) result.time = time;
   }
