@@ -257,7 +257,7 @@ export const createTrackerPlayback = (
   const bank = sampleBankFromModule(options.context, module, options.sampleRate);
   const lookAhead = Math.max(0.05, options.lookAhead ?? 0.2);
   const updateInterval = Math.max(10, options.updateInterval ?? 25);
-  const voices: SampleVoice[] = [];
+  const voices = new Set<SampleVoice>();
   const channelSamples: Array<SampleAsset | undefined> = [];
   const channelVoices: Array<SampleVoice | undefined> = [];
   const channelGains: number[] = [];
@@ -279,7 +279,10 @@ export const createTrackerPlayback = (
       const position = clock.current;
       const rowDuration = clock.tickDuration * clock.speed;
       const row = scheduleRow(options.context, module, bank, position, scheduledUntil, rowDuration, clock.tickDuration, channelSamples, effectMemory, channelVoices, channelGains, options.output);
-      voices.push(...row.voices);
+      for (const voice of row.voices) {
+        voices.add(voice);
+        voice.source.addEventListener("ended", () => voices.delete(voice), { once: true });
+      }
       const rowSpeed = clock.speed;
       scheduledUntil += rowDuration;
       for (let tick = 0; tick < rowSpeed; tick += 1) clock.advance();
@@ -296,7 +299,8 @@ export const createTrackerPlayback = (
   };
   const reset = (): void => {
     clearTimer();
-    for (const voice of voices.splice(0)) voice.dispose();
+    for (const voice of voices) voice.dispose();
+    voices.clear();
     channelSamples.fill(undefined);
     channelVoices.fill(undefined);
     channelGains.fill(1);
@@ -317,7 +321,8 @@ export const createTrackerPlayback = (
       if (!running) return;
       paused = true;
       clearTimer();
-      for (const voice of voices.splice(0)) voice.stop();
+      for (const voice of voices) voice.stop();
+      voices.clear();
       // Scheduled voices are no longer valid after a pause. Keeping these
       // references would let later row effects automate already-stopped
       // sources when playback resumes.
