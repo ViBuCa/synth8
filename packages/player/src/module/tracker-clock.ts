@@ -33,6 +33,8 @@ export class TrackerClock {
   readonly patternRows: TrackerClockOptions["patternRows"];
   readonly restartOrder: number;
   private position: TrackerPosition;
+  private readonly initialSpeed: number;
+  private readonly initialTempo: number;
   private speedValue: number;
   private tempoValue: number;
 
@@ -40,8 +42,10 @@ export class TrackerClock {
     this.orders = options.orders;
     this.patternRows = options.patternRows;
     this.restartOrder = Math.max(0, Math.floor(options.restartOrder ?? 0));
-    this.speedValue = Math.max(1, Math.floor(options.speed ?? 6));
-    this.tempoValue = Math.max(1, options.tempo ?? 125);
+    this.initialSpeed = Math.max(1, Math.floor(options.speed ?? 6));
+    this.initialTempo = Math.max(1, options.tempo ?? 125);
+    this.speedValue = this.initialSpeed;
+    this.tempoValue = this.initialTempo;
     this.position = {
       order: 0,
       pattern: this.orders[0] ?? 0,
@@ -56,6 +60,8 @@ export class TrackerClock {
   get current(): TrackerPosition { return { ...this.position }; }
 
   reset(): void {
+    this.speedValue = this.initialSpeed;
+    this.tempoValue = this.initialTempo;
     this.position = {
       order: 0,
       pattern: this.orders[0] ?? 0,

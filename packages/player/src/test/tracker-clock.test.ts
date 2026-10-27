@@ -47,4 +47,15 @@ describe("TrackerClock", () => {
     expect(clock.speed).toBe(3);
     expect(clock.tickDuration).toBeCloseTo(2.5 / 150);
   });
+
+  it("restores initial timing when reset", () => {
+    const clock = new TrackerClock({ orders: [0], patternRows: { 0: 8 }, speed: 6, tempo: 125 });
+    clock.setSpeed(3);
+    clock.setTempo(150);
+    clock.advance();
+    clock.reset();
+    expect(clock.current).toMatchObject({ order: 0, pattern: 0, row: 0, tick: 0 });
+    expect(clock.speed).toBe(6);
+    expect(clock.tempo).toBe(125);
+  });
 });

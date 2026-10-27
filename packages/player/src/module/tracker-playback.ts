@@ -125,6 +125,8 @@ const scheduleRow = (
   tickDuration: number,
   channelSamples: Array<SampleAsset | undefined>,
   effectMemory: EffectMemory,
+  channelVoices: Array<SampleVoice | undefined>,
+  channelGains: number[],
   output?: AudioNode,
 ): ScheduledRow => {
   const pattern = module.patterns.find((candidate) => candidate.index === position.pattern);
@@ -133,6 +135,7 @@ const scheduleRow = (
   const voices: SampleVoice[] = [];
   const effects: TrackerEffect[] = [];
   row.cells.forEach((cell, channel) => {
+    if (cell.volume !== undefined) channelGains[channel] = Math.max(0, Math.min(1, cell.volume));
     const activeEffect = cell.effect
       ? rememberedEffect(cell.effect, effectMemory[channel])
       : undefined;
@@ -144,21 +147,53 @@ const scheduleRow = (
       const selected = module.samples.find((candidate) => candidate.index === cell.instrument);
       channelSamples[channel] = selected ? bank.get(selected.assetId) : undefined;
     }
-    if (cell.note === undefined) return;
     const asset = channelSamples[channel];
+    const existing = channelVoices[channel];
+    if (cell.note === undefined) {
+      if (!existing || !activeEffect) return;
+      if (activeEffect.type === "note-cut") {
+        existing.stop(when + activeEffect.tick * tickDuration);
+      } else if (activeEffect.type === "volume-slide") {
+        const up = activeEffect.amount >> 4;
+        const down = activeEffect.amount & 0x0f;
+        const target = Math.max(0, Math.min(1, channelGains[channel] + (up - down) / 64));
+        channelGains[channel] = target;
+        existing.gain.gain.cancelScheduledValues(when);
+        existing.gain.gain.setValueAtTime(existing.gain.gain.value, when);
+        existing.gain.gain.linearRampToValueAtTime(Math.max(0.0001, target * (asset?.volume ?? 1)), when + duration);
+      } else if (activeEffect.type === "pitch-slide-up" || activeEffect.type === "pitch-slide-down" || activeEffect.type === "arpeggio" || activeEffect.type === "vibrato") {
+        schedulePitchEffect(
+          existing,
+          activeEffect,
+          when,
+          duration,
+          tickDuration,
+          existing.source.playbackRate.value,
+        );
+      }
+      return;
+    }
     if (!asset) return;
     const delay = activeEffect?.type === "note-delay" ? activeEffect.tick * tickDuration : 0;
-    const cut = activeEffect?.type === "note-cut" ? activeEffect.tick * tickDuration : duration;
-    const noteDuration = Math.max(0.01, Math.min(duration, cut));
+    if (existing && activeEffect?.type === "portamento") {
+      const targetRate = samplePlaybackRate(asset, cell.note);
+      const start = when + delay;
+      existing.source.playbackRate.cancelScheduledValues(start);
+      existing.source.playbackRate.setValueAtTime(existing.source.playbackRate.value, start);
+      existing.source.playbackRate.linearRampToValueAtTime(targetRate, start + duration);
+      return;
+    }
+    existing?.stop(when);
+    const cut = activeEffect?.type === "note-cut" ? activeEffect.tick * tickDuration : undefined;
     const sampleOffset = activeEffect?.type === "sample-offset"
       ? activeEffect.offset / asset.buffer.sampleRate
       : 0;
     const voice = scheduleSampleVoice(context, asset, {
       when: when + delay,
       note: cell.note,
-      duration: noteDuration,
+      ...(cut === undefined ? {} : { duration: Math.max(0.01, Math.min(duration, cut)) }),
       offset: sampleOffset,
-      gain: cell.volume ?? 1,
+      gain: channelGains[channel] ?? 1,
       pan: module.channels && module.channels > 1 ? (channel / (module.channels - 1)) * 2 - 1 : 0,
       output,
     });
@@ -166,7 +201,7 @@ const scheduleRow = (
       voice,
       activeEffect,
       when + delay,
-      noteDuration,
+      duration,
       tickDuration,
       samplePlaybackRate(asset, cell.note),
     );
@@ -174,9 +209,11 @@ const scheduleRow = (
       const up = activeEffect.amount >> 4;
       const down = activeEffect.amount & 0x0f;
       const delta = (up - down) / 64;
-      const target = Math.max(0.001, Math.min(1, (cell.volume ?? 1) + delta));
-      voice.gain.gain.linearRampToValueAtTime(target, when + delay + noteDuration);
+      const target = Math.max(0, Math.min(1, (channelGains[channel] ?? 1) + delta));
+      channelGains[channel] = target;
+      voice.gain.gain.linearRampToValueAtTime(Math.max(0.0001, target * (asset.volume ?? 1)), when + delay + duration);
     }
+    channelVoices[channel] = voice;
     voices.push(voice);
   });
   return { voices, effects };
@@ -211,6 +248,8 @@ export const createTrackerPlayback = (
   const updateInterval = Math.max(10, options.updateInterval ?? 25);
   const voices: SampleVoice[] = [];
   const channelSamples: Array<SampleAsset | undefined> = [];
+  const channelVoices: Array<SampleVoice | undefined> = [];
+  const channelGains: number[] = [];
   const effectMemory: EffectMemory = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
   let scheduledUntil = 0;
@@ -228,7 +267,7 @@ export const createTrackerPlayback = (
     while (scheduledUntil < now + lookAhead) {
       const position = clock.current;
       const rowDuration = clock.tickDuration * clock.speed;
-      const row = scheduleRow(options.context, module, bank, position, scheduledUntil, rowDuration, clock.tickDuration, channelSamples, effectMemory, options.output);
+      const row = scheduleRow(options.context, module, bank, position, scheduledUntil, rowDuration, clock.tickDuration, channelSamples, effectMemory, channelVoices, channelGains, options.output);
       voices.push(...row.voices);
       const rowSpeed = clock.speed;
       scheduledUntil += rowDuration;
@@ -248,6 +287,8 @@ export const createTrackerPlayback = (
     clearTimer();
     for (const voice of voices.splice(0)) voice.dispose();
     channelSamples.fill(undefined);
+    channelVoices.fill(undefined);
+    channelGains.fill(1);
     effectMemory.fill(undefined);
     clock.reset();
     scheduledUntil = 0;
@@ -266,6 +307,10 @@ export const createTrackerPlayback = (
       paused = true;
       clearTimer();
       for (const voice of voices.splice(0)) voice.stop();
+      // Scheduled voices are no longer valid after a pause. Keeping these
+      // references would let later row effects automate already-stopped
+      // sources when playback resumes.
+      channelVoices.fill(undefined);
     },
     resume() {
       if (!running || !paused) return;

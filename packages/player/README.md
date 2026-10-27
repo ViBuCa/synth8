@@ -102,10 +102,12 @@ playback.start();
 
 This first player schedules decoded sample notes using tracker order/row/tick
 timing and handles initial speed/tempo changes, pattern jumps/breaks, sample
-offsets, note cuts and note delays. It also approximates per-row arpeggio,
-pitch slides, vibrato and volume slides. Channel instrument memory is now preserved when later notes omit an instrument,
-and effect parameters are remembered per channel for supported commands when a
-later row omits the parameter. Full persistent effect execution and more format
+offsets, note cuts and note delays. Notes can sustain across rows, while
+portamento, arpeggio, pitch slides, vibrato, volume slides and note cuts can
+also operate on an existing channel voice. Channel instrument and volume
+memory is preserved when later rows omit those values, and effect parameters
+are remembered per channel for supported commands when a later row omits the
+parameter. More complete tracker effect semantics and additional format
 adapters are still being implemented.
 
 ## Game audio
