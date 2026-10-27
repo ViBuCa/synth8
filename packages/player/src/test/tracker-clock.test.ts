@@ -40,6 +40,12 @@ describe("TrackerClock", () => {
     expect(clock.current).toMatchObject({ order: 1, pattern: 5, row: 3, tick: 0 });
   });
 
+  it("keeps an empty module position valid when jumped", () => {
+    const clock = new TrackerClock({ orders: [], patternRows: {} });
+    clock.jump(4, 2);
+    expect(clock.current).toMatchObject({ order: 0, pattern: 0, row: 0, tick: 0 });
+  });
+
   it("supports runtime speed and tempo changes", () => {
     const clock = new TrackerClock({ orders: [0], patternRows: { 0: 8 }, speed: 6, tempo: 125 });
     clock.setSpeed(3);

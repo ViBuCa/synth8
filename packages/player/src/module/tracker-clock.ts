@@ -80,6 +80,10 @@ export class TrackerClock {
   }
 
   jump(order: number, row = 0): void {
+    if (this.orders.length === 0) {
+      this.position = { order: 0, pattern: 0, row: 0, tick: 0 };
+      return;
+    }
     const nextOrder = Math.max(0, Math.min(this.orders.length - 1, Math.floor(order)));
     this.position.order = nextOrder;
     this.position.pattern = this.orders[nextOrder] ?? 0;
