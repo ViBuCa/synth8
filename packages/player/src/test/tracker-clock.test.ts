@@ -65,4 +65,13 @@ describe("TrackerClock", () => {
     expect(clock.speed).toBe(6);
     expect(clock.tempo).toBe(125);
   });
+
+  it("rejects non-finite runtime timing values", () => {
+    const clock = new TrackerClock({ orders: [0], patternRows: { 0: 8 }, speed: 6, tempo: 125 });
+    clock.setSpeed(Number.NaN);
+    clock.setTempo(Number.POSITIVE_INFINITY);
+    expect(clock.speed).toBe(6);
+    expect(clock.tempo).toBe(125);
+    expect(clock.tickDuration).toBeCloseTo(0.02);
+  });
 });
