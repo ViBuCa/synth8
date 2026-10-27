@@ -280,7 +280,9 @@ export const createTrackerPlayback = (
     timer = undefined;
   };
   const schedule = (): void => {
-    if (!running || paused) return;
+    // There is no meaningful clock progression for an empty module. Avoid
+    // keeping a timer alive while repeatedly scheduling silent rows.
+    if (!running || paused || module.orders.length === 0) return;
     const now = options.context.currentTime;
     if (scheduledUntil < now) scheduledUntil = now;
     while (scheduledUntil < now + lookAhead) {
