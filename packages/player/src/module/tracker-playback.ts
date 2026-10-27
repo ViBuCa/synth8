@@ -214,6 +214,9 @@ const scheduleRow = (
       voice.gain.gain.linearRampToValueAtTime(Math.max(0.0001, target * (asset.volume ?? 1)), when + delay + duration);
     }
     channelVoices[channel] = voice;
+    voice.source.addEventListener("ended", () => {
+      if (channelVoices[channel] === voice) channelVoices[channel] = undefined;
+    }, { once: true });
     voices.push(voice);
   });
   return { voices, effects };
