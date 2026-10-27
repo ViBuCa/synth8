@@ -149,6 +149,14 @@ const scheduleRow = (
     }
     const asset = channelSamples[channel];
     const existing = channelVoices[channel];
+    if (cell.volume !== undefined && existing) {
+      existing.gain.gain.cancelScheduledValues(when);
+      existing.gain.gain.setValueAtTime(existing.gain.gain.value, when);
+      existing.gain.gain.linearRampToValueAtTime(
+        Math.max(0.0001, channelGains[channel] * (asset?.volume ?? 1)),
+        when + Math.min(duration, tickDuration),
+      );
+    }
     if (cell.note === undefined) {
       if (!existing || !activeEffect) return;
       if (activeEffect.type === "note-cut") {
