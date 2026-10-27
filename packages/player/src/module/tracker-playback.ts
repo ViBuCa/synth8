@@ -322,9 +322,10 @@ export const createTrackerPlayback = (
   return {
     start() {
       if (running && !paused) return;
-      void options.context.resume();
       running = true;
       paused = false;
+      if (module.orders.length === 0) return;
+      void options.context.resume();
       schedule();
     },
     pause() {
