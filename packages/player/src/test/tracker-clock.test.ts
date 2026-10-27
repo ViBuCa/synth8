@@ -44,6 +44,7 @@ describe("TrackerClock", () => {
     const clock = new TrackerClock({ orders: [], patternRows: {} });
     clock.jump(4, 2);
     expect(clock.current).toMatchObject({ order: 0, pattern: 0, row: 0, tick: 0 });
+    expect(clock.advance()).toMatchObject({ order: 0, pattern: 0, row: 0, tick: 0 });
   });
 
   it("supports runtime speed and tempo changes", () => {

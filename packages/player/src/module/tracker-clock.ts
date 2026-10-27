@@ -93,6 +93,7 @@ export class TrackerClock {
 
   /** Advance one tracker tick and return the new position. */
   advance(): TrackerTick {
+    if (this.orders.length === 0) return { ...this.position, seconds: this.tickDuration };
     this.position.tick += 1;
     if (this.position.tick >= this.speedValue) {
       this.position.tick = 0;
