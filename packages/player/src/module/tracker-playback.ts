@@ -230,11 +230,19 @@ const scheduleRow = (
   return { voices, effects };
 };
 
+const lastEffect = <T extends TrackerEffect["type"]>(effects: readonly TrackerEffect[], type: T): Extract<TrackerEffect, { type: T }> | undefined => {
+  for (let index = effects.length - 1; index >= 0; index -= 1) {
+    const effect = effects[index];
+    if (effect?.type === type) return effect as Extract<TrackerEffect, { type: T }>;
+  }
+  return undefined;
+};
+
 const applyRowControls = (clock: TrackerClock, effects: readonly TrackerEffect[]): void => {
-  const speed = effects.find((effect) => effect.type === "set-speed");
-  const tempo = effects.find((effect) => effect.type === "set-tempo");
-  if (speed?.type === "set-speed" && speed.speed > 0) clock.setSpeed(speed.speed);
-  if (tempo?.type === "set-tempo") clock.setTempo(tempo.bpm);
+  const speed = lastEffect(effects, "set-speed");
+  const tempo = lastEffect(effects, "set-tempo");
+  if (speed && speed.speed > 0) clock.setSpeed(speed.speed);
+  if (tempo) clock.setTempo(tempo.bpm);
 };
 
 /**
@@ -287,8 +295,8 @@ export const createTrackerPlayback = (
       scheduledUntil += rowDuration;
       for (let tick = 0; tick < rowSpeed; tick += 1) clock.advance();
       applyRowControls(clock, row.effects);
-      const jump = row.effects.find((effect) => effect.type === "pattern-jump");
-      const breakEffect = row.effects.find((effect) => effect.type === "pattern-break");
+      const jump = lastEffect(row.effects, "pattern-jump");
+      const breakEffect = lastEffect(row.effects, "pattern-break");
       if (jump?.type === "pattern-jump") {
         clock.jump(jump.order, breakEffect?.type === "pattern-break" ? breakEffect.row : 0);
       } else if (breakEffect?.type === "pattern-break") {
