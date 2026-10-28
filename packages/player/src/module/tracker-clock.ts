@@ -24,7 +24,9 @@ const rowCount = (rows: TrackerClockOptions["patternRows"], pattern: number): nu
   const value = rows instanceof Map
     ? rows.get(pattern)
     : (rows as Record<number, number>)[pattern];
-  return Math.max(1, Math.floor(value ?? 1));
+  return value !== undefined && Number.isFinite(value)
+    ? Math.max(1, Math.floor(value))
+    : 1;
 };
 
 /**

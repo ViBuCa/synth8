@@ -47,6 +47,12 @@ describe("TrackerClock", () => {
     expect(clock.advance()).toMatchObject({ order: 0, pattern: 0, row: 0, tick: 0 });
   });
 
+  it("falls back to one row for invalid pattern lengths", () => {
+    const clock = new TrackerClock({ orders: [3], patternRows: { 3: Number.NaN } });
+    clock.jump(0, 99);
+    expect(clock.current).toMatchObject({ order: 0, pattern: 3, row: 0, tick: 0 });
+  });
+
   it("supports runtime speed and tempo changes", () => {
     const clock = new TrackerClock({ orders: [0], patternRows: { 0: 8 }, speed: 6, tempo: 125 });
     clock.setSpeed(3);
