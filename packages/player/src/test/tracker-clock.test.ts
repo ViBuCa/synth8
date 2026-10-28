@@ -73,5 +73,9 @@ describe("TrackerClock", () => {
     expect(clock.speed).toBe(6);
     expect(clock.tempo).toBe(125);
     expect(clock.tickDuration).toBeCloseTo(0.02);
+    clock.setSpeed(0);
+    clock.setTempo(0);
+    expect(clock.speed).toBe(1);
+    expect(clock.tempo).toBe(1);
   });
 });

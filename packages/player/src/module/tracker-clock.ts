@@ -17,8 +17,8 @@ export type TrackerTick = TrackerPosition & {
   seconds: number;
 };
 
-const positiveFinite = (value: number | undefined, fallback: number): number =>
-  value !== undefined && Number.isFinite(value) && value > 0 ? value : fallback;
+const finiteOr = (value: number | undefined, fallback: number): number =>
+  value !== undefined && Number.isFinite(value) ? value : fallback;
 
 const rowCount = (rows: TrackerClockOptions["patternRows"], pattern: number): number => {
   const value = rows instanceof Map
@@ -45,8 +45,8 @@ export class TrackerClock {
     this.orders = options.orders;
     this.patternRows = options.patternRows;
     this.restartOrder = Math.max(0, Math.floor(options.restartOrder ?? 0));
-    this.initialSpeed = Math.max(1, Math.floor(positiveFinite(options.speed, 6)));
-    this.initialTempo = positiveFinite(options.tempo, 125);
+    this.initialSpeed = Math.max(1, Math.floor(finiteOr(options.speed, 6)));
+    this.initialTempo = Math.max(1, finiteOr(options.tempo, 125));
     this.speedValue = this.initialSpeed;
     this.tempoValue = this.initialTempo;
     this.position = {
@@ -74,12 +74,12 @@ export class TrackerClock {
   }
 
   setSpeed(speed: number): void {
-    this.speedValue = Math.max(1, Math.floor(positiveFinite(speed, this.initialSpeed)));
+    this.speedValue = Math.max(1, Math.floor(finiteOr(speed, this.initialSpeed)));
     this.position.tick = Math.min(this.position.tick, this.speedValue - 1);
   }
 
   setTempo(tempo: number): void {
-    this.tempoValue = positiveFinite(tempo, this.initialTempo);
+    this.tempoValue = Math.max(1, finiteOr(tempo, this.initialTempo));
   }
 
   jump(order: number, row = 0): void {
