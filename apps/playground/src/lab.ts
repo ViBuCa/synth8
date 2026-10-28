@@ -1,5 +1,6 @@
 import { compile } from "@vibuca/synth8-core";
-import { analyzeSample, createGameAudio, decodeModuleAsync, decodeSampleBank, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
+import { analyzeSample, createGameAudio, decodeModuleAsync, decodeSampleBank, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, sampleDataFromModule, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
+import type { SampleAssetData } from "@vibuca/synth8-player";
 import type { GameAudio, PreparedPlayback, PreparedSfx, SampleAssetData, TrackerModule } from "@vibuca/synth8-player"
 import {
   parseMidi,
@@ -846,12 +847,16 @@ const clearModuleSamples = (): void => {
   moduleSamples.replaceChildren();
 };
 
-const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandidates>): void => {
+const showModuleSamples = (
+  candidates: SampleAssetData[],
+  label = "Sample candidates",
+  downloadName = "tfmx-sample-candidates.s8bank.json",
+): void => {
   clearModuleSamples();
   if (!candidates.length) return;
   moduleSamples.hidden = false;
   const heading = document.createElement("p");
-  heading.textContent = `Sample candidates (${candidates.length}) — preview or export individually:`;
+  heading.textContent = `${label} (${candidates.length}) — preview or export individually:`;
   const exportBank = document.createElement("button");
   exportBank.type = "button";
   exportBank.textContent = "Export sample bank JSON";
@@ -860,7 +865,7 @@ const showModuleSamples = (candidates: ReturnType<typeof extractTfmxSampleCandid
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "tfmx-sample-candidates.s8bank.json";
+    link.download = downloadName;
     link.click();
     URL.revokeObjectURL(url);
   });
@@ -928,7 +933,9 @@ moduleFileInput.addEventListener("change", async () => {
     loadedModule = await decodeModuleAsync(bytes);
     moduleMusic = await (await getGameAudio()).prepareModule(loadedModule, { lookAhead: 0.25 });
     moduleMusic.start();
-    setGameAudioStatus(`Playing MOD ${loadedModule.title ?? file.name} (${loadedModule.channels ?? 0} channels).`);
+    const samples = sampleDataFromModule(loadedModule);
+    showModuleSamples(samples, "MOD samples", "mod-samples.s8bank.json");
+    setGameAudioStatus(`Playing full MOD ${loadedModule.title ?? file.name} (${loadedModule.channels ?? 0} channels) while showing ${samples.length} decoded samples.`);
   } catch (error) {
     loadedModule = undefined;
     const bytes = new Uint8Array(await file.arrayBuffer());
