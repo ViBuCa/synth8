@@ -44,9 +44,9 @@ export class TrackerClock {
   private tempoValue: number;
 
   constructor(options: TrackerClockOptions) {
-    this.orders = options.orders;
+    this.orders = options.orders.map((order) => Number.isFinite(order) ? Math.floor(order) : 0);
     this.patternRows = options.patternRows;
-    this.restartOrder = Math.max(0, Math.floor(finiteOr(options.restartOrder, 0)));
+    this.restartOrder = Math.max(0, Math.min(Math.max(0, this.orders.length - 1), Math.floor(finiteOr(options.restartOrder, 0))));
     this.initialSpeed = Math.max(1, Math.floor(finiteOr(options.speed, 6)));
     this.initialTempo = Math.max(1, finiteOr(options.tempo, 125));
     this.speedValue = this.initialSpeed;

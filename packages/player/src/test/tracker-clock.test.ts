@@ -73,8 +73,9 @@ describe("TrackerClock", () => {
   });
 
   it("rejects non-finite runtime timing values", () => {
-    const clock = new TrackerClock({ orders: [0], patternRows: { 0: 8 }, speed: 6, tempo: 125, restartOrder: Number.NaN });
-    expect(clock.restartOrder).toBe(0);
+    const clock = new TrackerClock({ orders: [Number.NaN, 1.9], patternRows: { 0: 8 }, speed: 6, tempo: 125, restartOrder: 99 });
+    expect(clock.orders).toEqual([0, 1]);
+    expect(clock.restartOrder).toBe(1);
     clock.setSpeed(Number.NaN);
     clock.setTempo(Number.POSITIVE_INFINITY);
     expect(clock.speed).toBe(6);
