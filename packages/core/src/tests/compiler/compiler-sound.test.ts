@@ -21,6 +21,23 @@ describe('compile sounds', () => {
         ]);
     });
 
+    it("adds oscillator stacks to melody playback", () => {
+        expect(compile(`melody("c2 g1").osc("sawtooth", 0, 0.55).osc("sine", -12, 0.35)`).layers).toMatchObject([
+            {
+                playback: {
+                    oscillators: [
+                        { sound: "sawtooth", gain: 0.55 },
+                        { sound: "sine", transpose: -12, gain: 0.35 },
+                    ],
+                },
+                events: [
+                    { time: 0, dur: 1, type: "note", value: "c2" },
+                    { time: 1, dur: 1, type: "note", value: "g1" },
+                ],
+            },
+        ]);
+    });
+
     it("adds playback sound to beat layers", () => {
         expect(compile(`beat("kick snare").sound("square")`).layers).toMatchObject([
             {

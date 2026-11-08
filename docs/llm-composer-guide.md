@@ -51,6 +51,7 @@ Melody-only modifiers:
 
 Playback/layer modifiers:
 - .sound("sine" | "triangle" | "square" | "sawtooth" | "pulse12" | "pulse25" | "pulse50" | "pulse75" | "noise" | "wavetable")
+- .osc(sound, transpose?, gain?, detune?) adds one oscillator to a melodic voice. Use repeated .osc() calls for layered basses/leads; transpose is semitones, gain is 0..1, detune is cents.
 - .sample("asset-id") selects a preloaded PCM sample supplied by the host application. Use only when the application provides a matching SampleBank entry.
 - .preset("chip-lead" | "chip-bass" | "soft-pad" | "metal-rhythm" | "arcade-pluck" | "deep-bass" | "warm-pad" | "glass-lead" | "metal-lead" | "anthem-lead" | "palm-muted" | "arena-chords" | "picked-bass" | "metal-bass" | "synth-brass" | "dark-pad" | "orchestra-hit" | "warm-keys")
 - .bank("default" | "808" | "909" | "arcade" | "chip") for drum character
@@ -166,6 +167,15 @@ beat("_ hihat _ hihat").fast(2).gain(0.25).loop()
 
 // bass
 melody("c2 _ g1 _ a1 _ g1 _").preset("deep-bass").loop()
+
+// custom multi-oscillator bass
+melody("c2 c2 g1 c2")
+  .osc("sawtooth", 0, 0.55)
+  .osc("sine", -12, 0.35)
+  .osc("square", 0, 0.15, 7)
+  .cutoff(1200)
+  .distortion(0.22)
+  .loop()
 
 // pad chords
 melody("c4+e4+g4 _ f4+a4+c5 _").preset("warm-pad").gain(0.35).loop()

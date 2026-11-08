@@ -12,6 +12,10 @@ const PRESET_PLAYBACK: Record<PlaybackPreset, PlaybackConfig> = {
     },
     "chip-bass": {
         sound: "triangle",
+        oscillators: [
+            { sound: "triangle", gain: 0.82 },
+            { sound: "pulse25", transpose: -12, gain: 0.18 },
+        ],
         gain: 0.9,
         envelope: {
             attack: 0.001,
@@ -54,6 +58,11 @@ const PRESET_PLAYBACK: Record<PlaybackPreset, PlaybackConfig> = {
     },
     "deep-bass": {
         sound: "sine",
+        oscillators: [
+            { sound: "sine", transpose: -12, gain: 0.42 },
+            { sound: "triangle", gain: 0.48 },
+            { sound: "sawtooth", gain: 0.12 },
+        ],
         gain: 0.95,
         envelope: {
             attack: 0.002,
@@ -121,12 +130,21 @@ const PRESET_PLAYBACK: Record<PlaybackPreset, PlaybackConfig> = {
     },
     "picked-bass": {
         sound: "square",
+        oscillators: [
+            { sound: "square", gain: 0.72 },
+            { sound: "triangle", transpose: -12, gain: 0.28 },
+        ],
         gain: 0.7,
         envelope: { attack: 0.001, decay: 0.11, sustain: 0.52, release: 0.08 },
         effects: { distortion: 0.12, lowpass: 2600 },
     },
     "metal-bass": {
         sound: "sawtooth",
+        oscillators: [
+            { sound: "sawtooth", gain: 0.58 },
+            { sound: "sawtooth", detune: -7, gain: 0.22 },
+            { sound: "square", transpose: -12, gain: 0.22 },
+        ],
         gain: 0.58,
         envelope: { attack: 0.001, decay: 0.14, sustain: 0.62, release: 0.1 },
         effects: { distortion: 0.28, lowpass: 3200 },
@@ -170,7 +188,7 @@ export const resolvePlaybackPreset = (
         return playback;
     }
 
-    return {
+    const resolved: PlaybackConfig = {
         ...preset,
         ...playback,
         bank: playback.bank ?? preset.bank,
@@ -183,4 +201,10 @@ export const resolvePlaybackPreset = (
             ...playback.effects,
         },
     };
+
+    if (playback.sound !== undefined && playback.oscillators === undefined) {
+        delete resolved.oscillators;
+    }
+
+    return resolved;
 };

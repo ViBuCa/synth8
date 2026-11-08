@@ -14,7 +14,13 @@ const pattern = (events: Synth8Event[], length = 4): Pattern => ({
 describe("native player", () => {
   it("resolves playback presets without an audio engine", () => {
     expect(resolvePlaybackPreset({ sound: "square" })).toMatchObject({ sound: "square" });
-    expect(resolvePlaybackPreset({ preset: "chip-bass" })).toBeTruthy();
+    expect(resolvePlaybackPreset({ preset: "chip-bass" })).toMatchObject({
+      oscillators: [
+        { sound: "triangle", gain: 0.82 },
+        { sound: "pulse25", transpose: -12, gain: 0.18 },
+      ],
+    });
+    expect(resolvePlaybackPreset({ preset: "chip-bass", sound: "square" })).not.toHaveProperty("oscillators");
   });
 
   it("schedules queried events in beat time", () => {

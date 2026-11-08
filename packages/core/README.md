@@ -239,6 +239,19 @@ wavetable
 
 Pulse variants are normalized retro pulse sources (12.5%, 25%, 50%, and 75% duty). `noise` is an unpitched white-noise source; note pitch is ignored and the note envelope controls its duration. `wavetable` is reserved for the minimal built-in wavetable source and currently falls back to the basic synth oscillator in live playback.
 
+Use `.osc(sound, transpose, gain, detune)` to stack multiple oscillators into one melodic voice. The oscillators are summed before the shared filter, envelope, distortion, pan, and effects chain, which is useful for basses and thick leads:
+
+```ts
+melody("c2 _ g1 _ bb1 _ g1 _")
+  .osc("sawtooth", 0, 0.55)
+  .osc("sine", -12, 0.35)
+  .osc("square", 0, 0.15, 7)
+  .cutoff(1200)
+  .distortion(0.22)
+```
+
+`transpose` is an integer semitone offset from `-48` to `48`, `gain` is `0`–`1`, and `detune` is cents from `-1200` to `1200`. Omitted values default to `0`, `1`, and `0`. If no `.osc()` calls are present, `.sound()` remains the single-oscillator shorthand.
+
 ### Pitch expression, filters, and articulation
 
 Sustained layers can use vibrato, portamento, and a low-pass filter:
@@ -307,7 +320,7 @@ Supported presets, grouped by arrangement role:
 | Percussive or dramatic | `synth-brass` (retro stabs), `orchestra-hit` (artificial 80s punctuation) |
 | Keyboard | `warm-keys` (soft unobtrusive keys) |
 
-The guitar and orchestral presets are intentionally single-oscillator approximations: Synth8 has no sampled instruments or oscillator layering. Preset gains are conservative so layers can be combined; use `.gain()` for arrangement-specific balance.
+Several bass presets use oscillator stacks for a fuller synthesized instrument voice. Guitar and orchestral presets remain lightweight synthetic approximations rather than sampled instrument models. Preset gains are conservative so layers can be combined; use `.gain()` for arrangement-specific balance.
 
 Presets are stored on the compiled layer playback config. Explicit modifiers such as `.sound()` or `.release()` can override preset defaults during playback.
 

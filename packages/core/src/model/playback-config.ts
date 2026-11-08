@@ -39,6 +39,16 @@ export type EnvelopeConfig = {
   release?: number;
 };
 
+export type OscillatorConfig = {
+  sound: Waveform;
+  /** Relative pitch offset in semitones. */
+  transpose?: number;
+  /** Fine pitch offset in cents. */
+  detune?: number;
+  /** Per-oscillator level before the shared filter/envelope/effects chain. */
+  gain?: number;
+};
+
 export type PlaybackPreset =
   | "chip-lead"
   | "chip-bass"
@@ -83,6 +93,8 @@ export type PlaybackConfig = {
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;
+  /** Optional oscillator stack. When present, oscillators are summed into one voice. */
+  oscillators?: OscillatorConfig[];
   gain?: number;
   pan?: number; // -1 left, 1 right
   envelope?: EnvelopeConfig;

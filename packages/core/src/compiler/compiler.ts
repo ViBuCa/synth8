@@ -227,6 +227,7 @@ const compilePlayback = (ast: {
   preset?: PlaybackConfig["preset"];
   bank?: PlaybackConfig["bank"];
   sound?: Waveform;
+  oscillators?: PlaybackConfig["oscillators"];
   gain?: number;
   pan?: number;
   envelope?: PlaybackConfig["envelope"];
@@ -250,6 +251,10 @@ const compilePlayback = (ast: {
 
   if (ast.sound !== undefined) {
     playback.sound = ast.sound;
+  }
+
+  if (ast.oscillators !== undefined) {
+    playback.oscillators = ast.oscillators;
   }
 
   if (ast.gain !== undefined) {

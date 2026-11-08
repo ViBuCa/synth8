@@ -241,6 +241,18 @@ melody("c4 e4")
         });
     });
 
+    it("parses oscillator stack modifiers", () => {
+        expect(
+            parse(`melody("c2").osc("sawtooth", 0, 0.55).osc("sine", -12, 0.35).osc("square", 0, 0.15, 7)`)
+        ).toMatchObject({
+            oscillators: [
+                { sound: "sawtooth", gain: 0.55 },
+                { sound: "sine", transpose: -12, gain: 0.35 },
+                { sound: "square", gain: 0.15, detune: 7 },
+            ],
+        });
+    });
+
     it("parses envelope modifiers", () => {
         expect(
             parse(`melody("c4").attack(0.01).decay(0.2).sustain(0.6).release(0.4)`)
@@ -338,6 +350,9 @@ melody("c4 e4")
     it("rejects unknown sound values", () => {
         expect(() => parse(`melody("c4").sound("wind")`)).toThrow(
             "Illegal sound value: wind"
+        );
+        expect(() => parse(`melody("c4").osc("wind")`)).toThrow(
+            "Illegal osc sound value: wind"
         );
     });
 

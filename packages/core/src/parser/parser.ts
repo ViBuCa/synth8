@@ -1,4 +1,4 @@
-import type { EffectConfig, EnvelopeConfig, FilterConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "../model";
+import type { EffectConfig, EnvelopeConfig, FilterConfig, OscillatorConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "../model";
 import type { ArpeggioMode, AstNode } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
@@ -20,6 +20,7 @@ type Modifiers = {
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;
+  oscillators?: OscillatorConfig[];
   gain?: number;
   pan?: number;
   envelope?: EnvelopeConfig;
@@ -185,6 +186,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let bank: PlaybackBank | undefined = undefined;
   let sample: string | undefined = undefined;
   let sound: Waveform | undefined = undefined;
+  const oscillators: OscillatorConfig[] = [];
   let pan: number | undefined = undefined;
   const envelope: EnvelopeConfig = {};
   const effects: EffectConfig = {};
@@ -224,6 +226,36 @@ const parseModifiers = (state: ParserState): Modifiers => {
         throw new Error("filterEnvelope() expects six non-negative values.");
       }
       filter = { ...(filter ?? {}), envelope: { start: values[0], peak: values[1], attack: values[2], decay: values[3], sustain: values[4], release: values[5] } };
+      continue;
+    }
+
+    if (modifier === "osc") {
+      const oscillatorSound = expectString(state);
+      let oscillatorTranspose = 0;
+      let oscillatorGain = 1;
+      let oscillatorDetune = 0;
+      if (matchSymbol(state, ",")) oscillatorTranspose = expectNumber(state);
+      if (matchSymbol(state, ",")) oscillatorGain = expectNumber(state);
+      if (matchSymbol(state, ",")) oscillatorDetune = expectNumber(state);
+      expectSymbol(state, ")");
+      if (!WAVEFORMS.includes(oscillatorSound as Waveform)) {
+        throw new Error(`Illegal osc sound value: ${oscillatorSound}`);
+      }
+      if (!Number.isInteger(oscillatorTranspose) || oscillatorTranspose < -48 || oscillatorTranspose > 48) {
+        throw new Error("osc() transpose must be an integer between -48 and 48 semitones.");
+      }
+      if (oscillatorGain < 0 || oscillatorGain > 1) {
+        throw new Error("osc() gain must be between 0 and 1.");
+      }
+      if (!Number.isFinite(oscillatorDetune) || oscillatorDetune < -1200 || oscillatorDetune > 1200) {
+        throw new Error("osc() detune must be between -1200 and 1200 cents.");
+      }
+      oscillators.push({
+        sound: oscillatorSound as Waveform,
+        ...(oscillatorTranspose !== 0 ? { transpose: oscillatorTranspose } : {}),
+        ...(oscillatorGain !== 1 ? { gain: oscillatorGain } : {}),
+        ...(oscillatorDetune !== 0 ? { detune: oscillatorDetune } : {}),
+      });
       continue;
     }
 
@@ -436,6 +468,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
     preset,
     bank,
     sound,
+    oscillators: oscillators.length > 0 ? oscillators : undefined,
     gain,
     pan,
     envelope: Object.keys(envelope).length > 0 ? envelope : undefined,
@@ -460,7 +493,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     throw new Error("beat() requires at least one step.");
   }
 
-  const { rate, repeat, loop, offset, sample, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { rate, repeat, loop, offset, sample, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -473,6 +506,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     preset,
     bank,
     sound,
+    oscillators,
     gain,
     pan,
     envelope,
@@ -496,7 +530,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     throw new Error("melody() requires at least one note.");
   }
 
-  const { rate, transpose, repeat, loop, offset, sample, preset, bank, sound, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, sample, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -510,6 +544,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     preset,
     bank,
     sound,
+    oscillators,
     gain,
     pan,
     envelope,
@@ -538,7 +573,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, sample, preset, bank, sound, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { repeat, loop, offset, sample, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -550,6 +585,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     preset,
     bank,
     sound,
+    oscillators,
     gain,
     pan,
     envelope,

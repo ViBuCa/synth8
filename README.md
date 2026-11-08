@@ -51,6 +51,7 @@ Unlike many live-coding environments, Synth8 is designed from the ground up for 
 
 * Multiple independent layers
 * Per-layer waveform selection, including pulse sources and unpitched noise
+* Multi-oscillator melodic voices via `.osc(sound, transpose, gain, detune)`
 * Imported sample/instrument references via `.sample("asset-id")`
 * Support for gain, panning, envelopes, effects and instrument banks
 * Named drum banks (`default`, `808`, `909`, `arcade`, and `chip`)
@@ -80,7 +81,9 @@ song(
     .pan(-0.6),
 
   melody("c3 g3 c3 g3")
-    .sound("triangle")
+    .osc("sawtooth", 0, 0.5)
+    .osc("sine", -12, 0.35)
+    .cutoff(1200)
     .gain(0.6)
     .pan(0.6),
 
@@ -148,6 +151,7 @@ Implemented:
 * Transposition
 * Layered playback model
 * Waveform selection
+* Oscillator stacks
 * Synth envelope shaping
 * Playback presets
 * Drum banks

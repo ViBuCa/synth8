@@ -65,6 +65,27 @@ const examples = {
   .sound("sawtooth")
   .loop()`,
 
+  "Oscillator Bass": `song(
+  melody("c2 c2 eb2 c2 g1 g1 bb1 g1")
+    .osc("sawtooth", 0, 0.55)
+    .osc("sine", -12, 0.35)
+    .osc("square", 0, 0.15, 7)
+    .cutoff(1300)
+    .resonance(0.18)
+    .distortion(0.26)
+    .loop(),
+
+  beat("kick _ snare _ kick _ snare _")
+    .bank("909")
+    .gain(0.7)
+    .loop(),
+
+  beat("_ hihat _ hihat")
+    .fast(2)
+    .gain(0.22)
+    .loop()
+)`,
+
   "Chords": `melody("c4+e4+g4 _ f4+a4+c5 _ g4+b4+d5 _ c4+e4+g4")
   .sound("triangle")`,
 
@@ -184,6 +205,7 @@ const snippets = {
   Preset: `.preset("chip-lead")`,
   Bank: `.bank("808")`,
   Effect: `.echo(0.2)`,
+  Oscillator: `.osc("sawtooth", 0, 0.55)`,
 };
 
 const gameSfxSources = {

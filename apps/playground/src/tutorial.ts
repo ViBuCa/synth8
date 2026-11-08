@@ -72,28 +72,20 @@ const tutorialExamples: TutorialExample[] = [
     source: `beat("kick+hihat _ snare+hihat _ kick openhat snare hihat")`,
   },
   {
-    title: "Layered Bass",
-    body: "Several sawtooth layers can approximate a multi-oscillator or tracker bass.",
-    details: "This is a Synth8 approximation: parallel layers provide separate frequencies, while distortion and filtering shape the combined sound. Future instrument definitions will support multiple oscillators as one voice.",
-    source: `song(
-  melody("c2 c2 eb2 c2")
-    .sound("sawtooth")
-    .gain(0.42),
-  melody("c2 c2 eb2 c2")
-    .sound("sawtooth")
-    .transpose(7)
-    .gain(0.2),
-  melody("c2 c2 eb2 c2")
-    .sound("square")
-    .preset("metal-bass")
-    .distortion(0.35)
-    .lowpass(2200)
-)`
+    title: "Oscillator Bass",
+    body: "Stack multiple waves into one synth voice with osc().",
+    details: "Use .osc(sound, transpose, gain, detune) for sub oscillators, detuned saws, and square-wave bite. The stack is filtered and distorted as one instrument voice.",
+    source: `melody("c2 c2 eb2 c2")
+  .osc("sawtooth", 0, 0.55)
+  .osc("sine", -12, 0.35)
+  .osc("square", 0, 0.15, 7)
+  .cutoff(1400)
+  .distortion(0.28)`
   },
   {
     title: "Sounds",
     body: "Use sound() to choose the synth waveform for a melody layer.",
-    details: "Sources: sine, triangle, square, sawtooth, pulse12, pulse25, pulse50, pulse75, noise, wavetable. Pulse duty is fixed by the source name. Imported assets can use .sample(\"asset-id\") when a SampleBank is supplied by the application.",
+    details: "Sources: sine, triangle, square, sawtooth, pulse12, pulse25, pulse50, pulse75, noise, wavetable. Pulse duty is fixed by the source name. Use osc() when one voice should contain multiple waveforms. Imported assets can use .sample(\"asset-id\") when a SampleBank is supplied by the application.",
     source: `melody("c4 e4 g4 c5")
   .sound("pulse25")`,
   },
