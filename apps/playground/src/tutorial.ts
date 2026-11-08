@@ -1,5 +1,6 @@
 import { compile } from "@vibuca/synth8-core";
 import { play, stop } from "@vibuca/synth8-player";
+import { isExperimentalEnabled } from "./features";
 
 type TutorialExample = {
   title: string;
@@ -72,15 +73,15 @@ const tutorialExamples: TutorialExample[] = [
     source: `beat("kick+hihat _ snare+hihat _ kick openhat snare hihat")`,
   },
   {
-    title: "Oscillator Bass",
+    title: "Oscillator Stacks",
     body: "Stack multiple waves into one synth voice with osc().",
-    details: "Use .osc(sound, transpose, gain, detune) for sub oscillators, detuned saws, and square-wave bite. The stack is filtered and distorted as one instrument voice.",
-    source: `melody("c2 c2 eb2 c2")
-  .osc("sawtooth", 0, 0.55)
-  .osc("sine", -12, 0.35)
-  .osc("square", 0, 0.15, 7)
-  .cutoff(1400)
-  .distortion(0.28)`
+    details: "Use .osc(sound, transpose, gain, detune) for thicker basses, leads, pads, and stabs. The stack is filtered and processed as one instrument voice.",
+    source: `melody("c4 e4 g4 c5")
+  .osc("sawtooth", 0, 0.4, -6)
+  .osc("sawtooth", 0, 0.4, 6)
+  .osc("square", 0, 0.15)
+  .cutoff(3600)
+  .chorus(0.25)`
   },
   {
     title: "Sounds",
@@ -255,13 +256,15 @@ function escapeHtml(value: string): string {
 }
 
 export function renderTutorial(root: HTMLElement) {
+  const experimental = isExperimentalEnabled();
+
   root.innerHTML = `
     <main>
       <header class="app-header">
         <button class="brand-button" type="button" data-view="home">Synth8</button>
         <nav class="main-nav" aria-label="Main">
           <button class="nav-button" type="button" data-view="lab">Laboratory</button>
-          <button class="nav-button" type="button" data-view="editor">Editor (preview)</button>
+          ${experimental ? `<button class="nav-button" type="button" data-view="editor">Editor (preview)</button>` : ""}
           <button class="nav-button is-active" type="button" data-view="tutorial">Tutorial</button>
         </nav>
       </header>
@@ -269,7 +272,7 @@ export function renderTutorial(root: HTMLElement) {
       <section class="tutorial-hero">
         <h1>Synth8 Tutorial</h1>
         <p class="lead">Each example is editable and playable. Change a pattern, then press Play to hear what changed.</p>
-        <p class="tutorial-details"><strong>Tracker files and samples:</strong> Open the <strong>Laboratory</strong>, choose <strong>Music + Sfx</strong>, then use <strong>Load tracker module (MOD / TFMX / TFHD)</strong>. MOD files can be previewed as modules. TFMX and TFHD files are inspected for reusable sample candidates; each candidate can be previewed, renamed, exported as WAV or collected into a Synth8 sample-bank JSON file. TFMX/TFHD arrangement replay is intentionally not required for this workflow. See <a href="https://github.com/ViBuCa/synth8/blob/main/docs/tracker-modules-roadmap.md">the tracker roadmap</a>.</p>
+        ${experimental ? `<p class="tutorial-details"><strong>Tracker files and samples:</strong> Open the <strong>Laboratory</strong>, choose <strong>Music + Sfx</strong>, then use <strong>Load tracker module (MOD / TFMX / TFHD)</strong>. MOD files can be previewed as modules. TFMX and TFHD files are inspected for reusable sample candidates; each candidate can be previewed, renamed, exported as WAV or collected into a Synth8 sample-bank JSON file. TFMX/TFHD arrangement replay is intentionally not required for this workflow. See <a href="https://github.com/ViBuCa/synth8/blob/main/docs/tracker-modules-roadmap.md">the tracker roadmap</a>.</p>
         <div class="tutorial-tracker-guide">
           <h2>Imported sample workflow</h2>
           <ol>
@@ -279,7 +282,7 @@ export function renderTutorial(root: HTMLElement) {
             <li>Load that bank, select <strong>Use in Synth8</strong>, and play or export the generated pattern.</li>
           </ol>
           <pre><code>melody("c2 eb2 f2").sample("tfmx-candidate-5794")</code></pre>
-        </div>
+        </div>` : ""}
       </section>
 
       <div class="tutorial-list">

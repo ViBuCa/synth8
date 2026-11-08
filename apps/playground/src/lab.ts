@@ -7,8 +7,10 @@ import {
   midiToSynth8Source,
 } from "@vibuca/synth8-import-midi";
 import { DEFAULT_SONG_SOURCE, downloadSynth8Source, getSynth8FileMetadata, readSynth8Source } from "@vibuca/synth8-editor";
+import { isExperimentalEnabled } from "./features";
 
 export function renderLab(root: HTMLElement) {
+const experimental = isExperimentalEnabled();
 type OutputKind = "info" | "success" | "error" | "json";
 type DemoTab = "player" | "game";
 
@@ -65,7 +67,7 @@ const examples = {
   .sound("sawtooth")
   .loop()`,
 
-  "Oscillator Bass": `song(
+  "Oscillator Stack": `song(
   melody("c2 c2 eb2 c2 g1 g1 bb1 g1")
     .osc("sawtooth", 0, 0.55)
     .osc("sine", -12, 0.35)
@@ -276,7 +278,7 @@ root.innerHTML = `
       <button class="brand-button" type="button" data-view="home">Synth8</button>
       <nav class="main-nav" aria-label="Main">
         <button class="nav-button is-active" type="button" data-view="lab">Laboratory</button>
-        <button class="nav-button" type="button" data-view="editor">Editor (preview)</button>
+        ${experimental ? `<button class="nav-button" type="button" data-view="editor">Editor (preview)</button>` : ""}
         <button class="nav-button" type="button" data-view="tutorial">Tutorial</button>
       </nav>
     </header>
@@ -380,8 +382,8 @@ root.innerHTML = `
       </div>
 
       <div id="playback-status" class="playback-status" role="status" aria-live="polite">Idle.</div>
-      <p class="tracker-callout"><strong>Working with tracker files?</strong> Open <em>Music + Sfx</em> to load MOD, TFMX or TFHD files, preview extracted samples and export a Synth8 sample bank.</p>
-      <button id="open-tracker-import" type="button">Open tracker importer</button>
+      <p class="tracker-callout" ${experimental ? "" : "hidden"}><strong>Working with tracker files?</strong> Open <em>Music + Sfx</em> to load MOD, TFMX or TFHD files, preview extracted samples and export a Synth8 sample bank.</p>
+      <button id="open-tracker-import" type="button" ${experimental ? "" : "hidden"}>Open tracker importer</button>
     </section>
 
     <section
@@ -396,7 +398,7 @@ root.innerHTML = `
         <button id="game-music">Start Music</button>
         <button id="game-music-stop">Stop Music</button>
       </div>
-      <div class="game-audio-controls">
+      <div class="game-audio-controls" ${experimental ? "" : "hidden"}>
         <label for="module-file">Load tracker module (MOD / TFMX / TFHD)</label>
         <input id="module-file" type="file" accept=".mod,.m15,.nst,.tfm,.tfx,.tfhd,.xm,.s3m,.it,audio/x-mod" />
         <button id="module-stop" type="button">Stop Module</button>
