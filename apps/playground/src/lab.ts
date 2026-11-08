@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { analyzeSample, createGameAudio, decodeModuleAsync, decodeSampleBank, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderOgg, renderWav, resetPlaybackMetrics, resume, sampleDataFromModule, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
+import { analyzeSample, createGameAudio, decodeInstrumentPack, decodeModuleAsync, decodeSampleBank, encodeInstrumentPack, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderInstrumentPack, renderOgg, renderWav, resetPlaybackMetrics, resume, sampleDataFromModule, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
 import type { SampleAssetData } from "@vibuca/synth8-player";
 import type { GameAudio, PreparedPlayback, PreparedSfx, SampleAssetData, TrackerModule } from "@vibuca/synth8-player"
 import {
@@ -377,6 +377,7 @@ root.innerHTML = `
         <button id="stop">Stop</button>
         <button id="export-wav">Export WAV</button>
         <button id="export-ogg">Export OGG</button>
+        <button id="export-instrument-pack">Export Instrument Pack</button>
         <button id="benchmark">Measure Core</button>
         <button id="share">Copy Share Link</button>
       </div>
@@ -407,6 +408,8 @@ root.innerHTML = `
       <div class="game-audio-controls">
         <label for="sample-bank-file">Load Synth8 sample bank</label>
         <input id="sample-bank-file" type="file" accept=".json,.s8bank.json,application/json" />
+        <label for="instrument-pack-file">Load Synth8 instrument pack</label>
+        <input id="instrument-pack-file" type="file" accept=".json,.s8inst.json,application/json" />
       </div>
 
       <div class="volume-grid">
@@ -469,6 +472,7 @@ const playbackStatus = document.querySelector<HTMLDivElement>("#playback-status"
 const playButton = document.querySelector<HTMLButtonElement>("#play")!;
 const exportWavButton = document.querySelector<HTMLButtonElement>("#export-wav")!;
 const exportOggButton = document.querySelector<HTMLButtonElement>("#export-ogg")!;
+const exportInstrumentPackButton = document.querySelector<HTMLButtonElement>("#export-instrument-pack")!;
 const benchmarkButton = document.querySelector<HTMLButtonElement>("#benchmark")!;
 const gameMusicButton = document.querySelector<HTMLButtonElement>("#game-music")!;
 const gameMusicStopButton = document.querySelector<HTMLButtonElement>("#game-music-stop")!;
@@ -476,6 +480,7 @@ const moduleFileInput = document.querySelector<HTMLInputElement>("#module-file")
 const moduleStopButton = document.querySelector<HTMLButtonElement>("#module-stop")!;
 const moduleSamples = document.querySelector<HTMLDivElement>("#module-samples")!;
 const sampleBankFileInput = document.querySelector<HTMLInputElement>("#sample-bank-file")!;
+const instrumentPackFileInput = document.querySelector<HTMLInputElement>("#instrument-pack-file")!;
 let samplePreviewContext: AudioContext | undefined;
 let samplePreviewBank: SampleBank | undefined;
 let loadedSampleBank: SampleBank | undefined;
@@ -720,6 +725,43 @@ exportOggButton.addEventListener("click", async () => {
   } finally {
     exportOggButton.disabled = false;
     exportOggButton.textContent = previousText;
+  }
+});
+
+exportInstrumentPackButton.addEventListener("click", async () => {
+  const previousText = exportInstrumentPackButton.textContent ?? "Export Instrument Pack";
+
+  try {
+    exportInstrumentPackButton.disabled = true;
+    exportInstrumentPackButton.textContent = "Rendering...";
+    setPlaybackStatus("Rendering instrument samples...", true);
+
+    const pattern = compile(sourceInput.value);
+    const pack = await renderInstrumentPack(pattern, {
+      name: "Synth8 instrument pack",
+      sampleRate: 22050,
+      noteDuration: 1,
+      tail: 0.25,
+      sampleBank: loadedSampleBank,
+    });
+    if (!pack.samples.length) throw new Error("No melodic instruments found to export.");
+    const blob = new Blob([encodeInstrumentPack(pack)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "synth8-instruments.s8inst.json";
+    link.click();
+    URL.revokeObjectURL(url);
+
+    showModuleSamples(pack.samples, `Instrument pack samples: ${pack.instruments.map((instrument) => instrument.name ?? instrument.id).join(", ")}`, "synth8-instruments.s8bank.json");
+    setPlaybackStatus("Instrument pack exported.");
+    setOutput("success", `Exported ${pack.instruments.length} instrument descriptions and ${pack.samples.length} rendered samples.`);
+  } catch (error) {
+    setPlaybackStatus("Instrument pack export failed.");
+    setOutput("error", error instanceof Error ? error.message : String(error));
+  } finally {
+    exportInstrumentPackButton.disabled = false;
+    exportInstrumentPackButton.textContent = previousText;
   }
 });
 
@@ -995,7 +1037,28 @@ sampleBankFileInput.addEventListener("change", async () => {
     loadedSampleBank = new SampleBank(samplePreviewContext);
     loadedSampleBank.addAll(loadedSampleAssets);
     samplePreviewBank = loadedSampleBank;
+    showModuleSamples(loadedSampleAssets, "Loaded sample bank", "loaded-samples.s8bank.json");
     setGameAudioStatus(`Loaded ${loadedSampleAssets.length} Synth8 sample assets from ${file.name}.`);
+  } catch (error) {
+    setGameAudioStatus(error instanceof Error ? error.message : String(error));
+  }
+});
+
+instrumentPackFileInput.addEventListener("change", async () => {
+  const file = instrumentPackFileInput.files?.[0];
+  if (!file) return;
+  try {
+    const pack = decodeInstrumentPack(await file.text());
+    loadedSampleAssets = pack.samples;
+    const Constructor = globalThis.AudioContext;
+    if (!Constructor) throw new Error("This environment does not provide AudioContext.");
+    samplePreviewContext ??= new Constructor();
+    await samplePreviewContext.resume();
+    loadedSampleBank = new SampleBank(samplePreviewContext);
+    loadedSampleBank.addAll(loadedSampleAssets);
+    samplePreviewBank = loadedSampleBank;
+    showModuleSamples(pack.samples, `Instrument pack: ${pack.instruments.map((instrument) => instrument.name ?? instrument.id).join(", ")}`, "instrument-pack-samples.s8bank.json");
+    setGameAudioStatus(`Loaded ${pack.instruments.length} instrument descriptions and ${pack.samples.length} samples from ${file.name}.`);
   } catch (error) {
     setGameAudioStatus(error instanceof Error ? error.message : String(error));
   }

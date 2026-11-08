@@ -52,6 +52,7 @@ Unlike many live-coding environments, Synth8 is designed from the ground up for 
 * Multiple independent layers
 * Per-layer waveform selection, including pulse sources and unpitched noise
 * Multi-oscillator melodic voices via `.osc(sound, transpose, gain, detune)`
+* Pre-rendered Synth8 instrument packs for sampler-style game playback
 * Imported sample/instrument references via `.sample("asset-id")`
 * Support for gain, panning, envelopes, effects and instrument banks
 * Named drum banks (`default`, `808`, `909`, `arcade`, and `chip`)
@@ -166,6 +167,7 @@ Implemented:
 * MIDI export
 * First browser piano-roll editor preview
 * Preloaded sample-bank foundation for imported tracker samples
+* Synth8 instrument-pack export/import for pre-rendered sampler playback
 * Playground MOD loading, TFMX sample candidate preview, naming, WAV export, sample-bank JSON import/export and sample-backed Synth8 preview
 
 Planned:

@@ -3,6 +3,7 @@ export * from "./sample-player";
 export * from "./sample-wav";
 export * from "./sample-bank-format";
 export * from "./sample-analysis";
+export * from "./instrument-pack";
 export * from "./tfmx-samples";
 export * from "./tracker-model";
 export * from "./tracker-clock";

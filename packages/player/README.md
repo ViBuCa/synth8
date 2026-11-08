@@ -59,6 +59,35 @@ scheduleSampleVoice(audioContext, sample, {
 });
 ```
 
+Synth8 can also export a tracker-like instrument pack. The export renders each
+compiled melodic/drum instrument into PCM samples and stores the original
+instrument description beside the sample zones, so the pack can be imported into
+a `SampleBank`, inspected, or replayed with the minimal sampler backend.
+
+```ts
+import {
+  SampleBank,
+  InstrumentPackBackend,
+  addInstrumentPackToSampleBank,
+  decodeInstrumentPack,
+  encodeInstrumentPack,
+  renderInstrumentPack,
+} from "@vibuca/synth8-player";
+
+const pack = await renderInstrumentPack(pattern, {
+  sampleRate: 22050,
+  noteDuration: 1,
+  tail: 0.25,
+});
+const json = encodeInstrumentPack(pack); // save as .s8inst.json
+
+const loaded = decodeInstrumentPack(json);
+const bank = new SampleBank(audioContext);
+addInstrumentPackToSampleBank(bank, loaded);
+const backend = new InstrumentPackBackend({ context: audioContext, pack: loaded, sampleBank: bank, bpm: 180 });
+await play(pattern, { backend, clock: audioContext });
+```
+
 Tracker modules will remain part of this player package rather than requiring a
 separate npm package for MOD, XM, S3M, IT, or TFMX. The first format-neutral
 tracker model and ProTracker MOD detector/decoder are now available:
