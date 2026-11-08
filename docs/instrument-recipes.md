@@ -1,17 +1,25 @@
 # Synth8 Instrument Recipes
 
-These examples define reusable Synth8 instruments with `instruments(...)` and `.instrument("name")`. They are based on common subtractive-synthesis recipes: sub oscillators for bass weight, detuned saws for width, pulse/square waves for bite, and filtered triangle/sine layers for softer tones.
+These examples define reusable Synth8 instruments with `instruments(...)` and `.instrument("name")`. They are based on common subtractive-synthesis recipes: harmonically rich oscillators, low-pass filtering, amplitude envelopes, detune/chorus for ensemble width, and controlled distortion for edge.
 
-Use them as starting points, then adjust `.gain()`, `.cutoff()`, `.resonance()`, `.distortion()`, `.chorus()`, and envelopes to fit your song.
+I checked public references while tuning these recipes:
+
+- [Subtractive synthesis](https://en.wikipedia.org/wiki/Subtractive_synthesis): start from overtone-rich sources such as square/triangle/noise and attenuate harmonics with filters; ADSR envelopes shape the resulting sound.
+- [Roland TB-303](https://en.wikipedia.org/wiki/Roland_TB-303): classic acid bass uses sawtooth or square waves into a resonant 24 dB/oct low-pass filter controlled by an envelope.
+- [Supersaw](https://en.wikipedia.org/wiki/Supersaw): the classic wide lead/trance sound emulates multiple detuned sawtooth oscillators.
+- [Sound On Sound — Synthesizing Strings: String Machines](https://www.soundonsound.com/techniques/synthesizing-strings-string-machines): string-machine-style patches rely on saw waves, detune/ensemble movement, partly closed low-pass filters, and slow amplitude contours.
+- [Sound On Sound — Synthesizing Brass Instruments](https://www.soundonsound.com/techniques/synthesizing-brass-instruments): synth brass benefits from bright waveforms, quick attacks, evolving harmonic brightness, and filter/resonance changes.
+
+Use these as starting points, then adjust `.gain()`, `.cutoff()`, `.resonance()`, `.distortion()`, `.chorus()`, and envelopes to fit your song.
 
 ## Fat Sub Bass
 
-**Sound:** Deep, solid low end with a saw edge that still reads on small speakers. Useful for action loops, cyberpunk bass lines, and heavy game levels.
+**Sound:** Deep, solid low end with a saw edge that still reads on small speakers. The sine sub carries weight, triangle adds body, and a quiet saw layer adds harmonics before filtering/distortion. Useful for action loops, cyberpunk bass lines, and heavy game levels.
 
 ```ts
 instrument("fat bass")
-  .osc("sine", -12, 0.38)
-  .osc("triangle", 0, 0.42)
+  .osc("sine", -12, 0.40)
+  .osc("triangle", 0, 0.40)
   .osc("sawtooth", 0, 0.18)
   .attack(0.002)
   .decay(0.12)
@@ -24,11 +32,11 @@ instrument("fat bass")
 
 ## Silent / Menu Bass
 
-**Sound:** A restrained version of the bass for menus, pause screens, or lower-intensity game states. Keeps the harmonic theme while reducing impact.
+**Sound:** A restrained version of the bass for menus, pause screens, or lower-intensity game states. It keeps the same harmonic role but removes the bright saw/distortion layer.
 
 ```ts
 instrument("silent bass")
-  .osc("sine", -12, 0.32)
+  .osc("sine", -12, 0.34)
   .osc("triangle", 0, 0.30)
   .attack(0.01)
   .decay(0.18)
@@ -40,30 +48,48 @@ instrument("silent bass")
 
 ## Acid Bass
 
-**Sound:** Nasal, resonant, animated bass. Works well for fast arpeggiated or repeated notes.
+**Sound:** Nasal, resonant, animated bass inspired by TB-303-style patches: saw/square-family waveforms, short envelope, resonant low-pass filter, and a little drive. Works well for fast repeated notes and slides.
 
 ```ts
 instrument("acid bass")
-  .osc("sawtooth", 0, 0.7)
-  .osc("pulse25", 0, 0.25)
+  .osc("sawtooth", 0, 0.68)
+  .osc("square", 0, 0.22)
   .attack(0.001)
-  .decay(0.08)
-  .sustain(0.35)
-  .release(0.07)
-  .cutoff(1700)
-  .resonance(0.45)
-  .distortion(0.22)
+  .decay(0.075)
+  .sustain(0.32)
+  .release(0.06)
+  .cutoff(1650)
+  .resonance(0.50)
+  .distortion(0.24)
+```
+
+## Rounded 303 Bass
+
+**Sound:** A slightly softer acid/bassline patch using pulse instead of full square and less drive. Good when the bass should move rhythmically without dominating the mix.
+
+```ts
+instrument("rounded 303")
+  .osc("sawtooth", 0, 0.58)
+  .osc("pulse25", 0, 0.26)
+  .attack(0.001)
+  .decay(0.11)
+  .sustain(0.42)
+  .release(0.08)
+  .cutoff(1350)
+  .resonance(0.36)
+  .distortion(0.12)
 ```
 
 ## Detuned Saw Lead
 
-**Sound:** Wide, bright lead inspired by classic supersaw patches, but kept small enough for game playback.
+**Sound:** Wide, bright lead inspired by classic supersaw patches. Multiple saw oscillators are slightly detuned around the center pitch, with a square layer for bite.
 
 ```ts
 instrument("detuned lead")
-  .osc("sawtooth", 0, 0.38, -7)
-  .osc("sawtooth", 0, 0.38, 7)
-  .osc("square", 0, 0.16)
+  .osc("sawtooth", 0, 0.28, -11)
+  .osc("sawtooth", 0, 0.34, 0)
+  .osc("sawtooth", 0, 0.28, 11)
+  .osc("square", 0, 0.12)
   .attack(0.006)
   .decay(0.16)
   .sustain(0.72)
@@ -73,9 +99,28 @@ instrument("detuned lead")
   .echo(0.14)
 ```
 
+## Anthem Lead
+
+**Sound:** Wider and smoother than `detuned lead`, intended for long melodic hooks. It keeps distortion low and uses more release/echo so notes connect musically.
+
+```ts
+instrument("anthem lead")
+  .osc("sawtooth", 0, 0.32, -8)
+  .osc("sawtooth", 0, 0.32, 8)
+  .osc("triangle", 0, 0.16)
+  .attack(0.012)
+  .decay(0.22)
+  .sustain(0.82)
+  .release(0.62)
+  .cutoff(4800)
+  .distortion(0.10)
+  .chorus(0.34)
+  .echo(0.26)
+```
+
 ## Glass Lead
 
-**Sound:** Clear, bell-like lead for melodies that should sit above the mix without much distortion.
+**Sound:** Clear, bell-like lead for melodies that should sit above the mix without much distortion. The octave triangle adds shimmer while the sine keeps the center clean.
 
 ```ts
 instrument("glass lead")
@@ -92,26 +137,45 @@ instrument("glass lead")
 
 ## Warm Pad
 
-**Sound:** Soft chord bed with slow onset and gentle motion. Good for overworld maps, calm exploration, and menus.
+**Sound:** Soft chord bed with slow onset and gentle motion. Detuned saws provide string-machine-style movement; triangle softens the center. Good for overworld maps, calm exploration, and menus.
 
 ```ts
 instrument("warm pad")
-  .osc("sawtooth", 0, 0.30, -6)
-  .osc("sawtooth", 0, 0.30, 6)
-  .osc("triangle", 0, 0.25)
-  .attack(0.55)
+  .osc("sawtooth", 0, 0.28, -7)
+  .osc("sawtooth", 0, 0.28, 7)
+  .osc("triangle", 0, 0.24)
+  .attack(0.60)
   .decay(0.35)
-  .sustain(0.70)
-  .release(1.20)
+  .sustain(0.72)
+  .release(1.25)
   .cutoff(1800)
-  .chorus(0.45)
+  .chorus(0.48)
   .reverb(0.20)
   .gain(0.55)
 ```
 
+## String Machine
+
+**Sound:** Brighter, more synthetic ensemble pad. This intentionally keeps a saw buzz but rounds it with a partly closed filter and strong chorus.
+
+```ts
+instrument("string machine")
+  .osc("sawtooth", 0, 0.30, -9)
+  .osc("sawtooth", 0, 0.30, 9)
+  .osc("sawtooth", 12, 0.12, 4)
+  .attack(0.35)
+  .decay(0.25)
+  .sustain(0.82)
+  .release(1.40)
+  .cutoff(2400)
+  .chorus(0.58)
+  .reverb(0.18)
+  .gain(0.48)
+```
+
 ## Dark Pad
 
-**Sound:** Muted, tense atmosphere for caves, stealth, or suspense scenes.
+**Sound:** Muted, tense atmosphere for caves, stealth, or suspense scenes. The low saw gives weight, while the upper sine adds an eerie overtone.
 
 ```ts
 instrument("dark pad")
@@ -130,20 +194,39 @@ instrument("dark pad")
 
 ## Synth Brass Stab
 
-**Sound:** Short, confident saw/square stab for accents, victory cues, and retro brass chords.
+**Sound:** Short, confident saw/square stab for accents, victory cues, and retro brass chords. The quick attack and moderate decay emulate the punch of synth-brass patches.
 
 ```ts
 instrument("brass stab")
   .osc("sawtooth", 0, 0.52)
   .osc("square", 0, 0.22)
   .osc("sawtooth", 12, 0.10)
-  .attack(0.025)
-  .decay(0.18)
-  .sustain(0.45)
-  .release(0.20)
-  .cutoff(2600)
-  .resonance(0.18)
-  .chorus(0.16)
+  .attack(0.020)
+  .decay(0.20)
+  .sustain(0.42)
+  .release(0.18)
+  .cutoff(2800)
+  .resonance(0.20)
+  .chorus(0.14)
+```
+
+## Soft Brass
+
+**Sound:** Less percussive brass for sustained harmonies. The lower filter cutoff and longer release make it sit behind a lead.
+
+```ts
+instrument("soft brass")
+  .osc("sawtooth", 0, 0.45)
+  .osc("triangle", 0, 0.22)
+  .osc("square", 12, 0.08)
+  .attack(0.045)
+  .decay(0.26)
+  .sustain(0.58)
+  .release(0.38)
+  .cutoff(2200)
+  .resonance(0.14)
+  .chorus(0.18)
+  .gain(0.55)
 ```
 
 ## Arcade Pluck
@@ -160,6 +243,24 @@ instrument("arcade pluck")
   .release(0.07)
   .cutoff(4200)
   .echo(0.10)
+```
+
+## Warm Keys
+
+**Sound:** Rounded keyboard/chord patch with a soft transient and gentle chorus. Good for unobtrusive harmonic support.
+
+```ts
+instrument("warm keys")
+  .osc("triangle", 0, 0.48)
+  .osc("sine", 12, 0.16)
+  .osc("pulse50", 0, 0.12)
+  .attack(0.055)
+  .decay(0.28)
+  .sustain(0.55)
+  .release(0.70)
+  .cutoff(2600)
+  .chorus(0.18)
+  .gain(0.48)
 ```
 
 ## Noise Riser / Hit Layer
@@ -182,16 +283,17 @@ instrument("noise hit")
 ```ts
 instruments(
   instrument("fat bass")
-    .osc("sine", -12, 0.38)
-    .osc("triangle", 0, 0.42)
+    .osc("sine", -12, 0.40)
+    .osc("triangle", 0, 0.40)
     .osc("sawtooth", 0, 0.18)
     .cutoff(1200)
     .distortion(0.18),
 
   instrument("detuned lead")
-    .osc("sawtooth", 0, 0.38, -7)
-    .osc("sawtooth", 0, 0.38, 7)
-    .osc("square", 0, 0.16)
+    .osc("sawtooth", 0, 0.28, -11)
+    .osc("sawtooth", 0, 0.34, 0)
+    .osc("sawtooth", 0, 0.28, 11)
+    .osc("square", 0, 0.12)
     .cutoff(5200)
     .chorus(0.22),
 
