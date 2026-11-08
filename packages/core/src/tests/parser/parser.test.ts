@@ -253,6 +253,22 @@ melody("c4 e4")
         });
     });
 
+    it("parses named instrument definitions and references", () => {
+        expect(
+            parse(`instruments(
+                instrument("fat bass").osc("sawtooth", 0, 0.55).osc("sine", -12, 0.35),
+                song(melody("c2 g1").instrument("fat bass"))
+            )`)
+        ).toMatchObject({
+            kind: "InstrumentSetExpression",
+            instruments: [{ name: "fat bass", instrument: "fat bass" }],
+            pattern: {
+                kind: "SongExpression",
+                tracks: [{ instrument: "fat bass" }],
+            },
+        });
+    });
+
     it("parses envelope modifiers", () => {
         expect(
             parse(`melody("c4").attack(0.01).decay(0.2).sustain(0.6).release(0.4)`)

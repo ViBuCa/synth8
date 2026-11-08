@@ -90,6 +90,8 @@ export type EffectConfig = {
 export type PlaybackConfig = {
   /** ID of a preloaded sample/instrument asset. */
   sample?: string;
+  /** Named instrument reference used for reusable definitions and sample-pack swaps. */
+  instrument?: string;
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;

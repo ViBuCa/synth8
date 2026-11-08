@@ -1,5 +1,5 @@
 import type { EffectConfig, EnvelopeConfig, FilterConfig, OscillatorConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "../model";
-import type { ArpeggioMode, AstNode } from "../model/ast";
+import type { ArpeggioMode, AstNode, InstrumentExpression } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
 import { formatTokenPosition, tokenize, type SourcePosition, type Token } from "./tokenizer";
@@ -17,6 +17,7 @@ type Modifiers = {
   loop: boolean;
   offset: number;
   sample?: string;
+  instrument?: string;
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;
@@ -185,6 +186,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
   let preset: PlaybackPreset | undefined = undefined;
   let bank: PlaybackBank | undefined = undefined;
   let sample: string | undefined = undefined;
+  let instrument: string | undefined = undefined;
   let sound: Waveform | undefined = undefined;
   const oscillators: OscillatorConfig[] = [];
   let pan: number | undefined = undefined;
@@ -296,6 +298,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
         break;
       case "sound":
       case "sample":
+      case "instrument":
       case "preset":
       case "bank":
         str = expectString(state);
@@ -365,6 +368,11 @@ const parseModifiers = (state: ParserState): Modifiers => {
       case "sample":
         if (!str.trim()) throw new Error("sample() requires a non-empty sample ID.");
         sample = str;
+        break;
+
+      case "instrument":
+        if (!str.trim()) throw new Error("instrument() requires a non-empty instrument name.");
+        instrument = str;
         break;
 
       case "sound":
@@ -465,6 +473,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
     loop,
     offset,
     sample,
+    instrument,
     preset,
     bank,
     sound,
@@ -493,7 +502,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     throw new Error("beat() requires at least one step.");
   }
 
-  const { rate, repeat, loop, offset, sample, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { rate, repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -503,6 +512,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     loop,
     offset,
     sample,
+    instrument,
     preset,
     bank,
     sound,
@@ -530,7 +540,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     throw new Error("melody() requires at least one note.");
   }
 
-  const { rate, transpose, repeat, loop, offset, sample, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -541,6 +551,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     loop,
     offset,
     sample,
+    instrument,
     preset,
     bank,
     sound,
@@ -573,7 +584,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, sample, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -582,6 +593,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     loop,
     offset,
     sample,
+    instrument,
     preset,
     bank,
     sound,
@@ -592,6 +604,48 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     effects,
     pitch,
     filter,
+  };
+};
+
+const parseInstrumentExpression = (state: ParserState): AstNode => {
+  expectIdentifier(state, "instrument");
+  expectSymbol(state, "(");
+
+  const name = expectString(state);
+  if (!name.trim()) throw new Error("instrument() requires a non-empty instrument name.");
+
+  expectSymbol(state, ")");
+
+  const { loop: _loop, repeat: _repeat, offset: _offset, rate: _rate, transpose: _transpose, arp: _arp, ...modifiers } = parseModifiers(state);
+
+  return {
+    kind: "InstrumentExpression",
+    name,
+    loop: false,
+    repeat: 1,
+    offset: 0,
+    ...modifiers,
+    instrument: name,
+  };
+};
+
+const parseInstrumentSetExpression = (state: ParserState): AstNode => {
+  expectIdentifier(state, "instruments");
+  expectSymbol(state, "(");
+
+  const instruments: InstrumentExpression[] = [];
+  while (peek(state)?.type === "identifier" && peek(state)?.value === "instrument") {
+    instruments.push(parseInstrumentExpression(state) as InstrumentExpression);
+    expectSymbol(state, ",");
+  }
+
+  const pattern = parseExpression(state);
+  expectSymbol(state, ")");
+
+  return {
+    kind: "InstrumentSetExpression",
+    instruments,
+    pattern,
   };
 };
 
@@ -640,6 +694,9 @@ const parseExpression = (state: ParserState): AstNode => {
 
     case "song":
       return parseSongExpression(state);
+
+    case "instruments":
+      return parseInstrumentSetExpression(state);
 
     default:
       return parserError(state, `Unknown expression: ${expressionToken.value}`, expressionToken);

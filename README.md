@@ -124,7 +124,7 @@ The playground lets you compare native rendered and native live playback in the 
 
 ## LLM Composer Guide
 
-If you want an LLM to compose Synth8 music for you, copy the prompt/reference in [docs/llm-composer-guide.md](docs/llm-composer-guide.md) into your chat and ask for a song, loop, or SFX.
+If you want an LLM to compose Synth8 music for you, copy the prompt/reference in [docs/llm-composer-guide.md](docs/llm-composer-guide.md) into your chat and ask for a song, loop, or SFX. For reusable synth patches, see [docs/instrument-recipes.md](docs/instrument-recipes.md).
 
 ## Packages
 

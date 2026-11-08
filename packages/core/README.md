@@ -252,6 +252,25 @@ melody("c2 _ g1 _ bb1 _ g1 _")
 
 `transpose` is an integer semitone offset from `-48` to `48`, `gain` is `0`–`1`, and `detune` is cents from `-1200` to `1200`. Omitted values default to `0`, `1`, and `0`. If no `.osc()` calls are present, `.sound()` remains the single-oscillator shorthand.
 
+Reusable instruments can be defined once and referenced by name from multiple melody or beat layers:
+
+```ts
+instruments(
+  instrument("fat bass")
+    .osc("sawtooth", 0, 0.55)
+    .osc("sine", -12, 0.35)
+    .cutoff(1200)
+    .distortion(0.22),
+
+  song(
+    melody("c2 c2 g1 c2").instrument("fat bass"),
+    melody("eb2 eb2 bb1 eb2").instrument("fat bass").gain(0.55)
+  )
+)
+```
+
+The named instrument becomes layer playback data. Local modifiers such as `.gain()` or `.pan()` override the definition for that layer, while the instrument name is retained for instrument-pack export and runtime swapping.
+
 ### Pitch expression, filters, and articulation
 
 Sustained layers can use vibrato, portamento, and a low-pass filter:

@@ -8,7 +8,7 @@ export class BackendScheduler {
   private origin = 0;
   private readonly lookAhead: number;
   private readonly updateInterval: number;
-  private readonly bpm: number;
+  private bpm: number;
 
   constructor(
     private readonly pattern: Synth8Pattern,
@@ -54,6 +54,14 @@ export class BackendScheduler {
   }
 
   resume(): void { this.start(); }
+
+  setBpm(bpm: number): void {
+    const next = Math.max(1, bpm);
+    const musicalNow = Math.max(0, (this.clock.currentTime - this.origin) * this.bpm / 60);
+    this.bpm = next;
+    this.origin = this.clock.currentTime - musicalNow * 60 / this.bpm;
+    this.backend.setBpm?.(next);
+  }
 
   stop(): void {
     this.pause();

@@ -158,7 +158,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
   private readonly context: BaseAudioContext;
   private readonly output: AudioNode;
   private readonly outputGain: GainNode;
-  private readonly bpm: number;
+  private bpm: number;
   private readonly maxVoices: number;
   private readonly sampleBank?: SampleBank;
   private readonly sampleVoices: SampleVoice[] = [];
@@ -193,6 +193,13 @@ export class WebAudioBackend implements Synth8AudioBackend {
 
   setMasterGain(gain: number): void {
     this.outputGain.gain.setTargetAtTime(Math.max(0, Math.min(1, gain)), this.context.currentTime, 0.01);
+  }
+
+  setBpm(bpm: number): void {
+    const next = Math.max(1, bpm);
+    const beat = Math.max(0, (this.context.currentTime - this.origin) * this.bpm / 60);
+    this.bpm = next;
+    this.origin = this.context.currentTime - beat * 60 / this.bpm;
   }
 
   stop(): void {

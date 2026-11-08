@@ -1,6 +1,6 @@
 import { compile } from "@vibuca/synth8-core";
-import { analyzeSample, createGameAudio, decodeInstrumentPack, decodeModuleAsync, decodeSampleBank, encodeInstrumentPack, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderInstrumentPack, renderOgg, renderWav, resetPlaybackMetrics, resume, sampleDataFromModule, scheduleSampleVoice, SampleBank, stop } from "@vibuca/synth8-player";
-import type { SampleAssetData } from "@vibuca/synth8-player";
+import { analyzeSample, createGameAudio, decodeInstrumentPack, decodeModuleAsync, decodeSampleBank, encodeInstrumentPack, encodeSampleBank, encodeSampleWav, extractTfmxSampleCandidates, getPlaybackMetrics, inspectModule, pause, play, renderInstrumentPack, renderOgg, renderWav, resetPlaybackMetrics, resume, sampleDataFromModule, scheduleSampleVoice, InstrumentPackBackend, SampleBank, stop } from "@vibuca/synth8-player";
+import type { InstrumentPackData, SampleAssetData } from "@vibuca/synth8-player";
 import type { GameAudio, PreparedPlayback, PreparedSfx, SampleAssetData, TrackerModule } from "@vibuca/synth8-player"
 import {
   parseMidi,
@@ -484,6 +484,7 @@ const instrumentPackFileInput = document.querySelector<HTMLInputElement>("#instr
 let samplePreviewContext: AudioContext | undefined;
 let samplePreviewBank: SampleBank | undefined;
 let loadedSampleBank: SampleBank | undefined;
+let loadedInstrumentPack: InstrumentPackData | undefined;
 let loadedSampleAssets: SampleAssetData[] = [];
 let samplePreviewVoice: ReturnType<typeof scheduleSampleVoice> | undefined;
 const gameAudioStatus = document.querySelector<HTMLDivElement>("#game-audio-status")!;
@@ -601,11 +602,15 @@ playButton.addEventListener("click", async () => {
 
     resetPlaybackMetrics();
     setOutput("json", JSON.stringify(pattern, null, 2));
+    const backend = loadedInstrumentPack && loadedSampleBank && playbackMode === "live" && samplePreviewContext
+      ? new InstrumentPackBackend({ context: samplePreviewContext, pack: loadedInstrumentPack, sampleBank: loadedSampleBank, bpm })
+      : undefined;
     await play(pattern, {
       bpm,
       playbackMode,
       context: samplePreviewContext,
       sampleBank: loadedSampleBank,
+      backend,
     });
 
     setPlaybackStatus(`Playing (${playbackMode}).`);
@@ -1034,6 +1039,7 @@ sampleBankFileInput.addEventListener("change", async () => {
     if (!Constructor) throw new Error("This environment does not provide AudioContext.");
     samplePreviewContext ??= new Constructor();
     await samplePreviewContext.resume();
+    loadedInstrumentPack = undefined;
     loadedSampleBank = new SampleBank(samplePreviewContext);
     loadedSampleBank.addAll(loadedSampleAssets);
     samplePreviewBank = loadedSampleBank;
@@ -1049,6 +1055,7 @@ instrumentPackFileInput.addEventListener("change", async () => {
   if (!file) return;
   try {
     const pack = decodeInstrumentPack(await file.text());
+    loadedInstrumentPack = pack;
     loadedSampleAssets = pack.samples;
     const Constructor = globalThis.AudioContext;
     if (!Constructor) throw new Error("This environment does not provide AudioContext.");

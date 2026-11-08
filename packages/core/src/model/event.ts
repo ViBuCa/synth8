@@ -54,6 +54,7 @@ export interface Synth8AudioBackend {
   start?(): Promise<void> | void;
   stop?(): void;
   setMasterGain?(gain: number): void;
+  setBpm?(bpm: number): void;
   dispose?(): void;
 }
 
@@ -77,8 +78,8 @@ export const toSynth8Event = (
     time: event.time,
     duration: event.dur,
     ...(event.velocity !== undefined ? { velocity: event.velocity } : {}),
-    ...((playback?.preset ?? playback?.sound ?? playback?.bank) !== undefined
-      ? { instrument: playback?.preset ?? playback?.sound ?? playback?.bank }
+    ...((playback?.instrument ?? playback?.preset ?? playback?.sound ?? playback?.bank) !== undefined
+      ? { instrument: playback?.instrument ?? playback?.preset ?? playback?.sound ?? playback?.bank }
       : {}),
     ...(controls ? { controls } : {}),
     ...(parameters && Object.keys(parameters).length > 0 ? { parameters } : {}),

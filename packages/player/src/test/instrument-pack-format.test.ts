@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeInstrumentPack, encodeInstrumentPack, type InstrumentPackData } from "../module";
+import { decodeInstrumentPack, encodeInstrumentPack, findInstrumentSampleForNote, type InstrumentPackData } from "../module";
 
 const pack: InstrumentPackData = {
   version: 1,
@@ -9,7 +9,9 @@ const pack: InstrumentPackData = {
   instruments: [{
     id: "inst-1-bass",
     name: "bass",
+    kind: "note",
     playback: {
+      instrument: "bass",
       oscillators: [
         { sound: "sawtooth", gain: 0.55 },
         { sound: "sine", transpose: -12, gain: 0.35 },
@@ -42,7 +44,9 @@ describe("instrument pack format", () => {
       createdBy: "synth8",
       instruments: [{
         id: "inst-1-bass",
+        kind: "note",
         playback: {
+          instrument: "bass",
           oscillators: [
             { sound: "sawtooth", gain: 0.55 },
             { sound: "sine", transpose: -12, gain: 0.35 },
@@ -52,6 +56,7 @@ describe("instrument pack format", () => {
       samples: [{ id: "inst-1-bass-n36", rootNote: 36 }],
     });
     expect([...decoded.samples[0].pcm]).toEqual([-128, 0, 127]);
+    expect(findInstrumentSampleForNote(decoded, decoded.instruments[0], 40)?.id).toBe("inst-1-bass-n36");
   });
 
   it("rejects unsupported payloads", () => {

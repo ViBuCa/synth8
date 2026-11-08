@@ -224,6 +224,7 @@ const compileMelodySteps = (
 
 const compilePlayback = (ast: {
   sample?: PlaybackConfig["sample"];
+  instrument?: PlaybackConfig["instrument"];
   preset?: PlaybackConfig["preset"];
   bank?: PlaybackConfig["bank"];
   sound?: Waveform;
@@ -239,6 +240,10 @@ const compilePlayback = (ast: {
 
   if (ast.sample !== undefined) {
     playback.sample = ast.sample;
+  }
+
+  if (ast.instrument !== undefined) {
+    playback.instrument = ast.instrument;
   }
 
   if (ast.preset !== undefined) {
@@ -353,6 +358,16 @@ const playbackConfigsEqual = (
   right?: PlaybackConfig
 ): boolean => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 
+const resolveInstrumentPlayback = (
+  playback: PlaybackConfig | undefined,
+  instruments: ReadonlyMap<string, PlaybackConfig>
+): PlaybackConfig | undefined => {
+  const name = playback?.instrument;
+  if (!name) return playback;
+  const instrument = instruments.get(name);
+  return instrument ? mergePlayback(instrument, playback) : playback;
+};
+
 /**
  * Repeated sequence instances may share one player layer when they are a
  * single, equivalent, non-overlapping voice. Keeping this check local to
@@ -378,7 +393,7 @@ const canMergeRepeatedSequenceLayer = (
   });
 };
 
-const compileAst = (ast: AstNode): PatternData => {
+const compileAst = (ast: AstNode, instruments: ReadonlyMap<string, PlaybackConfig> = new Map()): PatternData => {
   switch (ast.kind) {
     case "BeatExpression": {
       for (const step of ast.steps) {
@@ -399,7 +414,7 @@ const compileAst = (ast: AstNode): PatternData => {
         loop: ast.loop,
         layers: [{
           events,
-          playback: compilePlayback(ast)
+          playback: resolveInstrumentPlayback(compilePlayback(ast), instruments)
         }]
       };
     }
@@ -424,13 +439,13 @@ const compileAst = (ast: AstNode): PatternData => {
         loop: ast.loop,
         layers: [{
           events,
-          playback: compilePlayback(ast)
+          playback: resolveInstrumentPlayback(compilePlayback(ast), instruments)
         }]
       };
     }
 
     case "SongExpression": {
-      const patterns = ast.tracks.map(compileAst);
+      const patterns = ast.tracks.map((track) => compileAst(track, instruments));
       const length = Math.max(...patterns.map((p) => p.length));
 
       const layers = patterns.flatMap((pattern) => {
@@ -460,9 +475,9 @@ const compileAst = (ast: AstNode): PatternData => {
       let sequenceLength = 0;
       const sequenceLayers: Pattern["layers"] = [];
 
-      const sequencePlayback = compilePlayback(ast);
+      const sequencePlayback = resolveInstrumentPlayback(compilePlayback(ast), instruments);
       for (const patternAst of ast.patterns) {
-        const pattern = compileAst(patternAst);
+        const pattern = compileAst(patternAst, instruments);
 
         sequenceLayers.push(
           ...pattern.layers.map((layer) => ({
@@ -528,6 +543,19 @@ const compileAst = (ast: AstNode): PatternData => {
         layers: repeatedLayers,
         loop: ast.loop,
       };
+    }
+
+    case "InstrumentSetExpression": {
+      const nextInstruments = new Map(instruments);
+      for (const instrument of ast.instruments) {
+        const playback = compilePlayback(instrument);
+        if (playback) nextInstruments.set(instrument.name, playback);
+      }
+      return compileAst(ast.pattern, nextInstruments);
+    }
+
+    case "InstrumentExpression": {
+      throw new Error("instrument() definitions must be inside instruments(...).");
     }
 
     default: {

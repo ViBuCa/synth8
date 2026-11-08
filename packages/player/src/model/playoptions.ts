@@ -8,6 +8,7 @@ export type PreparedPlayback = {
     resume(): void;
     stop(): void;
     setMasterGain(gain: number): void;
+    setBpm?(bpm: number): void;
     dispose(): void;
 };
 

@@ -84,6 +84,27 @@ const tutorialExamples: TutorialExample[] = [
   .chorus(0.25)`
   },
   {
+    title: "Named Instruments",
+    body: "Define instruments once, then reuse them across several melody or beat layers.",
+    details: "Use instruments(instrument(...), song(...)) and .instrument(\"name\"). Local layer modifiers such as gain() still override the shared definition. More recipes are in docs/instrument-recipes.md.",
+    source: `instruments(
+  instrument("fat bass")
+    .osc("sine", -12, 0.38)
+    .osc("triangle", 0, 0.42)
+    .osc("sawtooth", 0, 0.18)
+    .cutoff(1200)
+    .distortion(0.18),
+
+  song(
+    melody("c2 c2 g1 c2")
+      .instrument("fat bass"),
+    melody("eb2 eb2 bb1 eb2")
+      .instrument("fat bass")
+      .gain(0.55)
+  )
+)`
+  },
+  {
     title: "Sounds",
     body: "Use sound() to choose the synth waveform for a melody layer.",
     details: "Sources: sine, triangle, square, sawtooth, pulse12, pulse25, pulse50, pulse75, noise, wavetable. Pulse duty is fixed by the source name. Use osc() when one voice should contain multiple waveforms. Imported assets can use .sample(\"asset-id\") when a SampleBank is supplied by the application.",

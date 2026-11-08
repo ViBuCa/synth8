@@ -38,6 +38,19 @@ describe('compile sounds', () => {
         ]);
     });
 
+    it("resolves reusable named instruments", () => {
+        expect(compile(`instruments(
+            instrument("fat bass").osc("sawtooth", 0, 0.55).osc("sine", -12, 0.35).cutoff(1200),
+            song(
+              melody("c2 g1").instrument("fat bass"),
+              melody("eb2 bb1").instrument("fat bass").gain(0.5)
+            )
+        )`).layers).toMatchObject([
+            { playback: { instrument: "fat bass", oscillators: [{ sound: "sawtooth", gain: 0.55 }, { sound: "sine", transpose: -12, gain: 0.35 }], filter: { cutoff: 1200 } } },
+            { playback: { instrument: "fat bass", oscillators: [{ sound: "sawtooth", gain: 0.55 }, { sound: "sine", transpose: -12, gain: 0.35 }], filter: { cutoff: 1200 }, gain: 0.5 } },
+        ]);
+    });
+
     it("adds playback sound to beat layers", () => {
         expect(compile(`beat("kick snare").sound("square")`).layers).toMatchObject([
             {

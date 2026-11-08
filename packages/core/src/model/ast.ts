@@ -4,7 +4,9 @@ export type AstNode =
   | BeatExpression
   | MelodyExpression
   | SongExpression
-  | SequenceExpression;
+  | SequenceExpression
+  | InstrumentExpression
+  | InstrumentSetExpression;
 
 export type ArpeggioMode = "up" | "down" | "updown";
 
@@ -13,6 +15,7 @@ type Modifiers = {
   offset: number;
   loop: boolean;
   sample?: string;
+  instrument?: string;
   preset?: PlaybackPreset;
   bank?: PlaybackBank;
   sound?: Waveform;
@@ -24,6 +27,17 @@ type Modifiers = {
   pitch?: PitchExpression;
   filter?: FilterConfig;
 }
+
+export type InstrumentExpression = {
+  kind: "InstrumentExpression";
+  name: string;
+} & Modifiers;
+
+export type InstrumentSetExpression = {
+  kind: "InstrumentSetExpression";
+  instruments: InstrumentExpression[];
+  pattern: AstNode;
+};
 
 export type SequenceExpression = {
   kind: "SequenceExpression";

@@ -36,6 +36,7 @@ const prepareLive = (pattern: Pattern, options: PlayOptions, context: AudioConte
     pause: () => scheduler.pause(),
     resume: () => scheduler.resume(),
     setMasterGain: (gain: number) => backend.setMasterGain?.(gain),
+    setBpm: (bpm: number) => scheduler.setBpm(bpm),
     stop: () => { scheduler.stop(); backend.dispose?.(); },
     dispose: () => { scheduler.stop(); backend.dispose?.(); },
   };

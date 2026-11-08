@@ -85,7 +85,12 @@ const loaded = decodeInstrumentPack(json);
 const bank = new SampleBank(audioContext);
 addInstrumentPackToSampleBank(bank, loaded);
 const backend = new InstrumentPackBackend({ context: audioContext, pack: loaded, sampleBank: bank, bpm: 180 });
-await play(pattern, { backend, clock: audioContext });
+await play(pattern, { backend, clock: audioContext, playbackMode: "live" });
+
+// Runtime arrangement variants can swap or mute named instruments.
+backend.setInstrumentOverride("fat bass", "silent bass");
+backend.setInstrumentOverride("drums", false);
+backend.setBpm(110);
 ```
 
 Tracker modules will remain part of this player package rather than requiring a
