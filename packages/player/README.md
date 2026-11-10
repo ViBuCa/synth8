@@ -1,7 +1,10 @@
 # @vibuca/synth8-player
 
 Native Web Audio playback and rendering for Synth8 patterns. The player has no
-Tone.js dependency.
+Tone.js dependency. Native synth playback uses a conservative default output
+calibration (`masterGain` 0.45) so rendered and browser-played music sits closer
+to normal web-media loudness; applications can override master gain in playback
+options or their own mixer.
 
 ## Playback
 

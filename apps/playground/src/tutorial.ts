@@ -137,9 +137,9 @@ const tutorialExamples: TutorialExample[] = [
     body: "preset() and bank() are quick starting points for common roles.",
     details: "Presets cover basses, leads, pads, brass, plucks, and rhythm approximations. Drum banks change kit character: 808 is rounder, 909 is tighter, arcade/chip are shorter and brighter.",
     source: `song(
-  melody("bb4/1 f5/1 bb5/2").preset("metal-lead"),
-  melody("c2 _ g1 _").preset("picked-bass").loop(),
-  beat("kick _ snare _").bank("909").loop(),
+  melody("bb4/1 f5/1 bb5/2").preset("metal-lead").gain(0.75),
+  melody("c2 _ g1 _").preset("picked-bass").gain(0.75).loop(),
+  beat("kick _ snare _").bank("909").gain(0.7).loop(),
   beat("_ hihat _ hihat").bank("chip").fast(2).gain(0.25).loop()
 )`,
   },
@@ -293,6 +293,7 @@ export function renderTutorial(root: HTMLElement) {
         <button class="brand-button" type="button" data-view="home">Synth8</button>
         <nav class="main-nav" aria-label="Main">
           <button class="nav-button" type="button" data-view="lab">Laboratory</button>
+          <button class="nav-button" type="button" data-view="instruments">Named Instruments</button>
           ${experimental ? `<button class="nav-button" type="button" data-view="editor">Editor (preview)</button>` : ""}
           <button class="nav-button is-active" type="button" data-view="tutorial">Tutorial</button>
         </nav>

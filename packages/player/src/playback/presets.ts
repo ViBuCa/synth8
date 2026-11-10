@@ -106,9 +106,9 @@ const PRESET_PLAYBACK: Record<PlaybackPreset, PlaybackConfig> = {
     // they are intentionally approximations, not sampled guitar models.
     "metal-lead": {
         sound: "sawtooth",
-        gain: 0.55,
-        envelope: { attack: 0.003, decay: 0.16, sustain: 0.82, release: 0.28 },
-        effects: { distortion: 0.38, chorus: 0.16, echo: 0.16, highpass: 180 },
+        gain: 0.34,
+        envelope: { attack: 0.004, decay: 0.18, sustain: 0.68, release: 0.24 },
+        effects: { distortion: 0.18, chorus: 0.12, echo: 0.12, lowpass: 3600 },
     },
     "anthem-lead": {
         sound: "sawtooth",

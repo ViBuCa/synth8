@@ -192,7 +192,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
     // Native oscillators and parallel effect sends otherwise measure hotter
     // than Tone's default destination, especially when many layers overlap.
     // Keep the value configurable for applications that have their own mixer.
-    this.outputGain.gain.value = Math.max(0, Math.min(1, options.masterGain ?? 0.75));
+    this.outputGain.gain.value = Math.max(0, Math.min(1, options.masterGain ?? 0.45));
     this.outputGain.connect(options.output ?? options.context.destination);
     this.output = this.outputGain;
     this.bpm = options.bpm ?? 120;
@@ -331,6 +331,7 @@ export class WebAudioBackend implements Synth8AudioBackend {
       ? playback.oscillators.map((oscillator) => oscillator.sound)
       : [playback.sound ?? instrument];
     const antiAliasCutoff = cutoff === undefined &&
+      voice.filter.type === "lowpass" &&
       sounds.some((sound) => sound === "sawtooth" || sound === "square" || sound.startsWith("pulse"))
       ? Math.min(18000, Math.max(6000, frequency * 8))
       : undefined;

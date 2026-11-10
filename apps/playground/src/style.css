@@ -514,6 +514,41 @@ button:disabled {
     color: #ffdab2;
 }
 
+.instrument-lab-card {
+    border: 1px solid #44475a;
+    border-radius: 12px;
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+}
+
+.instrument-toolbar {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.instrument-toolbar label,
+.instrument-editor-grid label {
+    display: grid;
+    gap: 6px;
+}
+
+.instrument-toolbar label:first-child {
+    min-width: min(100%, 360px);
+}
+
+.instrument-editor-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.instrument-editor-grid .tutorial-editor {
+    min-height: 340px;
+}
+
 .option-row {
     display: flex;
     gap: 1rem;
