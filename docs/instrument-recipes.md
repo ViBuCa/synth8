@@ -80,6 +80,64 @@ instrument("rounded 303")
   .distortion(0.12)
 ```
 
+## Disco-Funk Filter Bass
+
+**Sound:** Punchy funk/disco bass with a per-note filter pop. The filter envelope opens quickly and falls back to a darker sustain, creating a wah-like transient.
+
+```ts
+instrument("disco funk bass")
+  .osc("sawtooth", 0, 0.62)
+  .osc("square", 0, 0.22)
+  .osc("sine", -12, 0.18)
+  .attack(0.003)
+  .decay(0.14)
+  .sustain(0.42)
+  .release(0.07)
+  .filterEnvelope(420, 2400, 0.012, 0.13, 680, 0.08)
+  .resonance(0.36)
+  .distortion(0.08)
+```
+
+## Cosmic LFO Bass
+
+**Sound:** Slow sci-fi bass with continuous filter drift and delayed vibrato. Useful for space, underwater, or alien ambience.
+
+```ts
+instrument("cosmic bass")
+  .osc("sawtooth", 0, 0.34, -6)
+  .osc("sawtooth", 0, 0.34, 6)
+  .osc("sine", -12, 0.32)
+  .attack(0.08)
+  .decay(0.45)
+  .sustain(0.78)
+  .release(0.70)
+  .cutoff(1100)
+  .resonance(0.42)
+  .vibrato(0.45, 0.10, 0.35)
+  .lfo("cutoff", 0.28, 0.50, "triangle")
+  .chorus(0.25)
+  .reverb(0.15)
+```
+
+## Amiga Crunch Bass
+
+**Sound:** Tracker-like synth-rock bass. The patch is still synthesized, but light bit-depth reduction and drive push it toward a crunchy vintage sample character.
+
+```ts
+instrument("amiga crunch bass")
+  .osc("sawtooth", 0, 0.62)
+  .osc("triangle", 0, 0.32)
+  .osc("sine", -12, 0.20)
+  .attack(0.004)
+  .decay(0.16)
+  .sustain(0.62)
+  .release(0.09)
+  .cutoff(820)
+  .resonance(0.10)
+  .distortion(0.24)
+  .bitcrush(7)
+```
+
 ## Detuned Saw Lead
 
 **Sound:** Wide, bright lead inspired by classic supersaw patches. Multiple saw oscillators are slightly detuned around the center pitch, with a square layer for bite.

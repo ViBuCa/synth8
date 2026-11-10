@@ -1,4 +1,4 @@
-import { EffectConfig, EnvelopeConfig, FilterConfig, OscillatorConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "./playback-config";
+import { EffectConfig, EnvelopeConfig, FilterConfig, LfoConfig, OscillatorConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "./playback-config";
 
 export type AstNode =
   | BeatExpression
@@ -26,6 +26,7 @@ type Modifiers = {
   effects?: EffectConfig;
   pitch?: PitchExpression;
   filter?: FilterConfig;
+  lfos?: LfoConfig[];
 }
 
 export type InstrumentExpression = {

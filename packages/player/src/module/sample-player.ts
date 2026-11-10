@@ -22,6 +22,7 @@ export type SampleVoiceOptions = {
     echo?: number;
     chorus?: number;
     reverb?: number;
+    bitcrush?: number;
     room?: number;
   };
 };
@@ -45,6 +46,16 @@ export const samplePlaybackRate = (
 
 const midiRate = (asset: SampleAsset, options: SampleVoiceOptions): number =>
   samplePlaybackRate(asset, options.note ?? asset.rootNote ?? 60, options.finetune ?? 0);
+
+const bitcrusherCurve = (bits: number): Float32Array<ArrayBuffer> => {
+  const curve: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(256 * Float32Array.BYTES_PER_ELEMENT));
+  const levels = Math.max(2, 2 ** Math.max(1, Math.min(16, Math.floor(bits))));
+  for (let index = 0; index < curve.length; index += 1) {
+    const x = (index * 2) / (curve.length - 1) - 1;
+    curve[index] = Math.round(x * (levels / 2 - 1)) / Math.max(1, levels / 2 - 1);
+  }
+  return curve;
+};
 
 /**
  * Schedule one preloaded sample without decoding or allocating audio data at
@@ -99,9 +110,12 @@ export const scheduleSampleVoice = (
     }
     distortion.curve = curve;
   }
+  const bitcrusher = effects.bitcrush !== undefined ? context.createWaveShaper() : undefined;
+  if (bitcrusher) bitcrusher.curve = bitcrusherCurve(effects.bitcrush ?? 8);
   const sourceChain = filter ? gain.connect(filter) : gain;
   const shaped = distortion ? sourceChain.connect(distortion) : sourceChain;
-  shaped.connect(panner);
+  const crushed = bitcrusher ? shaped.connect(bitcrusher) : shaped;
+  crushed.connect(panner);
   panner.connect(output);
   const ambience = effects.echo ?? effects.reverb ?? effects.room ?? effects.chorus;
   const delay = ambience !== undefined || effects.delay !== undefined ? context.createDelay(2) : undefined;
@@ -142,6 +156,7 @@ export const scheduleSampleVoice = (
     gain.disconnect();
     filter?.disconnect();
     distortion?.disconnect();
+    bitcrusher?.disconnect();
     delay?.disconnect();
     wetGain?.disconnect();
     panner.disconnect();

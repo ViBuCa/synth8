@@ -327,6 +327,16 @@ melody("c4 e4")
         });
     });
 
+    it("parses filter/pitch modulation modifiers", () => {
+        expect(
+            parse(`melody("c4").filterEnvelope(400, 2200, 0.01, 0.12, 700, 0.08).lfo("cutoff", 0.4, 0.5, "triangle").bitcrush(7)`)
+        ).toMatchObject({
+            filter: { envelope: { start: 400, peak: 2200, attack: 0.01, decay: 0.12, sustain: 700, release: 0.08 } },
+            lfos: [{ target: "cutoff", rate: 0.4, depth: 0.5, waveform: "triangle" }],
+            effects: { bitcrush: 7 },
+        });
+    });
+
     it("parses effect modifiers", () => {
         expect(
             parse(
@@ -405,6 +415,12 @@ melody("c4 e4")
         );
         expect(() => parse(`melody("c4").lowpass(10)`)).toThrow(
             "lowpass() must be between 20 and 20000 Hz."
+        );
+        expect(() => parse(`melody("c4").bitcrush(17)`)).toThrow(
+            "bitcrush() expects an integer bit depth from 1 to 16."
+        );
+        expect(() => parse(`melody("c4").lfo("volume", 1, 0.5)`)).toThrow(
+            "Illegal lfo target: volume"
         );
     });
 });

@@ -112,6 +112,18 @@ const tutorialExamples: TutorialExample[] = [
   .sound("pulse25")`,
   },
   {
+    title: "Filter Movement",
+    body: "Use filter envelopes and LFOs for wah basses, sweeps, and sci-fi motion.",
+    details: "filterEnvelope(start, peak, attack, decay, sustain, release) is per-note. lfo(\"cutoff\", rate, depth, waveform) is continuous. bitcrush(bits) adds lo-fi digital texture.",
+    source: `melody("c2 c2 g1 c2")
+  .osc("sawtooth", 0, 0.62)
+  .osc("sine", -12, 0.22)
+  .filterEnvelope(420, 2400, 0.012, 0.13, 680, 0.08)
+  .lfo("cutoff", 0.3, 0.35, "triangle")
+  .resonance(0.35)
+  .bitcrush(8)`,
+  },
+  {
     title: "Envelope",
     body: "Use envelope modifiers to shape how notes fade in, settle, and release.",
     details: "attack, decay, and release are seconds from 0 to 30. sustain is a level from 0 to 1.",

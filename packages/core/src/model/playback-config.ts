@@ -17,6 +17,15 @@ export type PitchExpression = {
   portamento?: number;
 };
 
+export type LfoWaveform = "sine" | "triangle" | "square" | "sawtooth";
+
+export type LfoConfig = {
+  target: "cutoff" | "pitch";
+  rate: number;
+  depth: number;
+  waveform?: LfoWaveform;
+};
+
 export type FilterEnvelope = {
   start: number;
   peak: number;
@@ -85,6 +94,8 @@ export type EffectConfig = {
   highpass?: number;
   distortion?: number;
   chorus?: number;
+  /** Bit-depth reduction, 1-16 bits. */
+  bitcrush?: number;
 };
 
 export type PlaybackConfig = {
@@ -103,4 +114,5 @@ export type PlaybackConfig = {
   effects?: EffectConfig;
   pitch?: PitchExpression;
   filter?: FilterConfig;
+  lfos?: LfoConfig[];
 };

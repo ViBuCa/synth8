@@ -1,4 +1,4 @@
-import type { EffectConfig, EnvelopeConfig, FilterConfig, OscillatorConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "../model";
+import type { EffectConfig, EnvelopeConfig, FilterConfig, LfoConfig, LfoWaveform, OscillatorConfig, PlaybackBank, PlaybackPreset, PitchExpression, Waveform } from "../model";
 import type { ArpeggioMode, AstNode, InstrumentExpression } from "../model/ast";
 import { parseBeatPattern } from "./beat-pattern-parser";
 import { parseMelodyPattern } from "./melody-pattern-parser";
@@ -28,11 +28,14 @@ type Modifiers = {
   effects?: EffectConfig;
   pitch?: PitchExpression;
   filter?: FilterConfig;
+  lfos?: LfoConfig[];
   arp?: ArpeggioMode;
 };
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "square", "sawtooth", "pulse12", "pulse25", "pulse50", "pulse75", "noise", "wavetable"];
 const ARPEGGIOS: ArpeggioMode[] = ["up", "down", "updown"];
+const LFO_TARGETS: LfoConfig["target"][] = ["cutoff", "pitch"];
+const LFO_WAVEFORMS: LfoWaveform[] = ["sine", "triangle", "square", "sawtooth"];
 const PLAYBACK_PRESETS: PlaybackPreset[] = [
   "chip-lead",
   "chip-bass",
@@ -194,6 +197,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
   const effects: EffectConfig = {};
   let pitch: PitchExpression | undefined = undefined;
   let filter: FilterConfig | undefined = undefined;
+  const lfos: LfoConfig[] = [];
   let arp: ArpeggioMode | undefined = undefined;
 
   while (matchSymbol(state, ".")) {
@@ -228,6 +232,38 @@ const parseModifiers = (state: ParserState): Modifiers => {
         throw new Error("filterEnvelope() expects six non-negative values.");
       }
       filter = { ...(filter ?? {}), envelope: { start: values[0], peak: values[1], attack: values[2], decay: values[3], sustain: values[4], release: values[5] } };
+      continue;
+    }
+
+    if (modifier === "lfo") {
+      const target = expectString(state);
+      expectSymbol(state, ",");
+      const rate = expectNumber(state);
+      expectSymbol(state, ",");
+      const depth = expectNumber(state);
+      let waveform: LfoWaveform | undefined;
+      if (matchSymbol(state, ",")) waveform = expectString(state) as LfoWaveform;
+      expectSymbol(state, ")");
+      if (!LFO_TARGETS.includes(target as LfoConfig["target"])) {
+        throw new Error(`Illegal lfo target: ${target}`);
+      }
+      if (rate <= 0 || rate > 20 || depth < 0 || depth > 1) {
+        throw new Error("lfo() expects rate 0-20 Hz and depth 0-1.");
+      }
+      if (waveform !== undefined && !LFO_WAVEFORMS.includes(waveform)) {
+        throw new Error(`Illegal lfo waveform: ${waveform}`);
+      }
+      lfos.push({ target: target as LfoConfig["target"], rate, depth, ...(waveform ? { waveform } : {}) });
+      continue;
+    }
+
+    if (modifier === "bitcrush") {
+      const bits = expectNumber(state);
+      expectSymbol(state, ")");
+      if (!Number.isInteger(bits) || bits < 1 || bits > 16) {
+        throw new Error("bitcrush() expects an integer bit depth from 1 to 16.");
+      }
+      effects.bitcrush = bits;
       continue;
     }
 
@@ -484,6 +520,7 @@ const parseModifiers = (state: ParserState): Modifiers => {
     effects: Object.keys(effects).length > 0 ? effects : undefined,
     pitch,
     filter,
+    lfos: lfos.length > 0 ? lfos : undefined,
     arp
   };
 };
@@ -502,7 +539,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     throw new Error("beat() requires at least one step.");
   }
 
-  const { rate, repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { rate, repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter, lfos } = parseModifiers(state);
 
   return {
     kind: "BeatExpression",
@@ -523,6 +560,7 @@ const parseBeatExpression = (state: ParserState): AstNode => {
     effects,
     pitch,
     filter,
+    lfos,
   };
 };
 
@@ -540,7 +578,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     throw new Error("melody() requires at least one note.");
   }
 
-  const { rate, transpose, repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter, arp } = parseModifiers(state);
+  const { rate, transpose, repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter, lfos, arp } = parseModifiers(state);
 
   return {
     kind: "MelodyExpression",
@@ -562,6 +600,7 @@ const parseMelodyExpression = (state: ParserState): AstNode => {
     effects,
     pitch,
     filter,
+    lfos,
     arp
   };
 };
@@ -584,7 +623,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     throw new Error("sequence() requires at least one pattern.");
   }
 
-  const { repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter } = parseModifiers(state);
+  const { repeat, loop, offset, sample, instrument, preset, bank, sound, oscillators, gain, pan, envelope, effects, pitch, filter, lfos } = parseModifiers(state);
 
   return {
     kind: "SequenceExpression",
@@ -604,6 +643,7 @@ const parseSequenceExpression = (state: ParserState): AstNode => {
     effects,
     pitch,
     filter,
+    lfos,
   };
 };
 

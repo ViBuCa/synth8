@@ -290,7 +290,35 @@ Vibrato rate is Hz, depth is normalized from `0` to `1`, and delay/portamento ar
 melody("bb4{accent} f5{staccato} bb5{bend:+2} bb5{mute}/2")
 ```
 
-Supported articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. Staccato and mute shorten playback without changing rhythmic timing; accent is velocity-limited to avoid clipping. Filter envelopes use `.filterEnvelope(start, peak, attack, decay, sustain, release)` and are stored in the compiled layer configuration. Vibrato delay and filter-envelope automation are retained in compiled data; native live and rendered playback currently apply the static portion only.
+Supported articulations are `accent`, `staccato`, `legato`, `slide`, `vibrato`, and `mute`. In native playback, accent raises note level, staccato/mute shorten notes, legato shortens release, vibrato enables note vibrato, bends ramp pitch across the note, and slide uses portamento-style pitch movement when possible.
+
+Filter envelopes use `.filterEnvelope(start, peak, attack, decay, sustain, release)` and are stored in Hz/seconds. Native live and rendered playback schedule those filter ramps per note:
+
+```ts
+melody("c2 c2 g1 c2")
+  .osc("sawtooth", 0, 0.65)
+  .osc("sine", -12, 0.25)
+  .filterEnvelope(420, 2200, 0.012, 0.14, 650, 0.08)
+  .resonance(0.35)
+```
+
+Use `.lfo("cutoff", rateHz, depth, waveform?)` for continuous filter movement and `.lfo("pitch", ...)` for extra pitch modulation. Targets are `cutoff` and `pitch`; waveforms are `sine`, `triangle`, `square`, and `sawtooth`.
+
+```ts
+melody("a1/4 e2/4 g1/4 d2/4")
+  .instrument("cosmic bass")
+  .lfo("cutoff", 0.35, 0.45, "triangle")
+```
+
+For lo-fi digital texture, `.bitcrush(bits)` applies bit-depth reduction from `1` to `16` bits after distortion and before pan/output:
+
+```ts
+melody("e2 e2 g2 a2")
+  .instrument("amiga bass")
+  .bitcrush(7)
+```
+
+Portamento, bend, vibrato delay, filter envelopes, cutoff LFO, pitch LFO, and bitcrush are applied by the native Web Audio backend.
 
 ### Envelope
 

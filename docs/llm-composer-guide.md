@@ -62,15 +62,18 @@ Envelope modifiers:
 - .attack(seconds), .decay(seconds), .release(seconds): 0 to 30
 - .sustain(level): 0 to 1
 
-Expression:
+Expression and modulation:
 - .vibrato(rateHz, depth, delaySeconds?): rate 0-20, depth 0-1, delay 0-30
 - .portamento(seconds): 0 to 30
 - .cutoff(hz): 20 to 20000; .resonance(amount): 0 to 1
+- .filterEnvelope(startHz, peakHz, attackSec, decaySec, sustainHz, releaseSec) for per-note filter movement
+- .lfo("cutoff" | "pitch", rateHz, depth, waveform?): waveform can be "sine", "triangle", "square", or "sawtooth"
 - Note articulation: `{accent}`, `{staccato}`, `{legato}`, `{slide}`, `{vibrato}`, `{mute}`, or `{bend:+2}` (semitones)
 
 Effects:
 - .delay(seconds): 0 to 2
 - .echo(amount), .room(amount), .reverb(amount), .distortion(amount), .chorus(amount): 0 to 1
+- .bitcrush(bits): integer bit-depth reduction from 1 to 16
 - .lowpass(hz), .highpass(hz): 20 to 20000
 
 Semantics:

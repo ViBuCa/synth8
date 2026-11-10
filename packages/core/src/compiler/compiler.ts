@@ -235,6 +235,7 @@ const compilePlayback = (ast: {
   effects?: PlaybackConfig["effects"];
   pitch?: PlaybackConfig["pitch"];
   filter?: PlaybackConfig["filter"];
+  lfos?: PlaybackConfig["lfos"];
 }): PlaybackConfig | undefined => {
   const playback: PlaybackConfig = {};
 
@@ -280,6 +281,7 @@ const compilePlayback = (ast: {
 
   if (ast.pitch !== undefined) playback.pitch = ast.pitch;
   if (ast.filter !== undefined) playback.filter = ast.filter;
+  if (ast.lfos !== undefined) playback.lfos = ast.lfos;
 
   return Object.keys(playback).length > 0
     ? playback
@@ -312,6 +314,7 @@ const mergePlayback = (
   }
 
   if (parent?.pitch || child?.pitch) playback.pitch = { ...parent?.pitch, ...child?.pitch };
+  if (parent?.lfos || child?.lfos) playback.lfos = child?.lfos ?? parent?.lfos;
   if (parent?.filter || child?.filter) playback.filter = {
     ...parent?.filter,
     ...child?.filter,
