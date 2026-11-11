@@ -549,6 +549,45 @@ button:disabled {
     min-height: 340px;
 }
 
+.composer-card {
+    border: 1px solid #44475a;
+    border-radius: 12px;
+    display: grid;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding: 18px;
+}
+
+.composer-instruments,
+.composer-song-editor {
+    display: grid;
+    gap: 8px;
+}
+
+.composer-instruments .tutorial-editor,
+.composer-song-editor .tutorial-editor {
+    min-height: 270px;
+}
+
+.composer-song-bar {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.composer-song-bar > label:first-child {
+    display: grid;
+    gap: 6px;
+    min-width: min(100%, 280px);
+}
+
+.composer-import {
+    display: grid;
+    gap: 6px;
+    min-width: min(100%, 300px);
+}
+
 .option-row {
     display: flex;
     gap: 1rem;

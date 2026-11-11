@@ -9,8 +9,10 @@ I checked public references while tuning these recipes:
 - [Supersaw](https://en.wikipedia.org/wiki/Supersaw): the classic wide lead/trance sound emulates multiple detuned sawtooth oscillators.
 - [Sound On Sound — Synthesizing Strings: String Machines](https://www.soundonsound.com/techniques/synthesizing-strings-string-machines): string-machine-style patches rely on saw waves, detune/ensemble movement, partly closed low-pass filters, and slow amplitude contours.
 - [Sound On Sound — Synthesizing Brass Instruments](https://www.soundonsound.com/techniques/synthesizing-brass-instruments): synth brass benefits from bright waveforms, quick attacks, evolving harmonic brightness, and filter/resonance changes.
+- [Low-frequency oscillation](https://en.wikipedia.org/wiki/Low-frequency_oscillation): an LFO is a slow control signal commonly used for vibrato, tremolo, and filter movement; Synth8's `.lfo(...)` currently targets pitch or cutoff.
+- [Chiptune](https://en.wikipedia.org/wiki/Chiptune): classic game sounds make expressive use of simple pulse/square waveforms, short patterns, and pitch movement. The recipes here are modern Synth8 approximations, not hardware emulations.
 
-Use these as starting points, then adjust `.gain()`, `.cutoff()`, `.resonance()`, `.distortion()`, `.chorus()`, and envelopes to fit your song.
+Use these as starting points, then adjust `.gain()`, `.cutoff()`, `.resonance()`, `.distortion()`, `.chorus()`, and envelopes to fit your song. Recipes intentionally stay within Synth8's current oscillator, filter, envelope, and effect features: for example, the mallet patch is layered sine/triangle synthesis, not FM, and the organ is an oscillator-stack approximation rather than a modeled drawbar organ.
 
 ## Fat Sub Bass
 
@@ -32,18 +34,19 @@ instrument("fat bass")
 
 ## Silent / Menu Bass
 
-**Sound:** A restrained version of the bass for menus, pause screens, or lower-intensity game states. It keeps the same harmonic role but removes the bright saw/distortion layer.
+**Sound:** A restrained version of the bass for menus, pause screens, or lower-intensity game states. The sine sub adds weight, while a triangle at the played pitch and a quiet octave-above triangle provide harmonics that remain audible on small speakers. A pure low sine can be almost inaudible on laptop/phone speakers because it has no upper harmonics and its fundamental may be below the speaker's useful range.
 
 ```ts
 instrument("silent bass")
-  .osc("sine", -12, 0.34)
-  .osc("triangle", 0, 0.30)
+  .osc("sine", -12, 0.24)
+  .osc("triangle", 0, 0.42)
+  .osc("triangle", 12, 0.16)
   .attack(0.01)
   .decay(0.18)
   .sustain(0.55)
   .release(0.35)
-  .cutoff(650)
-  .gain(0.45)
+  .cutoff(1100)
+  .gain(0.55)
 ```
 
 ## Acid Bass
@@ -334,6 +337,106 @@ instrument("noise hit")
   .release(0.05)
   .highpass(1400)
   .gain(0.22)
+```
+
+## Wobble Bass
+
+**Sound:** A harmonically rich bass with a moderate cutoff LFO. The triangle LFO gives a rounded rise/fall rather than a hard on/off pulse; use it for action loops and moving ostinatos.
+
+```ts
+instrument("wobble bass")
+  .osc("sawtooth", 0, 0.42)
+  .osc("triangle", -12, 0.32)
+  .attack(0.004)
+  .decay(0.14)
+  .sustain(0.62)
+  .release(0.09)
+  .cutoff(900)
+  .resonance(0.28)
+  .lfo("cutoff", 2.2, 0.42, "triangle")
+  .gain(0.42)
+```
+
+## Hollow Pulse Lead
+
+**Sound:** A restrained retro lead. The pulse provides a clear, narrow tone and the triangle adds enough body to keep it audible on small speakers.
+
+```ts
+instrument("hollow pulse lead")
+  .osc("pulse25", 0, 0.48)
+  .osc("triangle", 0, 0.20)
+  .attack(0.006)
+  .decay(0.12)
+  .sustain(0.48)
+  .release(0.12)
+  .cutoff(3800)
+  .gain(0.42)
+```
+
+## Soft Mallet
+
+**Sound:** A short, rounded pluck for pickups and menu motifs. The upper partials are separate oscillators, not FM operators; keep their gains low for a gentle tone.
+
+```ts
+instrument("soft mallet")
+  .osc("sine", 0, 0.48)
+  .osc("triangle", 12, 0.18)
+  .osc("sine", 19, 0.10)
+  .attack(0.002)
+  .decay(0.32)
+  .sustain(0.08)
+  .release(0.22)
+  .gain(0.42)
+```
+
+## Retro Organ
+
+**Sound:** A steady, octave-stacked tone for retro organ chords and sustained counter-melodies. The square waves add harmonics; the lower triangle fills the body.
+
+```ts
+instrument("organ")
+  .osc("square", 0, 0.30)
+  .osc("square", 12, 0.12)
+  .osc("triangle", -12, 0.16)
+  .attack(0.012)
+  .decay(0.08)
+  .sustain(0.82)
+  .release(0.08)
+  .cutoff(3000)
+  .gain(0.34)
+```
+
+## Arcade Pulse Bass
+
+**Sound:** Pulse-and-triangle bass with a quiet sine sub. Unlike an all-sine bass, the pulse/triangle layers contribute harmonics that make the part translate better on small speakers.
+
+```ts
+instrument("arcade pulse bass")
+  .osc("pulse25", 0, 0.36)
+  .osc("triangle", 12, 0.22)
+  .osc("sine", -12, 0.18)
+  .attack(0.002)
+  .decay(0.10)
+  .sustain(0.56)
+  .release(0.07)
+  .cutoff(1900)
+  .gain(0.42)
+```
+
+## Noise Sweep
+
+**Sound:** Filtered noise for transition sweeps, power-ups, and sci-fi ambience. Lengthen the note and adjust the LFO rate/depth to change its movement.
+
+```ts
+instrument("noise sweep")
+  .sound("noise")
+  .attack(0.04)
+  .decay(0.28)
+  .sustain(0.22)
+  .release(0.16)
+  .highpass(900)
+  .lfo("cutoff", 0.35, 0.5, "triangle")
+  .gain(0.24)
 ```
 
 ## Full Usage Example

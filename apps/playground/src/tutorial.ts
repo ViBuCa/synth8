@@ -294,6 +294,7 @@ export function renderTutorial(root: HTMLElement) {
         <nav class="main-nav" aria-label="Main">
           <button class="nav-button" type="button" data-view="lab">Laboratory</button>
           <button class="nav-button" type="button" data-view="instruments">Named Instruments</button>
+          <button class="nav-button" type="button" data-view="composer">Composer</button>
           ${experimental ? `<button class="nav-button" type="button" data-view="editor">Editor (preview)</button>` : ""}
           <button class="nav-button is-active" type="button" data-view="tutorial">Tutorial</button>
         </nav>

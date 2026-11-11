@@ -32,16 +32,17 @@ const recipes: NamedInstrumentRecipe[] = [
     name: "silent bass",
     role: "Menu / alternate bass",
     description: "Restrained bass for menus, pause screens, or lower-intensity variants.",
-    melody: `melody("c2 _ g1 _ eb2 _ bb1 _")`,
+    melody: `melody("c3 _ g2 _ eb3 _ bb2 _")`,
     source: `instrument("silent bass")
-  .osc("sine", -12, 0.34)
-  .osc("triangle", 0, 0.30)
+  .osc("sine", -12, 0.24)
+  .osc("triangle", 0, 0.42)
+  .osc("triangle", 12, 0.16)
   .attack(0.01)
   .decay(0.18)
   .sustain(0.55)
   .release(0.35)
-  .cutoff(650)
-  .gain(0.45)`,
+  .cutoff(1100)
+  .gain(0.55)`
   },
   {
     name: "acid bass",
@@ -304,6 +305,100 @@ const recipes: NamedInstrumentRecipe[] = [
   .gain(0.48)`,
   },
   {
+    name: "wobble bass",
+    role: "Moving bass",
+    description: "A controlled filter-LFO bass for modern action loops; the moderate rate keeps motion clear without becoming harsh.",
+    melody: `melody("c2 c2 c2 eb2 g2 g2 eb2 c2")`,
+    source: `instrument("wobble bass")
+  .osc("sawtooth", 0, 0.42)
+  .osc("triangle", -12, 0.32)
+  .attack(0.004)
+  .decay(0.14)
+  .sustain(0.62)
+  .release(0.09)
+  .cutoff(900)
+  .resonance(0.28)
+  .lfo("cutoff", 2.2, 0.42, "triangle")
+  .gain(0.42)`,
+  },
+  {
+    name: "hollow pulse lead",
+    role: "Retro lead",
+    description: "A narrow pulse tone with a soft triangle body, useful for melody hooks that should feel retro but not painfully bright.",
+    melody: `melody("c5 eb5 g5 bb5 c6 bb5 g5 eb5")`,
+    source: `instrument("hollow pulse lead")
+  .osc("pulse25", 0, 0.48)
+  .osc("triangle", 0, 0.20)
+  .attack(0.006)
+  .decay(0.12)
+  .sustain(0.48)
+  .release(0.12)
+  .cutoff(3800)
+  .gain(0.42)`,
+  },
+  {
+    name: "soft mallet",
+    role: "Bell / mallet",
+    description: "A sine-and-triangle pluck with a short decay for pickups, menu motifs, and gentle melodic punctuation. This is subtractive/additive layering, not FM synthesis.",
+    melody: `melody("c5 _ g5 _ eb5 _ c6 _")`,
+    source: `instrument("soft mallet")
+  .osc("sine", 0, 0.48)
+  .osc("triangle", 12, 0.18)
+  .osc("sine", 19, 0.10)
+  .attack(0.002)
+  .decay(0.32)
+  .sustain(0.08)
+  .release(0.22)
+  .gain(0.42)`,
+  },
+  {
+    name: "organ",
+    role: "Sustained keys",
+    description: "A steady, octave-stacked tone for retro organ chords, dungeon themes, and sustained counter-melodies.",
+    melody: `melody("c4+e4+g4 _ f4+a4+c5 _ g4+b4+d5 _ c4+e4+g4 _")`,
+    source: `instrument("organ")
+  .osc("square", 0, 0.30)
+  .osc("square", 12, 0.12)
+  .osc("triangle", -12, 0.16)
+  .attack(0.012)
+  .decay(0.08)
+  .sustain(0.82)
+  .release(0.08)
+  .cutoff(3000)
+  .gain(0.34)`,
+  },
+  {
+    name: "arcade pulse bass",
+    role: "Chiptune bass",
+    description: "A clean pulse-and-triangle bass that translates on small speakers and leaves room for a lead.",
+    melody: `melody("c2 _ c2 g1 eb2 _ bb1 _")`,
+    source: `instrument("arcade pulse bass")
+  .osc("pulse25", 0, 0.36)
+  .osc("triangle", 12, 0.22)
+  .osc("sine", -12, 0.18)
+  .attack(0.002)
+  .decay(0.10)
+  .sustain(0.56)
+  .release(0.07)
+  .cutoff(1900)
+  .gain(0.42)`,
+  },
+  {
+    name: "noise sweep",
+    role: "Transition FX",
+    description: "A noise-based filtered sweep for transitions, power-ups, and sci-fi ambience. Change the note duration and filter/LFO values to alter its pacing.",
+    melody: `melody("c4/4 _ c4/4 _")`,
+    source: `instrument("noise sweep")
+  .sound("noise")
+  .attack(0.04)
+  .decay(0.28)
+  .sustain(0.22)
+  .release(0.16)
+  .highpass(900)
+  .lfo("cutoff", 0.35, 0.5, "triangle")
+  .gain(0.24)`,
+  },
+  {
     name: "noise hit",
     role: "FX / percussion",
     description: "Noisy transient layer for impacts, sweeps, and percussion-like accents.",
@@ -353,6 +448,7 @@ export function renderNamedInstruments(root: HTMLElement) {
         <nav class="main-nav" aria-label="Main">
           <button class="nav-button" type="button" data-view="lab">Laboratory</button>
           <button class="nav-button is-active" type="button" data-view="instruments">Named Instruments</button>
+          <button class="nav-button" type="button" data-view="composer">Composer</button>
           ${experimental ? `<button class="nav-button" type="button" data-view="editor">Editor (preview)</button>` : ""}
           <button class="nav-button" type="button" data-view="tutorial">Tutorial</button>
         </nav>
