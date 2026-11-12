@@ -28,6 +28,17 @@ instrument("warm pad")
   .cutoff(1800).chorus(0.3).gain(0.32)`;
 
 let samplePreviewContext: AudioContext | undefined;
+const getSamplePreviewContext = (): AudioContext => {
+  if (!samplePreviewContext) {
+    const Context = globalThis.AudioContext;
+    if (!Context) throw new Error("This browser does not provide AudioContext for sample preview.");
+    samplePreviewContext = new Context();
+  }
+  if (typeof samplePreviewContext.createBuffer !== "function") {
+    throw new Error("The sample preview AudioContext is unavailable. Reload the page and try again.");
+  }
+  return samplePreviewContext;
+};
 let samplePreviewBank: SampleBank | undefined;
 let samplePreviewVoice: ReturnType<typeof scheduleSampleVoice> | undefined;
 let previewPackCache: { key: string; pack: InstrumentPackData } | undefined;
@@ -206,10 +217,10 @@ export function renderComposer(root: HTMLElement): void {
   };
   const sourceFor = (song: SuiteSong): string => `instruments(\n${instrumentsInput.value}\n,\n${song.source}\n)`;
   const showSamples = (pack: InstrumentPackData): void => {
-    samplePreviewContext ??= new AudioContext();
+    const context = getSamplePreviewContext();
     samplePreviewVoice?.stop();
     samplePreviewVoice = undefined;
-    samplePreviewBank = new SampleBank(samplePreviewContext);
+    samplePreviewBank = new SampleBank(context);
     addInstrumentPackToSampleBank(samplePreviewBank, pack);
     const labels = new Map<string, string>();
     for (const instrument of pack.instruments) {
@@ -292,8 +303,9 @@ export function renderComposer(root: HTMLElement): void {
       }
       const pack = previewPackCache.pack;
       showSamples(pack);
+      const context = getSamplePreviewContext();
       const backend = new InstrumentPackBackend({
-        context: samplePreviewContext!,
+        context,
         pack,
         sampleBank: samplePreviewBank!,
         bpm: suite.bpm,
@@ -301,12 +313,15 @@ export function renderComposer(root: HTMLElement): void {
       });
       await play(pattern, {
         bpm: suite.bpm,
-        context: samplePreviewContext,
+        context,
         backend,
         playbackMode: "live",
       });
       status.textContent = `Playing ${song.name} with rendered samples.`;
-    } catch (error) { status.textContent = error instanceof Error ? error.message : String(error); }
+    } catch (error) {
+      console.error("Composer sampler preview failed:", error);
+      status.textContent = error instanceof Error ? error.message : String(error);
+    }
   });
   root.querySelector<HTMLButtonElement>("#composer-stop")!.addEventListener("click", () => { stop(); status.textContent = "Stopped."; });
   root.querySelector<HTMLButtonElement>("#composer-export-json")!.addEventListener("click", () => {
