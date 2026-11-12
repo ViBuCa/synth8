@@ -235,7 +235,9 @@ export function renderComposer(root: HTMLElement): void {
     sampleList.replaceChildren();
     const summary = document.createElement("p");
     summary.className = "tutorial-details";
-    summary.textContent = `${pack.samples.length} rendered samples from ${pack.instruments.length} packed instruments.`;
+    const peak = pack.samples.reduce((max, sample) => sample.pcm.reduce((sampleMax, value) => Math.max(sampleMax, Math.abs(value)), max), 0);
+    summary.textContent = `${pack.samples.length} rendered samples from ${pack.instruments.length} packed instruments (peak PCM ${peak}/128).`;
+    if (peak === 0) status.textContent = "Rendered samples are silent (peak PCM 0). Check the browser console and Web Audio support.";
     sampleList.append(summary);
     for (const asset of pack.samples) {
       const row = document.createElement("div");
@@ -245,8 +247,13 @@ export function renderComposer(root: HTMLElement): void {
       const previewButton = document.createElement("button");
       previewButton.type = "button";
       previewButton.textContent = "Preview";
-      previewButton.addEventListener("click", () => {
+      previewButton.addEventListener("click", async () => {
         if (!samplePreviewContext || !samplePreviewBank) return;
+        await samplePreviewContext.resume();
+        if (samplePreviewContext.state !== "running") {
+          status.textContent = `Audio output is ${samplePreviewContext.state}; click Preview again to unlock it.`;
+          return;
+        }
         samplePreviewVoice?.stop();
         const loadedAsset = samplePreviewBank.get(asset.id);
         if (loadedAsset) samplePreviewVoice = scheduleSampleVoice(samplePreviewContext, loadedAsset, {
@@ -295,6 +302,7 @@ export function renderComposer(root: HTMLElement): void {
       // Unlock the output while still inside the button gesture. Pack rendering
       // is asynchronous and may outlast the browser's transient user activation.
       await context.resume();
+      if (context.state !== "running") throw new Error(`Audio output is ${context.state}; allow audio playback and try again.`);
       stop(); status.textContent = "Preparing the game sampler pack for this suite...";
       const suiteKey = safeJson(suite);
       if (!previewPackCache || previewPackCache.key !== suiteKey) {
