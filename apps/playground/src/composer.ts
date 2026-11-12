@@ -33,7 +33,10 @@ let previewAudioUrl: string | undefined;
 
 function stopPreviewAudio(): void {
   previewAudio?.pause();
-  previewAudio = undefined;
+  if (previewAudio) {
+    previewAudio.removeAttribute("src");
+    previewAudio.load();
+  }
   if (previewAudioUrl) URL.revokeObjectURL(previewAudioUrl);
   previewAudioUrl = undefined;
 }
@@ -41,9 +44,32 @@ function stopPreviewAudio(): void {
 function playPreviewBlob(blob: Blob, loop = false): Promise<void> {
   stopPreviewAudio();
   previewAudioUrl = URL.createObjectURL(blob);
-  previewAudio = new Audio(previewAudioUrl);
+  previewAudio ??= new Audio();
   previewAudio.loop = loop;
+  previewAudio.src = previewAudioUrl;
   return previewAudio.play();
+}
+
+function silentPreviewWav(): Blob {
+  const sampleRate = 8000;
+  const bytes = new ArrayBuffer(44 + sampleRate * 2);
+  const view = new DataView(bytes);
+  const text = (offset: number, value: string): void => { for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i)); };
+  text(0, "RIFF"); view.setUint32(4, bytes.byteLength - 8, true); text(8, "WAVE"); text(12, "fmt ");
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true); view.setUint16(34, 16, true); text(36, "data"); view.setUint32(40, sampleRate * 2, true);
+  return new Blob([bytes], { type: "audio/wav" });
+}
+
+async function unlockPreviewAudio(): Promise<void> {
+  stopPreviewAudio();
+  previewAudio ??= new Audio();
+  previewAudioUrl = URL.createObjectURL(silentPreviewWav());
+  previewAudio.src = previewAudioUrl;
+  await previewAudio.play();
+  previewAudio.pause();
+  previewAudio.currentTime = 0;
 }
 
 function encodeAudioBufferWav(buffer: AudioBuffer): Blob {
@@ -322,7 +348,10 @@ export function renderComposer(root: HTMLElement): void {
       const song = suite.songs[activeIndex];
       if (!song) throw new Error("Select a song to preview.");
       const pattern = compile(sourceFor(song));
-      stopPreviewAudio();
+      // Unlock this same media element during the click gesture before the
+      // asynchronous sample-pack render; later playback may happen after the
+      // browser's transient user activation has expired.
+      await unlockPreviewAudio();
       status.textContent = "Preparing the game sampler pack for this suite...";
       const suiteKey = safeJson(suite);
       if (!previewPackCache || previewPackCache.key !== suiteKey) {
