@@ -1,5 +1,5 @@
 import { compile } from "@vibuca/synth8-core";
-import { encodeInstrumentPack, renderInstrumentPack } from "@vibuca/synth8-player";
+import { addInstrumentPackToSampleBank, encodeInstrumentPack, InstrumentPackBackend, renderInstrumentPack, SampleBank } from "@vibuca/synth8-player";
 import type { InstrumentPackData } from "@vibuca/synth8-player";
 import { isExperimentalEnabled } from "./features";
 import { play, stop } from "@vibuca/synth8-player";
@@ -26,6 +26,9 @@ instrument("warm pad")
   .osc("triangle", 0, 0.20)
   .attack(0.35).decay(0.25).sustain(0.65).release(0.8)
   .cutoff(1800).chorus(0.3).gain(0.32)`;
+
+let samplePreviewContext: AudioContext | undefined;
+let previewPackCache: { key: string; pack: InstrumentPackData } | undefined;
 
 const initialSongs: SuiteSong[] = [
   {
@@ -117,6 +120,7 @@ function download(name: string, blob: Blob): void {
 }
 
 function safeJson(value: unknown): string { return JSON.stringify(value, null, 2); }
+function escapeHtml(value: string): string { return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char); }
 
 export function renderComposer(root: HTMLElement): void {
   const experimental = isExperimentalEnabled();
@@ -135,7 +139,7 @@ export function renderComposer(root: HTMLElement): void {
       <section class="tutorial-hero">
         <h1>Game Music Composer</h1>
         <p class="lead">Create a shared instrument library and a suite of songs that reuse it. Save the editable suite as JSON or export a ZIP containing the suite, rendered instrument samples, and a game integration guide.</p>
-        <p class="tutorial-details">Instrument definitions are shared by every song. Use <code>.instrument("name")</code> on layers. A ZIP export renders the complete song suite into a sampler-style <code>.s8inst.json</code> pack; the source suite remains editable alongside it.</p>
+        <p class="tutorial-details">Instrument definitions are shared by every song. Use <code>.instrument("name")</code> on layers. Preview renders samples for the selected song and plays through the same sampler backend used by the game-ready ZIP export. The ZIP renders the complete suite into a sampler-style <code>.s8inst.json</code> pack; the source suite remains editable alongside it.</p>
       </section>
       <section class="composer-card">
         <label class="composer-instruments">
@@ -144,6 +148,7 @@ export function renderComposer(root: HTMLElement): void {
         </label>
         <div class="composer-song-bar">
           <label><span>Song</span><select id="composer-song-select"></select></label>
+          <label class="composer-song-name"><span>Song name</span><input id="composer-song-name" type="text" maxlength="80" /></label>
           <button id="composer-add-song" type="button">Add song</button>
           <button id="composer-remove-song" class="stop" type="button">Remove song</button>
           <label class="tutorial-bpm"><span>BPM</span><input id="composer-bpm" type="number" min="40" max="240" value="120" /></label>
@@ -170,6 +175,7 @@ export function renderComposer(root: HTMLElement): void {
 
   const instrumentsInput = root.querySelector<HTMLTextAreaElement>("#composer-instruments")!;
   const songSelect = root.querySelector<HTMLSelectElement>("#composer-song-select")!;
+  const songNameInput = root.querySelector<HTMLInputElement>("#composer-song-name")!;
   const songSource = root.querySelector<HTMLTextAreaElement>("#composer-song-source")!;
   const bpmInput = root.querySelector<HTMLInputElement>("#composer-bpm")!;
   const status = root.querySelector<HTMLDivElement>("#composer-status")!;
@@ -177,9 +183,12 @@ export function renderComposer(root: HTMLElement): void {
   let activeIndex = 0;
   instrumentsInput.value = initialInstruments;
 
-  const syncSongField = (): void => { songSource.value = songs[activeIndex]?.source ?? ""; };
+  const syncSongField = (): void => {
+    songSource.value = songs[activeIndex]?.source ?? "";
+    songNameInput.value = songs[activeIndex]?.name ?? "";
+  };
   const refreshSongs = (): void => {
-    songSelect.innerHTML = songs.map((song, index) => `<option value="${index}">${song.name.replace(/[&<>"']/g, "")}</option>`).join("");
+    songSelect.innerHTML = songs.map((song, index) => `<option value="${index}">${escapeHtml(song.name)}</option>`).join("");
     songSelect.value = String(activeIndex);
     syncSongField();
   };
@@ -191,6 +200,13 @@ export function renderComposer(root: HTMLElement): void {
 
   refreshSongs();
   songSelect.addEventListener("change", () => { currentSuite(); activeIndex = Number(songSelect.value); syncSongField(); });
+  songNameInput.addEventListener("input", () => {
+    const song = songs[activeIndex];
+    if (!song) return;
+    song.name = songNameInput.value;
+    const option = songSelect.options[activeIndex];
+    if (option) option.textContent = song.name || "(unnamed song)";
+  });
   songSource.addEventListener("input", () => { if (songs[activeIndex]) songs[activeIndex].source = songSource.value; });
   root.querySelector<HTMLButtonElement>("#composer-add-song")!.addEventListener("click", () => {
     currentSuite();
@@ -205,10 +221,37 @@ export function renderComposer(root: HTMLElement): void {
   root.querySelector<HTMLButtonElement>("#composer-play")!.addEventListener("click", async () => {
     try {
       const suite = currentSuite();
-      const pattern = compile(sourceFor(suite.songs[activeIndex]));
-      stop(); status.textContent = "Preparing selected song...";
-      await play(pattern, { bpm: suite.bpm, playbackMode: "rendered" });
-      status.textContent = `Playing ${suite.songs[activeIndex].name}.`;
+      const song = suite.songs[activeIndex];
+      if (!song) throw new Error("Select a song to preview.");
+      const pattern = compile(sourceFor(song));
+      stop(); status.textContent = "Preparing the game sampler pack for this suite...";
+      const suiteKey = safeJson(suite);
+      if (!previewPackCache || previewPackCache.key !== suiteKey) {
+        const combined = `instruments(\n${suite.instruments}\n,\nsequence(\n${suite.songs.map((item) => item.source).join(",\n")}\n)\n)`;
+        const packPattern = compile(combined);
+        const pack = await renderInstrumentPack(packPattern, {
+          name: "Synth8 game suite", sampleRate: 22050, rangePadding: 1, intervalSemitones: 3,
+        });
+        previewPackCache = { key: suiteKey, pack };
+      }
+      const pack = previewPackCache.pack;
+      samplePreviewContext ??= new AudioContext();
+      const sampleBank = new SampleBank();
+      addInstrumentPackToSampleBank(sampleBank, pack);
+      const backend = new InstrumentPackBackend({
+        context: samplePreviewContext,
+        pack,
+        sampleBank,
+        bpm: suite.bpm,
+        masterGain: 0.65,
+      });
+      await play(pattern, {
+        bpm: suite.bpm,
+        context: samplePreviewContext,
+        backend,
+        playbackMode: "live",
+      });
+      status.textContent = `Playing ${song.name} with rendered samples.`;
     } catch (error) { status.textContent = error instanceof Error ? error.message : String(error); }
   });
   root.querySelector<HTMLButtonElement>("#composer-stop")!.addEventListener("click", () => { stop(); status.textContent = "Stopped."; });

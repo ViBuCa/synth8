@@ -576,10 +576,11 @@ button:disabled {
     gap: 12px;
 }
 
-.composer-song-bar > label:first-child {
+.composer-song-bar > label:first-child,
+.composer-song-name {
     display: grid;
     gap: 6px;
-    min-width: min(100%, 280px);
+    min-width: min(100%, 220px);
 }
 
 .composer-import {
