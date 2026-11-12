@@ -172,7 +172,15 @@ const renderInstrumentEvent = async (
     sampleBank: options.sampleBank,
   });
   backend.start();
-  backend.schedule([{ ...event, ...(playback && Object.keys(playback).length > 0 ? { parameters: { ...playback } } : {}) }]);
+  const renderPlayback = playback ? { ...playback } : undefined;
+  // Gain and pan are event/layer controls in Synth8's public event contract.
+  // Baking layer gain into the sample and applying controls again in the
+  // sampler attenuated every packed note twice; pan has no meaning in mono PCM.
+  if (renderPlayback) {
+    delete renderPlayback.gain;
+    delete renderPlayback.pan;
+  }
+  backend.schedule([{ ...event, ...(renderPlayback && Object.keys(renderPlayback).length > 0 ? { parameters: renderPlayback } : {}) }]);
   const buffer = await context.startRendering();
   backend.dispose();
   return audioBufferToMonoPcm(buffer);

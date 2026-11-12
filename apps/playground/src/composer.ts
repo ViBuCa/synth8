@@ -257,7 +257,7 @@ export function renderComposer(root: HTMLElement): void {
         samplePreviewVoice?.stop();
         const loadedAsset = samplePreviewBank.get(asset.id);
         if (loadedAsset) samplePreviewVoice = scheduleSampleVoice(samplePreviewContext, loadedAsset, {
-          note: asset.rootNote ?? 60, gain: 0.65, duration: Math.min(2, loadedAsset.buffer.duration), release: 0.04,
+          note: asset.rootNote ?? 60, gain: 0.95, duration: Math.min(2, loadedAsset.buffer.duration), release: 0.04,
         });
       });
       const downloadButton = document.createElement("button");
