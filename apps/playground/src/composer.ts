@@ -291,6 +291,10 @@ export function renderComposer(root: HTMLElement): void {
       const song = suite.songs[activeIndex];
       if (!song) throw new Error("Select a song to preview.");
       const pattern = compile(sourceFor(song));
+      const context = getSamplePreviewContext();
+      // Unlock the output while still inside the button gesture. Pack rendering
+      // is asynchronous and may outlast the browser's transient user activation.
+      await context.resume();
       stop(); status.textContent = "Preparing the game sampler pack for this suite...";
       const suiteKey = safeJson(suite);
       if (!previewPackCache || previewPackCache.key !== suiteKey) {
@@ -303,7 +307,6 @@ export function renderComposer(root: HTMLElement): void {
       }
       const pack = previewPackCache.pack;
       showSamples(pack);
-      const context = getSamplePreviewContext();
       const backend = new InstrumentPackBackend({
         context,
         pack,

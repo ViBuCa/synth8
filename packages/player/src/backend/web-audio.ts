@@ -322,6 +322,8 @@ export class WebAudioBackend implements Synth8AudioBackend {
     const frequency = pitchToFrequency(event.pitch);
     const pan = Math.max(-1, Math.min(1, event.controls?.pan ?? playback.pan ?? 0));
     const cutoff = playback.filter?.cutoff ?? effects.lowpass;
+    const maxFilterFrequency = Math.max(20, this.context.sampleRate * 0.49);
+    const clampFilterFrequency = (frequency: number): number => Math.max(20, Math.min(maxFilterFrequency, frequency));
     // Native oscillator waveforms are not band-limited in every browser. At
     // the top of the range, the harmonics of saw/square/pulse fold back into
     // the audible band and can sound scratchy. Tone's oscillator path is a
@@ -346,8 +348,8 @@ export class WebAudioBackend implements Synth8AudioBackend {
     // presets retain their own release values.
     const release = Math.max(0, event.articulation === "legato" ? (envelope.release ?? 0.12) * 0.25 : envelope.release ?? 0.12);
     voice.panner.pan.setValueAtTime(pan, start);
-    if (cutoff !== undefined) voice.filter.frequency.setValueAtTime(cutoff, start);
-    else if (antiAliasCutoff !== undefined) voice.filter.frequency.setValueAtTime(antiAliasCutoff, start);
+    if (cutoff !== undefined) voice.filter.frequency.setValueAtTime(clampFilterFrequency(cutoff), start);
+    else if (antiAliasCutoff !== undefined) voice.filter.frequency.setValueAtTime(clampFilterFrequency(antiAliasCutoff), start);
     if (playback.filter?.resonance !== undefined) voice.filter.Q.setValueAtTime(playback.filter.resonance * 20, start);
     if (voice.distortion && effects.distortion !== undefined) voice.distortion.curve = distortionCurve(effects.distortion);
     if (voice.vibrato && voice.vibratoGain && (playback.pitch?.vibratoRate !== undefined || event.articulation === "vibrato")) {
@@ -370,11 +372,11 @@ export class WebAudioBackend implements Synth8AudioBackend {
     if (voice.bitcrusher && effects.bitcrush !== undefined) voice.bitcrusher.curve = bitcrusherCurve(effects.bitcrush);
     if (playback.filter?.envelope) {
       const filterEnvelope = playback.filter.envelope;
-      voice.filter.frequency.setValueAtTime(filterEnvelope.start, start);
-      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.peak, start + filterEnvelope.attack);
-      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.sustain, start + filterEnvelope.attack + filterEnvelope.decay);
-      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.sustain, end);
-      voice.filter.frequency.linearRampToValueAtTime(filterEnvelope.start, end + filterEnvelope.release);
+      voice.filter.frequency.setValueAtTime(clampFilterFrequency(filterEnvelope.start), start);
+      voice.filter.frequency.linearRampToValueAtTime(clampFilterFrequency(filterEnvelope.peak), start + filterEnvelope.attack);
+      voice.filter.frequency.linearRampToValueAtTime(clampFilterFrequency(filterEnvelope.sustain), start + filterEnvelope.attack + filterEnvelope.decay);
+      voice.filter.frequency.linearRampToValueAtTime(clampFilterFrequency(filterEnvelope.sustain), end);
+      voice.filter.frequency.linearRampToValueAtTime(clampFilterFrequency(filterEnvelope.start), end + filterEnvelope.release);
     }
 
     const bendTargetRatio = event.bend !== undefined ? 2 ** (event.bend / 12) : undefined;
@@ -440,9 +442,9 @@ export class WebAudioBackend implements Synth8AudioBackend {
       filter.type = noiseDrum || (playback.effects?.highpass !== undefined && playback.effects?.lowpass === undefined)
         ? "highpass"
         : "lowpass";
-      filter.frequency.value = noiseDrum
+      filter.frequency.value = Math.min(this.context.sampleRate * 0.49, noiseDrum
         ? (drumName === "hihat" || drumName === "openhat" ? 4500 : drumName === "crash" || drumName === "ride" ? 2800 : 900)
-        : playback.effects?.lowpass ?? playback.effects?.highpass ?? 20000;
+        : playback.effects?.lowpass ?? playback.effects?.highpass ?? 20000);
       const gain = this.context.createGain();
       gain.gain.value = 0;
       const panner = this.context.createStereoPanner();
