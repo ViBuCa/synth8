@@ -4,6 +4,7 @@ import { resolvePlaybackPreset } from "../playback/presets";
 import { BackendScheduler } from "../playback/backend-scheduler";
 import { encodeWav } from "../playback/render";
 import { createNativeBufferPlayback } from "../backend/native-buffer";
+import { scheduleSampleVoice } from "../module/sample-player";
 
 const pattern = (events: Synth8Event[], length = 4): Pattern => ({
   length,
@@ -37,6 +38,32 @@ describe("native player", () => {
     expect(batches[0][0]).toMatchObject({ time: 0, pitch: "c4" });
     scheduler.stop();
     expect(backend.stop).toHaveBeenCalledOnce();
+  });
+
+  it("connects sample sources to their gain stage", () => {
+    const source = {
+      buffer: undefined,
+      playbackRate: { setValueAtTime: vi.fn() },
+      connect: vi.fn(), start: vi.fn(), stop: vi.fn(), disconnect: vi.fn(),
+      addEventListener: vi.fn(),
+    };
+    const gain = {
+      gain: { setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), cancelScheduledValues: vi.fn() },
+      connect: vi.fn(), disconnect: vi.fn(),
+    };
+    const panner = { pan: { setValueAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn() };
+    const context = {
+      currentTime: 0,
+      destination: {},
+      createBufferSource: () => source,
+      createGain: () => gain,
+      createStereoPanner: () => panner,
+    } as unknown as BaseAudioContext;
+    const asset = { id: "test", buffer: { duration: 1, sampleRate: 22050 } as AudioBuffer };
+
+    scheduleSampleVoice(context, asset, { duration: 0.5 });
+
+    expect(source.connect).toHaveBeenCalledWith(gain);
   });
 
   it("encodes PCM audio as a WAV blob", async () => {

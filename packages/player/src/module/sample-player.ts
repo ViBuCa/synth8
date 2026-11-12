@@ -80,6 +80,7 @@ export const scheduleSampleVoice = (
   const loop = asset.loop;
 
   source.buffer = asset.buffer;
+  source.connect(gain);
   source.playbackRate.setValueAtTime(midiRate(asset, options), when);
   if (loop && loop.type === "forward") {
     const start = Math.max(0, Math.min(loop.start / asset.buffer.sampleRate, asset.buffer.duration));
