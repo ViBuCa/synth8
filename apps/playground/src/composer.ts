@@ -1,8 +1,8 @@
 import { compile } from "@vibuca/synth8-core";
-import { addInstrumentPackToSampleBank, encodeInstrumentPack, encodeSampleWav, InstrumentPackBackend, renderInstrumentPack, SampleBank, scheduleSampleVoice } from "@vibuca/synth8-player";
+import { addInstrumentPackToSampleBank, encodeInstrumentPack, encodeSampleWav, InstrumentPackBackend, renderInstrumentPack, SampleBank } from "@vibuca/synth8-player";
 import type { InstrumentPackData } from "@vibuca/synth8-player";
 import { isExperimentalEnabled } from "./features";
-import { play, stop } from "@vibuca/synth8-player";
+
 
 type SuiteSong = { id: string; name: string; source: string };
 type SuiteData = { version: 1; format: "synth8-suite"; instruments: string; songs: SuiteSong[]; bpm: number };
@@ -27,21 +27,59 @@ instrument("warm pad")
   .attack(0.35).decay(0.25).sustain(0.65).release(0.8)
   .cutoff(1800).chorus(0.3).gain(0.32)`;
 
-let samplePreviewContext: AudioContext | undefined;
-const getSamplePreviewContext = (): AudioContext => {
-  if (!samplePreviewContext) {
-    const Context = globalThis.AudioContext;
-    if (!Context) throw new Error("This browser does not provide AudioContext for sample preview.");
-    samplePreviewContext = new Context();
-  }
-  if (typeof samplePreviewContext.createBuffer !== "function") {
-    throw new Error("The sample preview AudioContext is unavailable. Reload the page and try again.");
-  }
-  return samplePreviewContext;
-};
-let samplePreviewBank: SampleBank | undefined;
-let samplePreviewVoice: ReturnType<typeof scheduleSampleVoice> | undefined;
 let previewPackCache: { key: string; pack: InstrumentPackData } | undefined;
+let previewAudio: HTMLAudioElement | undefined;
+let previewAudioUrl: string | undefined;
+
+function stopPreviewAudio(): void {
+  previewAudio?.pause();
+  previewAudio = undefined;
+  if (previewAudioUrl) URL.revokeObjectURL(previewAudioUrl);
+  previewAudioUrl = undefined;
+}
+
+function playPreviewBlob(blob: Blob, loop = false): Promise<void> {
+  stopPreviewAudio();
+  previewAudioUrl = URL.createObjectURL(blob);
+  previewAudio = new Audio(previewAudioUrl);
+  previewAudio.loop = loop;
+  return previewAudio.play();
+}
+
+function encodeAudioBufferWav(buffer: AudioBuffer): Blob {
+  const channels = buffer.numberOfChannels;
+  const dataBytes = buffer.length * channels * 2;
+  const bytes = new ArrayBuffer(44 + dataBytes);
+  const view = new DataView(bytes);
+  const text = (offset: number, value: string): void => { for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i)); };
+  text(0, "RIFF"); view.setUint32(4, 36 + dataBytes, true); text(8, "WAVE"); text(12, "fmt ");
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channels, true);
+  view.setUint32(24, buffer.sampleRate, true); view.setUint32(28, buffer.sampleRate * channels * 2, true);
+  view.setUint16(32, channels * 2, true); view.setUint16(34, 16, true); text(36, "data"); view.setUint32(40, dataBytes, true);
+  let offset = 44;
+  for (let frame = 0; frame < buffer.length; frame++) {
+    for (let channel = 0; channel < channels; channel++) {
+      const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[frame]));
+      view.setInt16(offset, sample < 0 ? sample * 32768 : sample * 32767, true);
+      offset += 2;
+    }
+  }
+  return new Blob([bytes], { type: "audio/wav" });
+}
+
+async function renderSampleSongWav(pattern: ReturnType<typeof compile>, pack: InstrumentPackData, bpm: number): Promise<Blob> {
+  const sampleRate = 44100;
+  const seconds = Math.max(0.1, pattern.length * 60 / bpm + 1.5);
+  const context = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
+  const bank = new SampleBank(context);
+  addInstrumentPackToSampleBank(bank, pack);
+  const backend = new InstrumentPackBackend({ context, pack, sampleBank: bank, bpm, masterGain: 0.9 });
+  backend.start();
+  backend.schedule(pattern.query(0, pattern.length));
+  const rendered = await context.startRendering();
+  backend.dispose();
+  return encodeAudioBufferWav(rendered);
+}
 
 const initialSongs: SuiteSong[] = [
   {
@@ -217,11 +255,6 @@ export function renderComposer(root: HTMLElement): void {
   };
   const sourceFor = (song: SuiteSong): string => `instruments(\n${instrumentsInput.value}\n,\n${song.source}\n)`;
   const showSamples = (pack: InstrumentPackData): void => {
-    const context = getSamplePreviewContext();
-    samplePreviewVoice?.stop();
-    samplePreviewVoice = undefined;
-    samplePreviewBank = new SampleBank(context);
-    addInstrumentPackToSampleBank(samplePreviewBank, pack);
     const labels = new Map<string, string>();
     for (const instrument of pack.instruments) {
       for (const zone of instrument.zones ?? []) {
@@ -248,17 +281,8 @@ export function renderComposer(root: HTMLElement): void {
       previewButton.type = "button";
       previewButton.textContent = "Preview";
       previewButton.addEventListener("click", async () => {
-        if (!samplePreviewContext || !samplePreviewBank) return;
-        await samplePreviewContext.resume();
-        if (samplePreviewContext.state !== "running") {
-          status.textContent = `Audio output is ${samplePreviewContext.state}; click Preview again to unlock it.`;
-          return;
-        }
-        samplePreviewVoice?.stop();
-        const loadedAsset = samplePreviewBank.get(asset.id);
-        if (loadedAsset) samplePreviewVoice = scheduleSampleVoice(samplePreviewContext, loadedAsset, {
-          note: asset.rootNote ?? 60, gain: 0.95, duration: Math.min(2, loadedAsset.buffer.duration), release: 0.04,
-        });
+        try { await playPreviewBlob(encodeSampleWav(asset)); }
+        catch (error) { status.textContent = error instanceof Error ? error.message : String(error); }
       });
       const downloadButton = document.createElement("button");
       downloadButton.type = "button";
@@ -298,12 +322,8 @@ export function renderComposer(root: HTMLElement): void {
       const song = suite.songs[activeIndex];
       if (!song) throw new Error("Select a song to preview.");
       const pattern = compile(sourceFor(song));
-      const context = getSamplePreviewContext();
-      // Unlock the output while still inside the button gesture. Pack rendering
-      // is asynchronous and may outlast the browser's transient user activation.
-      await context.resume();
-      if (context.state !== "running") throw new Error(`Audio output is ${context.state}; allow audio playback and try again.`);
-      stop(); status.textContent = "Preparing the game sampler pack for this suite...";
+      stopPreviewAudio();
+      status.textContent = "Preparing the game sampler pack for this suite...";
       const suiteKey = safeJson(suite);
       if (!previewPackCache || previewPackCache.key !== suiteKey) {
         const combined = `instruments(\n${suite.instruments}\n,\nsequence(\n${suite.songs.map((item) => item.source).join(",\n")}\n)\n)`;
@@ -315,26 +335,15 @@ export function renderComposer(root: HTMLElement): void {
       }
       const pack = previewPackCache.pack;
       showSamples(pack);
-      const backend = new InstrumentPackBackend({
-        context,
-        pack,
-        sampleBank: samplePreviewBank!,
-        bpm: suite.bpm,
-        masterGain: 0.65,
-      });
-      await play(pattern, {
-        bpm: suite.bpm,
-        context,
-        backend,
-        playbackMode: "live",
-      });
-      status.textContent = `Playing ${song.name} with rendered samples.`;
+      const songWav = await renderSampleSongWav(pattern, pack, suite.bpm);
+      await playPreviewBlob(songWav, pattern.loop);
+      status.textContent = `Playing ${song.name} rendered through the game sampler.`;
     } catch (error) {
       console.error("Composer sampler preview failed:", error);
       status.textContent = error instanceof Error ? error.message : String(error);
     }
   });
-  root.querySelector<HTMLButtonElement>("#composer-stop")!.addEventListener("click", () => { stop(); status.textContent = "Stopped."; });
+  root.querySelector<HTMLButtonElement>("#composer-stop")!.addEventListener("click", () => { stopPreviewAudio(); status.textContent = "Stopped."; });
   root.querySelector<HTMLButtonElement>("#composer-export-json")!.addEventListener("click", () => {
     download("synth8-suite.s8suite.json", new Blob([safeJson(currentSuite())], { type: "application/json" }));
   });
