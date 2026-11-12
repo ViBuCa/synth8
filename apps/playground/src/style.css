@@ -589,6 +589,36 @@ button:disabled {
     min-width: min(100%, 300px);
 }
 
+.composer-sample-list {
+    display: grid;
+    gap: 6px;
+    max-height: 360px;
+    overflow: auto;
+}
+
+.composer-sample-row {
+    align-items: center;
+    border-bottom: 1px solid #33364a;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: minmax(160px, 1fr) auto auto;
+    padding: 6px 0;
+}
+
+.composer-sample-row > span {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    .composer-sample-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .composer-sample-row > span {
+        grid-column: 1 / -1;
+    }
+}
+
 .option-row {
     display: flex;
     gap: 1rem;
