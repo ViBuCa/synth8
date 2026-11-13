@@ -4,8 +4,17 @@ import { createGameAudio, prepare } from "@vibuca/synth8-player";
 import type {
   GameAudio, GameAudioOptions, GameMusicOptions, GameSfxOptions,
   PlayOptions, PlaySfxOptions, PreparedPlayback, PreparedSfx,
-  MusicDuckingOptions,
+  MusicDuckingOptions, InstrumentPackData,
 } from "@vibuca/synth8-player";
+
+/** Textual game suite exported by the Synth8 Composer. */
+export type Synth8Suite = {
+  version: 1;
+  format: "synth8-suite";
+  instruments: string;
+  songs: Array<{ id: string; name: string; source: string }>;
+  bpm?: number;
+};
 
 /** A track can be registered once and prepared by any scene. */
 export type Synth8Track = { source: string; options?: GameMusicOptions };
@@ -124,6 +133,27 @@ export class Synth8Plugin extends Phaser.Plugins.ScenePlugin {
     playback.start();
     this.music = playback;
     return playback;
+  }
+
+  /** Play one song from a Composer suite through its exported sampler pack. */
+  async playSuiteSong(
+    suite: Synth8Suite,
+    songIdOrName: string,
+    instrumentPack: InstrumentPackData,
+    options: GameMusicOptions = {},
+  ): Promise<PreparedPlayback> {
+    if (suite.version !== 1 || suite.format !== "synth8-suite" || !Array.isArray(suite.songs)) {
+      throw new Error("Unsupported Synth8 suite format.");
+    }
+    const song = suite.songs.find((item) => item.id === songIdOrName || item.name === songIdOrName);
+    if (!song) throw new Error(`Unknown song in Synth8 suite: ${songIdOrName}`);
+    const source = `instruments(\n${suite.instruments}\n,\n${song.source}\n)`;
+    return this.playMusic(source, {
+      bpm: suite.bpm ?? 120,
+      ...options,
+      instrumentPack,
+      playbackMode: "live",
+    });
   }
   pauseMusic(): void { this.state().stack.at(-1)?.pause() ?? this.music?.pause(); }
   resumeMusic(): void { this.state().stack.at(-1)?.resume() ?? this.music?.resume(); }

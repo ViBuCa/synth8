@@ -95,6 +95,34 @@ await this.synth8.playMusic(
 );
 ```
 
+## Play a Composer suite with its exported samples
+
+A ZIP exported by the Synth8 Composer contains `synth8-suite.json` (shared
+instrument definitions and song sources) and `instruments.s8inst.json` (the
+rendered sampler pack). Decode the pack, then select a suite song by ID or name:
+
+```ts
+import { decodeInstrumentPack } from "@vibuca/synth8-player";
+import type { Synth8Suite } from "@vibuca/synth8-phaser-plugin";
+
+const suite = await fetch("/audio/synth8-suite.json").then((response) => response.json()) as Synth8Suite;
+const packText = await fetch("/audio/instruments.s8inst.json").then((response) => response.text());
+const instrumentPack = decodeInstrumentPack(packText);
+
+// Call startAudio from a pointer/key gesture to unlock browser audio.
+await this.synth8.startAudio({ musicVolume: 0.7 });
+await this.synth8.playSuiteSong(suite, "overworld", instrumentPack);
+```
+
+`playSuiteSong()` wraps the selected song in the suite's shared instrument
+definitions and routes it through `InstrumentPackBackend` and the pack samples.
+Playback uses the live sampler path; changing BPM or editing source requires
+re-exporting the instrument pack if the sound design or note coverage changed.
+The same pack can be reused across all songs in the suite.
+
+You can also use `playMusic(source, { instrumentPack, bpm })` directly when you
+already have the wrapped Synth8 source.
+
 ## Stop music
 
 ```ts

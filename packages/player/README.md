@@ -151,6 +151,19 @@ adapters are still being implemented.
 
 `createGameAudio()` provides native Web Audio music and SFX buses with master,
 music, SFX volume, ducking, overlapping SFX voices, and rendered or live music.
+Pass `instrumentPack` in `GameMusicOptions` to route named instruments through
+the pack's pre-rendered samples using `InstrumentPackBackend`; the pack's sample
+bank is cached for the lifetime of the game audio service. This sampler path
+uses live event scheduling even if `playbackMode` is omitted.
+
+```ts
+const playback = await audio.prepareMusic(pattern, {
+  bpm: 120,
+  instrumentPack: decodeInstrumentPack(packJson),
+});
+playback.start();
+```
+
 Games can also prepare a module directly from file bytes:
 
 ```ts

@@ -17,6 +17,8 @@ export type MusicDuckingOptions = {
 
 export type GameMusicOptions = {
     bpm?: number;
+    /** When supplied, route named note/drum layers through this pre-rendered sampler pack. */
+    instrumentPack?: import("../module").InstrumentPackData;
     sampleBank?: import("../module").SampleBank;
     playbackMode?: "live" | "rendered" | "streamed";
     streamChunkDuration?: number;

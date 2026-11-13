@@ -4,7 +4,8 @@ import type { TrackerModule } from "./module";
 import { renderToAudioBuffer } from "./playback/render";
 import { prepare as preparePlayback } from "./playback/play";
 import { createNativeBufferPlayback } from "./backend/native-buffer";
-import { createTrackerPlayback, decodeModuleAsync } from "./module";
+import { addInstrumentPackToSampleBank, InstrumentPackBackend, SampleBank, createTrackerPlayback, decodeModuleAsync } from "./module";
+import type { InstrumentPackData } from "./module";
 
 const DEFAULT_BPM = 120;
 const DEFAULT_SFX_VOICES = 8;
@@ -37,10 +38,42 @@ export const createGameAudio = async (options: GameAudioOptions = {}): Promise<G
 
   const musicSet = new Set<PreparedPlayback>();
   const sfxSet = new Set<InternalSfx>();
+  const instrumentPackBanks = new WeakMap<InstrumentPackData, SampleBank>();
   let currentMusic: PreparedPlayback | undefined;
 
   const prepareMusic = async (pattern: Pattern, musicOptions: GameMusicOptions = {}): Promise<PreparedPlayback> => {
     const bpm = musicOptions.bpm ?? DEFAULT_BPM;
+    if (musicOptions.instrumentPack) {
+      let sampleBank = musicOptions.sampleBank;
+      if (sampleBank) {
+        addInstrumentPackToSampleBank(sampleBank, musicOptions.instrumentPack);
+      } else {
+        sampleBank = instrumentPackBanks.get(musicOptions.instrumentPack);
+        if (!sampleBank) {
+          sampleBank = new SampleBank(context);
+          addInstrumentPackToSampleBank(sampleBank, musicOptions.instrumentPack);
+          instrumentPackBanks.set(musicOptions.instrumentPack, sampleBank);
+        }
+      }
+      const backend = new InstrumentPackBackend({
+        context,
+        pack: musicOptions.instrumentPack,
+        sampleBank,
+        bpm,
+        output: music,
+        masterGain: 1,
+      });
+      const playback = await preparePlayback(pattern, {
+        ...musicOptions,
+        backend,
+        bpm,
+        playbackMode: "live",
+        output: music,
+        sampleBank,
+      });
+      musicSet.add(playback);
+      return wrapMusic(playback);
+    }
     // Native rendered playback is deterministic and also covers the old
     // streamed mode without creating a player for every rendered chunk.
     if (musicOptions.playbackMode !== "live") {
